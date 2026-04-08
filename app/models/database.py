@@ -21,7 +21,10 @@ class Base(DeclarativeBase):
 class Session(Base):
     __tablename__ = "sessions"
     id = Column(String(64), primary_key=True)
-    messages = Column(JSON, default=list)
+    title = Column(String(255), default="New conversation")
+    messages = Column(JSON, default=list)          # user-visible chat history
+    agent_messages = Column(JSON, default=list)     # full Anthropic message history for resumption
+    metadata_ = Column("metadata", JSON, default=dict)  # token counts, vds codes, etc.
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -34,6 +37,17 @@ class GeneratedDatasheet(Base):
     datasheet = Column(JSON, nullable=False)
     validation_status = Column(String(20))
     completion_pct = Column(Float)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class AgentDownload(Base):
+    __tablename__ = "agent_downloads"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String(64))
+    vds_codes = Column(JSON, nullable=False)       # list of VDS codes
+    filename = Column(String(255), nullable=False)
+    download_type = Column(String(10), nullable=False)  # "xlsx" or "zip"
+    sheet_count = Column(Integer, default=1)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -74,11 +88,29 @@ async def _try_create_pgvector_table(conn):
         logger.warning(f"pgvector not available — RAG features disabled. ({type(e).__name__})")
 
 
+async def _migrate_sessions_table(conn):
+    """Add new columns to sessions table if they don't exist (for existing DBs)."""
+    migrations = [
+        ("title", "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT 'New conversation'"),
+        ("agent_messages", "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS agent_messages JSON DEFAULT '[]'"),
+        ("metadata", "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS metadata JSON DEFAULT '{}'"),
+    ]
+    for col_name, sql in migrations:
+        try:
+            await conn.execute(text(sql))
+        except Exception as e:
+            logger.debug(f"Migration for sessions.{col_name} skipped: {e}")
+
+
 async def init_db():
     """Create tables if they don't exist."""
     # Create core tables (no pgvector dependency)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Migrate existing sessions table with new columns
+    async with engine.begin() as conn:
+        await _migrate_sessions_table(conn)
 
     # Try pgvector table separately — non-fatal
     async with engine.begin() as conn:

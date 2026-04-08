@@ -5,8 +5,11 @@ This is the core agent loop. It:
 2. Streams back text, thinking, tool_calls
 3. Executes tools when Claude requests them
 4. Loops until Claude finishes (stop_reason="end_turn") or max tool calls reached
+5. Supports conversation resumption via prior_agent_messages
+6. Retries failed tool calls and rate-limited API calls with exponential backoff
 """
 
+import asyncio
 import json
 import logging
 import uuid
@@ -21,12 +24,41 @@ from .tools import TOOL_DEFINITIONS, execute_tool
 
 logger = logging.getLogger(__name__)
 
+# Retry config
+TOOL_RETRY_DELAYS = [0.5, 1.0, 2.0]       # max 2 retries
+API_RETRY_DELAYS = [1.0, 2.0, 4.0]         # max 3 retries for rate limits
+
+
+async def _retry_tool(tool_name: str, tool_input: dict) -> dict:
+    """Execute a tool with retries on failure."""
+    last_error = None
+    for attempt in range(1 + len(TOOL_RETRY_DELAYS)):
+        try:
+            return await execute_tool(tool_name, tool_input)
+        except Exception as e:
+            last_error = e
+            if attempt < len(TOOL_RETRY_DELAYS):
+                delay = TOOL_RETRY_DELAYS[attempt]
+                logger.warning(f"Tool '{tool_name}' failed (attempt {attempt + 1}), retrying in {delay}s: {e}")
+                await asyncio.sleep(delay)
+            else:
+                logger.exception(f"Tool '{tool_name}' failed after {attempt + 1} attempts")
+    return {"error": f"Tool '{tool_name}' failed after retries: {str(last_error)[:200]}"}
+
 
 async def run_agent(
     messages: list[dict],
     session_id: str | None = None,
+    prior_agent_messages: list[dict] | None = None,
 ) -> AsyncGenerator[AgentEvent, None]:
-    """Run the agent loop, yielding SSE events."""
+    """Run the agent loop, yielding SSE events.
+
+    Args:
+        messages: Current user messages (from this request).
+        session_id: Session ID for tracking.
+        prior_agent_messages: Full Anthropic message history from a previous session
+                              for conversation resumption.
+    """
     if not session_id:
         session_id = uuid.uuid4().hex[:16]
 
@@ -39,74 +71,118 @@ async def run_agent(
 
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-    anthropic_messages = []
-    for msg in messages:
-        anthropic_messages.append({
-            "role": msg["role"],
-            "content": msg["content"],
-        })
+    # Build message history: prior session + new messages
+    if prior_agent_messages:
+        anthropic_messages = list(prior_agent_messages)
+        # Append only new user messages (the last user message from request)
+        new_user_msgs = [m for m in messages if m["role"] == "user"]
+        if new_user_msgs:
+            anthropic_messages.append({
+                "role": "user",
+                "content": new_user_msgs[-1]["content"],
+            })
+    else:
+        anthropic_messages = [
+            {"role": msg["role"], "content": msg["content"]}
+            for msg in messages
+        ]
 
     tool_call_count = 0
     max_calls = settings.agent_max_tool_calls
+    total_input_tokens = 0
+    total_output_tokens = 0
 
     while True:
-        # ── Call Claude with streaming ──
-        try:
-            stream = client.messages.stream(
-                model=settings.agent_model,
-                max_tokens=settings.agent_max_tokens,
-                temperature=settings.agent_temperature,
-                system=SYSTEM_PROMPT,
-                messages=anthropic_messages,
-                tools=TOOL_DEFINITIONS,
-            )
+        # ── Status: calling LLM ──
+        yield AgentEvent(type="status", data={"message": "Calling Valve Agent...", "phase": "llm"})
 
-            # Process the stream — the actual HTTP request happens here in __aenter__
-            assistant_content = []
-            tool_uses = []
-            accumulated_text = ""
+        # ── Call Claude with streaming + rate limit retry ──
+        final = None
+        for api_attempt in range(1 + len(API_RETRY_DELAYS)):
+            try:
+                stream = client.messages.stream(
+                    model=settings.agent_model,
+                    max_tokens=settings.agent_max_tokens,
+                    temperature=settings.agent_temperature,
+                    system=SYSTEM_PROMPT,
+                    messages=anthropic_messages,
+                    tools=TOOL_DEFINITIONS,
+                )
 
-            async with stream as s:
-                async for event in s:
-                    if event.type == "content_block_start":
-                        block = event.content_block
-                        if block.type == "thinking":
-                            yield AgentEvent(type="thinking", data={"text": ""})
+                # Process the stream — the actual HTTP request happens here in __aenter__
+                assistant_content = []
+                tool_uses = []
+                accumulated_text = ""
 
-                    elif event.type == "content_block_delta":
-                        delta = event.delta
-                        if hasattr(delta, "thinking") and delta.thinking:
-                            yield AgentEvent(type="thinking", data={"text": delta.thinking})
-                        elif hasattr(delta, "text") and delta.text:
-                            accumulated_text += delta.text
-                            yield AgentEvent(type="text", data={"text": delta.text})
+                async with stream as s:
+                    async for event in s:
+                        if event.type == "content_block_start":
+                            block = event.content_block
+                            if block.type == "thinking":
+                                yield AgentEvent(type="thinking", data={"text": ""})
 
-                # Get the final message
-                final = await s.get_final_message()
+                        elif event.type == "content_block_delta":
+                            delta = event.delta
+                            if hasattr(delta, "thinking") and delta.thinking:
+                                yield AgentEvent(type="thinking", data={"text": delta.thinking})
+                            elif hasattr(delta, "text") and delta.text:
+                                accumulated_text += delta.text
+                                yield AgentEvent(type="text", data={"text": delta.text})
 
-        except anthropic.AuthenticationError:
-            yield AgentEvent(type="error", data={
-                "message": "Invalid Anthropic API key. Please check ANTHROPIC_API_KEY in your .env file."
-            })
-            return
-        except anthropic.RateLimitError:
-            yield AgentEvent(type="error", data={
-                "message": "Anthropic API rate limit reached. Please wait a moment and try again."
-            })
-            return
-        except anthropic.APIConnectionError as e:
-            yield AgentEvent(type="error", data={
-                "message": f"Cannot reach Anthropic API. Check your internet connection. ({e})"
-            })
-            return
-        except Exception as e:
-            logger.exception("Anthropic API error")
-            yield AgentEvent(type="error", data={
-                "message": f"API error: {type(e).__name__}: {str(e)[:200]}"
-            })
+                    # Get the final message
+                    final = await s.get_final_message()
+
+                # Track token usage
+                if final and final.usage:
+                    total_input_tokens += final.usage.input_tokens
+                    total_output_tokens += final.usage.output_tokens
+
+                break  # Success — exit retry loop
+
+            except anthropic.RateLimitError:
+                if api_attempt < len(API_RETRY_DELAYS):
+                    delay = API_RETRY_DELAYS[api_attempt]
+                    logger.warning(f"Rate limited (attempt {api_attempt + 1}), retrying in {delay}s")
+                    yield AgentEvent(type="status", data={
+                        "message": f"Rate limited — retrying in {int(delay)}s...",
+                        "phase": "retry",
+                    })
+                    await asyncio.sleep(delay)
+                else:
+                    yield AgentEvent(type="error", data={
+                        "message": "Anthropic API rate limit reached after retries. Please wait and try again.",
+                        "retryable": True,
+                    })
+                    return
+
+            except anthropic.AuthenticationError:
+                yield AgentEvent(type="error", data={
+                    "message": "Invalid Anthropic API key. Please check ANTHROPIC_API_KEY in your .env file."
+                })
+                return
+
+            except anthropic.APIConnectionError as e:
+                yield AgentEvent(type="error", data={
+                    "message": f"Cannot reach Anthropic API. Check your internet connection. ({e})",
+                    "retryable": True,
+                })
+                return
+
+            except Exception as e:
+                logger.exception("Anthropic API error")
+                yield AgentEvent(type="error", data={
+                    "message": f"API error: {type(e).__name__}: {str(e)[:200]}",
+                    "retryable": True,
+                })
+                return
+
+        if not final:
+            yield AgentEvent(type="error", data={"message": "Failed to get response from Claude."})
             return
 
         # ── Collect content blocks ──
+        assistant_content = []
+        tool_uses = []
         for block in final.content:
             if block.type == "text":
                 assistant_content.append({"type": "text", "text": block.text})
@@ -145,19 +221,26 @@ async def run_agent(
                 })
                 break
 
-            # Emit tool_call event
+            # Emit status + tool_call events
+            _friendly_tool_msgs = {
+                "find_valves": "Analyzing your requirements and finding matching valves...",
+                "generate_datasheet": "Generating valve datasheet with AI analysis...",
+                "get_piping_class_info": "Retrieving piping class specifications...",
+                "validate_combination": "Validating valve combination compatibility...",
+                "compare_valves": "Comparing valve specifications side by side...",
+            }
+            yield AgentEvent(type="status", data={
+                "message": _friendly_tool_msgs.get(tool_block.name, f"Processing your request..."),
+                "phase": "tool",
+                "tool": tool_block.name,
+            })
             yield AgentEvent(type="tool_call", data={
                 "name": tool_block.name,
                 "input": tool_block.input,
             })
 
-            # Execute the tool
-            try:
-                result = await execute_tool(tool_block.name, tool_block.input)
-            except Exception as e:
-                logger.exception(f"Tool execution error: {tool_block.name}")
-                result = {"error": f"Tool '{tool_block.name}' failed: {str(e)[:200]}"}
-
+            # Execute with retry
+            result = await _retry_tool(tool_block.name, tool_block.input)
             result_str = json.dumps(result)
 
             # Emit tool_result event
@@ -209,5 +292,13 @@ async def run_agent(
         # Append tool results to message history for next loop iteration
         anthropic_messages.append({"role": "user", "content": tool_results_content})
 
+    # ── Emit internal state for session persistence (not sent to client) ──
+    yield AgentEvent(type="_agent_state", data={
+        "agent_messages": anthropic_messages,
+    })
+
     # ── Done ──
-    yield AgentEvent(type="done", data={})
+    yield AgentEvent(type="done", data={
+        "input_tokens": total_input_tokens,
+        "output_tokens": total_output_tokens,
+    })

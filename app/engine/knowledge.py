@@ -257,7 +257,11 @@ class KnowledgeBase:
         return results[:limit]
 
     def get_piping_class_info(self, piping_class: str) -> dict:
-        """Get comprehensive info about a piping class."""
+        """Get comprehensive info about a piping class.
+
+        Uses PMS extracted data for authoritative values (hydrotest, gaskets,
+        bolts, nuts, design pressure) and falls back to VDS index samples.
+        """
         pc = piping_class.upper().strip()
         specs = [s for s in self.specs.values() if s.piping_class.upper() == pc]
 
@@ -284,7 +288,7 @@ class KnowledgeBase:
         elif is_nace and family == "CS":
             family = "CS_NACE"
 
-        return {
+        result = {
             "piping_class": pc,
             "pressure_class": pressure_info.get("label", "Unknown"),
             "pressure_rating": pressure_info.get("class", 0),
@@ -304,6 +308,41 @@ class KnowledgeBase:
             "bolts": sample.data.get("bolts", ""),
             "nuts": sample.data.get("nuts", ""),
         }
+
+        # Enrich with PMS extracted data if available
+        try:
+            from .pms_loader import get_pms_loader
+            pms = get_pms_loader()
+            pms_spec = pms.get_spec(pc)
+            if pms_spec:
+                # Hydrotest from PMS INDEX (authoritative)
+                if pms_spec.index_row and pms_spec.index_row.hydrotest_barg:
+                    shell = round(pms_spec.index_row.hydrotest_barg, 2)
+                    closure = round((shell / 1.5) * 1.1, 2)
+                    result["hydrotest_shell"] = f"{shell} barg"
+                    result["hydrotest_closure"] = f"{closure} barg"
+                # Design pressure from INDEX
+                if pms_spec.index_row and pms_spec.index_row.design_pressure_barg:
+                    result["design_pressure_barg"] = pms_spec.index_row.design_pressure_barg
+                # PT breakpoints
+                if pms_spec.index_row and pms_spec.index_row.pt_breakpoints:
+                    result["pt_breakpoints"] = pms_spec.index_row.pt_breakpoints
+                # Flange info
+                if pms_spec.flanges:
+                    faces = [f.flange_face for f in pms_spec.flanges if f.flange_face]
+                    if faces:
+                        result["flange_face"] = faces[0]
+                    mocs = [f.flange_moc for f in pms_spec.flanges if f.flange_moc]
+                    if mocs:
+                        result["flange_moc"] = mocs[0]
+                    types = [f.flange_type for f in pms_spec.flanges if f.flange_type]
+                    if types:
+                        result["flange_type"] = types[0]
+                result["pms_data_available"] = True
+        except (FileNotFoundError, Exception):
+            result["pms_data_available"] = False
+
+        return result
 
     def list_piping_classes_for_requirements(
         self,

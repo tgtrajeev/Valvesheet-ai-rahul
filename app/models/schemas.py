@@ -46,6 +46,7 @@ class DatasheetResponse(BaseModel):
     id: Optional[int] = None
     vds_code: str
     datasheet: dict[str, Any]
+    field_sources: dict[str, str] = {}
     validation_status: str
     completion_pct: float
 

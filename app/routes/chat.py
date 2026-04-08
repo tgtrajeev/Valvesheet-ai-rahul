@@ -1,29 +1,106 @@
-"""Chat endpoint — SSE streaming from agent orchestrator."""
+"""Chat endpoint — SSE streaming from agent orchestrator with session persistence."""
 
 import json
-from fastapi import APIRouter
+import logging
+from fastapi import APIRouter, Depends
 from sse_starlette.sse import EventSourceResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.schemas import ChatRequest
+from ..models.database import get_db
 from ..agent.orchestrator import run_agent
+from ..services.session_service import get_or_create_session, save_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_DEFAULT_TITLE = "New conversation"
+
+
+def _auto_title(text: str) -> str:
+    """Generate a short title from the first user message."""
+    text = text.strip()
+    if len(text) <= 60:
+        return text
+    return text[:57] + "..."
+
 
 @router.post("/chat")
-async def chat(request: ChatRequest):
-    """Stream agent responses via SSE.
+async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
+    """Stream agent responses via SSE with conversation persistence.
 
-    Accepts a ChatRequest with messages and optional session_id.
-    Returns an EventSourceResponse that streams AgentEvent objects.
+    - Loads prior agent_messages from DB for conversation resumption
+    - Saves updated history after stream completes
     """
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
+    # Load or create session
+    session_id = request.session_id or ""
+    session = await get_or_create_session(db, session_id) if session_id else None
+    await db.commit()
+
+    # Use stored agent_messages for Claude conversation continuity
+    prior_agent_messages = (session.agent_messages or []) if session else []
+
+    # Auto-title from first user message (default title is "New conversation")
+    session_title = (session.title if session else None) or _DEFAULT_TITLE
+    if session and session_title == _DEFAULT_TITLE and messages:
+        first_user = next((m["content"] for m in messages if m["role"] == "user"), "")
+        if first_user:
+            session_title = _auto_title(first_user)
+
     async def event_generator():
-        async for event in run_agent(messages, session_id=request.session_id):
+        collected_agent_messages = []
+        assistant_text = ""
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        async for event in run_agent(
+            messages,
+            session_id=session_id,
+            prior_agent_messages=prior_agent_messages,
+        ):
+            # Capture agent_messages and token usage from orchestrator
+            if event.type == "_agent_state":
+                collected_agent_messages = event.data.get("agent_messages", [])
+                continue
+            if event.type == "text":
+                assistant_text += event.data.get("text", "")
+            if event.type == "done":
+                total_input_tokens = event.data.get("input_tokens", 0)
+                total_output_tokens = event.data.get("output_tokens", 0)
+
             yield {
                 "event": event.type,
                 "data": json.dumps(event.data),
             }
+
+        # Persist session after stream completes
+        if session_id and session:
+            try:
+                # Build user-visible messages: start from what's stored, add new ones
+                chat_messages = list(session.messages or [])
+                for m in messages:
+                    if m not in chat_messages:
+                        chat_messages.append(m)
+                # Also save the assistant's response from this turn
+                if assistant_text.strip():
+                    chat_messages.append({"role": "assistant", "content": assistant_text})
+
+                metadata = session.metadata_ or {}
+                metadata["total_input_tokens"] = metadata.get("total_input_tokens", 0) + total_input_tokens
+                metadata["total_output_tokens"] = metadata.get("total_output_tokens", 0) + total_output_tokens
+
+                await save_session(
+                    db,
+                    session_id,
+                    messages=chat_messages,
+                    agent_messages=collected_agent_messages or prior_agent_messages,
+                    title=session_title,
+                    metadata=metadata,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to persist session {session_id}: {e}")
 
     return EventSourceResponse(event_generator())

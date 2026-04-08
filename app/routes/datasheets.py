@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException
 from ..config import settings
 from ..models.schemas import DatasheetResponse
 from ..engine.knowledge import get_knowledge_base
+from ..engine.field_sources import get_field_sources
+from ..engine.pms_resolver import get_pms_field_sources
 
 router = APIRouter()
 
@@ -23,9 +25,13 @@ async def get_datasheet(vds_code: str, include_empty: bool = False):
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
+        # Use PMS-aware field sources with granular provenance
+        piping_class = data.get("piping_class", "")
+        sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
         return DatasheetResponse(
             vds_code=code,
             datasheet=data,
+            field_sources=sources,
             validation_status="complete" if completion > 90 else "partial",
             completion_pct=completion,
         )
@@ -55,6 +61,7 @@ async def get_datasheet(vds_code: str, include_empty: bool = False):
     return DatasheetResponse(
         vds_code=code,
         datasheet=flat_data,
+        field_sources=get_field_sources(flat_data),
         validation_status="complete" if completion > 90 else "partial",
         completion_pct=completion,
     )
@@ -74,9 +81,12 @@ async def generate_batch(vds_codes: list[str]):
             total = len(data)
             filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
             completion = round((filled / total * 100) if total else 0, 1)
+            piping_class = data.get("piping_class", "")
+            sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
             results.append({
                 "vds_code": code,
                 "data": data,
+                "field_sources": sources,
                 "completion_pct": completion,
                 "status": "success",
                 "source": "vds_index",

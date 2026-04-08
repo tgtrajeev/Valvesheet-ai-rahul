@@ -8,11 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .models.database import init_db
 from .routes.chat import router as chat_router
+from .routes.sessions import router as sessions_router
 from .routes.validate import router as validate_router
 from .routes.datasheets import router as datasheets_router
 from .routes.ingest import router as ingest_router
 from .routes.metadata import router as metadata_router
 from .routes.suggest import router as suggest_router
+from .routes.downloads import router as downloads_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,11 +45,13 @@ app.add_middleware(
 )
 
 app.include_router(chat_router, prefix="/api")
+app.include_router(sessions_router, prefix="/api")
 app.include_router(validate_router, prefix="/api")
 app.include_router(datasheets_router, prefix="/api")
 app.include_router(ingest_router, prefix="/api")
 app.include_router(metadata_router, prefix="/api")
 app.include_router(suggest_router, prefix="/api")
+app.include_router(downloads_router, prefix="/api")
 
 
 @app.get("/health")

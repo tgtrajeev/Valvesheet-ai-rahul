@@ -17,6 +17,8 @@ from ..config import settings
 from ..engine.knowledge import get_knowledge_base, PRESSURE_CLASS_MAP, MATERIAL_DESCRIPTIONS
 from ..engine.validator import validate_combination, VALID_SPEC_CODES
 from ..engine.combination_builder import generate_combinations
+from ..engine.field_sources import get_field_sources
+from ..engine.pms_resolver import get_pms_field_sources
 
 # ── Tool definitions (JSON schema for Claude) ────────────────────────────────
 
@@ -311,9 +313,13 @@ async def _handle_generate(input_data: dict) -> dict:
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
+        # Use PMS-aware field sources with granular provenance
+        piping_class = data.get("piping_class", "")
+        sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
         result = {
             "vds_code": vds_code,
             "data": data,
+            "field_sources": sources,
             "source": "vds_index",
             "completion_pct": completion,
             "validation": {"is_valid": True, "source": "known_spec"},
@@ -387,9 +393,12 @@ async def _handle_generate(input_data: dict) -> dict:
     filled = sum(1 for v in flat_data.values() if v and v != "-")
     completion = round((filled / total * 100) if total else 0, 1)
 
+    piping_class = flat_data.get("piping_class", decoded.piping_class if decoded else "")
+    ml_sources = get_pms_field_sources(piping_class, flat_data) if piping_class else get_field_sources(flat_data)
     return {
         "vds_code": vds_code,
         "data": flat_data,
+        "field_sources": ml_sources,
         "source": "ml_prediction",
         "completion_pct": completion,
         "validation": {"is_valid": True, "warnings": validation.warnings},
