@@ -12,8 +12,8 @@ VALID_SEATS_BY_TYPE: dict[str, list[str]] = {
     "GL": ["M"],
     "CH": ["M"],
     "DB": ["M"],
-    "NE": ["M"],
-    "BF": ["T", "M"],
+    "NE": ["T", "P", "M"],
+    "BF": ["T", "P", "M"],
     "BL": ["T", "P", "M"],
     "BS": ["T", "P", "M"],
 }
@@ -64,18 +64,8 @@ SEAT_NAMES = {"T": "PTFE", "P": "PEEK", "M": "Metal"}
 
 
 def end_conn_for_spec(spec: str) -> list[str]:
-    """Derive valid end connection codes from a piping spec prefix."""
-    s = spec.strip().upper()
-    if s in NON_METALLIC_SPECS:
-        return ["F"]
-    if re.match(r"^T\d", s):
-        return ["JT"]
-    prefix = s[0] if s else ""
-    if prefix in ("A", "B", "D"):
-        return ["R"]  # 150/300/600# → RF
-    if prefix in ("E", "F", "G"):
-        return ["J"]  # 900/1500/2500# → RTJ
-    return ["R"]
+    """Return all valid end connection codes — any end type can be used with any spec."""
+    return ["R", "J", "F", "T", "H", "JT"]
 
 
 def validate_combination(
@@ -126,24 +116,7 @@ def validate_combination(
             f"Examples: A1, B1N, D1LN, A10, A20N, T50A"
         )
 
-    # 4. NE spec restriction — only E/F/G or tubing
-    if vt == "NE" and sp in VALID_SPEC_CODES:
-        prefix = sp[0] if sp else ""
-        is_high_pressure = prefix in ("E", "F", "G")
-        is_tubing = bool(re.match(r"^T\d", sp))
-        if not is_high_pressure and not is_tubing:
-            errors.append(
-                f"Needle Valve (NE) requires 900#/1500#/2500# specs (E/F/G series) "
-                f"or tubing specs (T50A-T60C). Spec '{sp}' is not compatible."
-            )
-            fix_specs = ["E1", "E1N", "F1", "G1", "T50A"]
-            for fs in fix_specs:
-                suggestions.append(Suggestion(
-                    type="fix",
-                    title=f"Use spec {fs}",
-                    description=f"Change to {fs} which is compatible with Needle Valve",
-                    action={"spec": fs},
-                ))
+    # 4. NE spec — needle valves can work with any valid piping class
 
     # 5. End connection compatibility
     if end_conn and sp in VALID_SPEC_CODES:

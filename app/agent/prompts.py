@@ -56,16 +56,16 @@ Examples: A1 = CS 150#, B1N = CS 300# NACE, A10 = SS316L 150#, D20N = DSS 600# N
 - **Check (CH)** — piston (P), swing (S), dual plate (D), or wafer (W). Backflow prevention, API 594/602
 - **Butterfly (BF)** — wafer (W), triple offset (T), or high performance (P). Large bore isolation, API 609
 - **Double Block & Bleed (DB)** — piston (P) or modular (M) design. Sampling/isolation, API 6D
-- **Needle (NE)** — inline (I) or angle (A) design. Instrumentation, small bore (E/F/G or tubing specs ONLY)
+- **Needle (NE)** — inline/straight (I) or angle (A) design. Instrumentation, small bore. Any piping class.
 
 ### Seat Rules (STRICT — no exceptions)
 - **Gate** → Metal (M) seat ONLY
 - **Globe** → Metal (M) seat ONLY
 - **Check** → Metal (M) seat ONLY
 - **DBB** → Metal (M) seat ONLY
-- **Needle** → Metal (M) seat ONLY
-- **Butterfly** → PTFE (T) or Metal (M)
 - **Ball** → PTFE (T), PEEK (P), or Metal (M)
+- **Butterfly** → PTFE (T), PEEK (P), or Metal (M)
+- **Needle** → PTFE (T), PEEK (P), or Metal (M)
 
 ### Bore Rules (STRICT)
 - **Full bore (F) / Reduced bore (R)** → ONLY for Ball valves (BL, BS)
@@ -179,20 +179,22 @@ If user asks for class 6000:
 > - **Tubing specs** (T50, T60) — for instrumentation
 > Which would you prefer?"
 
-### End Connections — What Maps to What
-- **RF (Raised Face)** → Class 150/300/600 (A/B/D prefix)
-- **RTJ (Ring Type Joint)** → Class 900/1500/2500 (E/F/G prefix)
-- **NPT (Threaded)** → Tubing specs only (T series)
-- **FF (Flat Face)** → Non-metallic specs only (A30-A42)
-- **BW (Butt Weld)** → Not a standard end connection in the VDS system
+### End Connections — Valid Options
+- **RF (Raised Face)** — R — common flanged connection
+- **RTJ (Ring Type Joint)** — J — metal-to-metal sealing
+- **FF (Flat Face)** — F — flat flange face
+- **NPT (Threaded / NPT female)** — T — threaded connection
+- **Hub connector** — H — compact high-pressure connection
+- **BW (Butt Weld)** — not standard in VDS system
 
-If user says "flanged ends" → that means RF or RTJ depending on class.
-If user says "NPT ends" with a non-tubing class → explain NPT is only for tubing specs.
+All end connection types can be used with any piping class. The user specifies what they need. \
+If user says "flanged ends" → that means RF or RTJ depending on preference.
 
-### Valve Type + Spec Restrictions
-- **Needle Valve** → ONLY works with class 900+ (E/F/G) or tubing (T) specs
-- **Butterfly Valve** → Typically class 150 (A series), wafer style
-- **DBB (Double Block & Bleed)** → Check available piping classes before committing
+### Valve Type + Spec Flexibility
+- All valve types can work with any valid piping class (A, B, D, E, F, G, T series)
+- **Needle valves** are small-bore (typically 1/2" to 1") but can use any spec
+- **Butterfly valves** → typically 2" and above
+- **DBB (Double Block & Bleed)** → check available piping classes before committing
 
 ### Sour Service (NACE)
 If user mentions "sour service", "H2S", "NACE", or "MR0175":
@@ -217,10 +219,9 @@ User: "4 inch gate valve, full bore, B1, raised face"
 > Would you like me to search for a 4\" gate valve in B1 (Class 300, Carbon Steel) with RF ends instead?"
 
 User: "1/2 inch needle valve, swing design, PTFE seat"
-> "Two issues with this request:
-> 1. **Swing design** is only valid for Check valves. Needle valves use **Inline (I)** or **Angle (A)** design.
-> 2. **PTFE seat** is not available for Needle valves — they only use **Metal (M)** seat.
-> Would you like a 1/2\" needle valve with inline design and metal seat instead?"
+> "**Swing design** is only valid for Check valves. Needle valves use **Inline (I)** or **Angle (A)** design. \
+> The PTFE seat is fine for a needle valve. \
+> Would you like a 1/2\" inline needle valve with PTFE seat instead?"
 
 User: "6 inch butterfly valve, modular design, B1"
 > "**Modular design** is only valid for DBB (Double Block & Bleed) valves. \
@@ -245,9 +246,7 @@ User: "Build datasheet for valve" or "Generate datasheet for 2 inch valve"
 > - **What material?** Carbon Steel, SS316L, Duplex, etc.?"
 
 User: "24 inch needle valve, NPT female"
-> "Two issues:
-> 1. **Needle valves** are small-bore instruments — typical sizes are 1/2\" to 1\". A 24\" needle valve doesn't exist.
-> 2. **NPT** is only available with tubing specs (T series), and needle valves require Class 900+ (E/F/G) or tubing.
+> "**Needle valves** are small-bore instruments — typical sizes are 1/2\" to 1\". A 24\" needle valve doesn't exist. \
 > For a 24\" valve, would you like a Ball, Gate, or Butterfly valve instead?"
 
 User: "BL valve, size 2\", design S, seat T, spec B1, end R"
