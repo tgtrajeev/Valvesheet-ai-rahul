@@ -55,6 +55,9 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         assistant_text = ""
         total_input_tokens = 0
         total_output_tokens = 0
+        # Capture rich UI events (suggestion/validation/datasheet) for session restore
+        ui_events: list[dict] = []
+        turn_index = len(session.messages or []) if session else 0
 
         async for event in run_agent(
             messages,
@@ -70,6 +73,13 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
             if event.type == "done":
                 total_input_tokens = event.data.get("input_tokens", 0)
                 total_output_tokens = event.data.get("output_tokens", 0)
+            # Save rich events for session restore
+            if event.type in ("suggestion", "validation", "datasheet"):
+                ui_events.append({
+                    "type": event.type,
+                    "data": event.data,
+                    "turn": turn_index,
+                })
 
             yield {
                 "event": event.type,
@@ -91,6 +101,9 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
                 metadata = session.metadata_ or {}
                 metadata["total_input_tokens"] = metadata.get("total_input_tokens", 0) + total_input_tokens
                 metadata["total_output_tokens"] = metadata.get("total_output_tokens", 0) + total_output_tokens
+                # Append new UI events to existing ones
+                existing_ui_events = metadata.get("ui_events", [])
+                metadata["ui_events"] = existing_ui_events + ui_events
 
                 await save_session(
                     db,
