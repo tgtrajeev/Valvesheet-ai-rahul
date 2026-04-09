@@ -210,6 +210,27 @@ TOOL_DEFINITIONS = [
             "required": ["vds_codes"],
         },
     },
+    {
+        "name": "query_pms",
+        "description": (
+            "Look up Piping Material Specification (PMS) data for a specific piping class. "
+            "Returns materials, gaskets, bolts, nuts, flanges, design pressure, hydrotest values, "
+            "corrosion allowance, service description, and pressure-temperature ratings. "
+            "Use this when the user provides a piping class and you need to know the exact "
+            "PMS specifications for materials, bolting, gaskets, or testing requirements. "
+            "ALWAYS provide the piping_class parameter."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "piping_class": {
+                    "type": "string",
+                    "description": "Piping class code: A1, B1N, D1LN, A10, A20N, T50A, etc."
+                },
+            },
+            "required": ["piping_class"],
+        },
+    },
 ]
 
 # ── Tool execution ────────────────────────────────────────────────────────────
@@ -224,6 +245,7 @@ async def execute_tool(name: str, input_data: dict) -> dict:
         "validate_combination": _handle_validate,
         "explain_field": _handle_explain,
         "compare_valves": _handle_compare,
+        "query_pms": _handle_query_pms,
     }
     handler = handlers.get(name)
     if not handler:
@@ -505,6 +527,92 @@ def _normalize_field_name(name: str) -> str:
     }
     normalized = name.lower().strip().replace(" ", "_")
     return aliases.get(normalized, normalized)
+
+
+async def _handle_query_pms(input_data: dict) -> dict:
+    """Query PMS extracted data for a specific piping class.
+
+    Returns comprehensive PMS data: materials, gaskets, bolts, nuts,
+    flanges, design pressure, hydrotest, PT ratings, service, etc.
+    """
+    piping_class = input_data.get("piping_class", "").upper().strip()
+    if not piping_class:
+        return {"error": "piping_class is required. Provide a class code like A1, B1N, T50A."}
+
+    try:
+        from ..engine.pms_loader import get_pms_loader
+        pms = get_pms_loader()
+        spec = pms.get_spec(piping_class)
+    except FileNotFoundError:
+        return {"error": "PMS data file not found. Ensure pms_extracted.json is in app/data/."}
+
+    if not spec:
+        available = pms.spec_codes[:20]
+        return {
+            "error": f"Piping class '{piping_class}' not found in PMS data.",
+            "available_classes": available,
+            "hint": f"Available classes include: {', '.join(available)}...",
+        }
+
+    result: dict = {
+        "piping_class": piping_class,
+        "pressure_rating": spec.header.pressure_rating,
+        "material_description": spec.header.material_description,
+        "corrosion_allowance": spec.header.corrosion_allowance,
+        "design_code": spec.header.design_code,
+        "service": spec.header.service,
+        "nace_compliant": spec.header.nace_flag,
+        "low_temperature": spec.header.lt_flag,
+    }
+
+    # Design pressure & hydrotest
+    if spec.index_row:
+        if spec.index_row.design_pressure_barg:
+            result["design_pressure_barg"] = spec.index_row.design_pressure_barg
+        if spec.index_row.hydrotest_barg:
+            shell = round(spec.index_row.hydrotest_barg, 2)
+            closure = round((shell / 1.5) * 1.1, 2)
+            result["hydrotest_shell_barg"] = shell
+            result["hydrotest_closure_barg"] = closure
+        if spec.index_row.min_temp_c is not None:
+            result["min_temperature_c"] = spec.index_row.min_temp_c
+        if spec.index_row.pt_breakpoints:
+            result["pt_ratings"] = spec.index_row.pt_breakpoints[:5]
+
+    # Bolting & gaskets
+    if spec.bolting_gaskets:
+        result["gaskets"] = spec.bolting_gaskets.gasket_spec
+        result["stud_bolts"] = spec.bolting_gaskets.stud_bolt_spec
+        result["hex_nuts"] = spec.bolting_gaskets.hex_nut_spec
+
+    # Flanges
+    if spec.flanges:
+        result["flanges"] = [
+            {
+                "size_range": f.size_range,
+                "material": f.flange_moc,
+                "face": f.flange_face,
+                "type": f.flange_type,
+            }
+            for f in spec.flanges
+        ]
+
+    # Valve assignments
+    if spec.valve_assignments:
+        result["valve_assignments"] = spec.valve_assignments[:10]
+
+    # Available NPS sizes
+    if spec.nps_sizes:
+        sizes = sorted(set(s.get("nps_inch", 0) for s in spec.nps_sizes if s.get("nps_inch")))
+        if sizes:
+            result["available_sizes_inch"] = sizes
+            result["size_range"] = f'{sizes[0]}" - {sizes[-1]}"'
+
+    # PT ratings table
+    if spec.pt_ratings:
+        result["pressure_temperature_ratings"] = spec.pt_ratings[:8]
+
+    return result
 
 
 async def _handle_compare(input_data: dict) -> dict:

@@ -228,6 +228,7 @@ async def run_agent(
                 "get_piping_class_info": "Retrieving piping class specifications...",
                 "validate_combination": "Validating valve combination compatibility...",
                 "compare_valves": "Comparing valve specifications side by side...",
+                "query_pms": "Looking up PMS material specifications...",
             }
             yield AgentEvent(type="status", data={
                 "message": _friendly_tool_msgs.get(tool_block.name, f"Processing your request..."),
