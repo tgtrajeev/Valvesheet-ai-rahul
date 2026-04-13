@@ -5,8 +5,9 @@ These tools let the agent work the way an engineer thinks:
 NOT:
   "Generate VDS code BLRTA1R"
 
-The knowledge base (679 specs from VDS index) is the primary data source.
-ML prediction API is the fallback for generating full datasheets.
+The knowledge base (VDS index) is used for instant lookup of known specs.
+For unknown-but-valid VDS combinations, the Rule Engine dynamically generates
+a complete datasheet from PMS data + engineering rules — no hardcoded lookup needed.
 """
 
 import json
@@ -98,8 +99,9 @@ TOOL_DEFINITIONS = [
         "name": "generate_datasheet",
         "description": (
             "Generate a complete valve datasheet for a specific VDS code. "
-            "First tries the local VDS index (679 specs with 100% accuracy), "
-            "then falls back to ML prediction API for unknown codes. "
+            "First tries the local VDS index for instant lookup. "
+            "For unknown codes, the Rule Engine dynamically derives ALL fields "
+            "from PMS data + engineering rules — ANY valid combination works. "
             "Use after find_valves has identified the right VDS code. "
             "Pass user-specified field overrides to customize the datasheet — "
             "e.g. if the user requests size 8\", pass overrides with size. "
@@ -380,51 +382,37 @@ async def _handle_generate(input_data: dict) -> dict:
             "hint": "Fix the errors above or use find_valves to search for valid specs.",
         }
 
-    # ── Step 3: Valid but unknown — try ML API if configured ──
-    if not settings.ml_api_base_url or settings.ml_api_base_url == "http://localhost:8080/api":
-        # ML API not configured for production — return validation result with decoded info
-        return {
-            "vds_code": vds_code,
-            "decoded": decoded.to_dict(),
-            "source": "validation_only",
-            "validation": {"is_valid": True, "warnings": validation.warnings},
-            "hint": (
-                f"VDS code '{vds_code}' is valid but not in the index ({kb.total_specs} known specs). "
-                "ML prediction API not configured. Use find_valves to search existing specs."
-            ),
-        }
+    # ── Step 3: Valid combination — generate datasheet from rules + PMS data ──
+    from ..engine.rule_engine import generate_datasheet as rule_generate
+    data = rule_generate(decoded)
 
-    url = f"{settings.ml_api_base_url}/ml/predict/{vds_code}/flat"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            api_data = resp.json()
-    except (httpx.ConnectError, httpx.HTTPStatusError, Exception) as e:
-        error_msg = str(e)[:200] if not isinstance(e, httpx.ConnectError) else "ML API not reachable"
-        return {
-            "vds_code": vds_code,
-            "decoded": decoded.to_dict(),
-            "source": "validation_only",
-            "validation": {"is_valid": True, "warnings": validation.warnings},
-            "hint": f"VDS code '{vds_code}' is valid but ML API unavailable ({error_msg}). Use find_valves for existing specs.",
-        }
+    # Apply user overrides
+    applied_overrides = {}
+    for key, val in overrides.items():
+        if val and val.strip():
+            field_key = _normalize_field_name(key)
+            old_val = data.get(field_key, "")
+            data[field_key] = val.strip()
+            applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
-    flat_data = api_data.get("data", {})
-    total = len(flat_data)
-    filled = sum(1 for v in flat_data.values() if v and v != "-")
+    total = len(data)
+    filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
     completion = round((filled / total * 100) if total else 0, 1)
 
-    piping_class = flat_data.get("piping_class", decoded.piping_class if decoded else "")
-    ml_sources = get_pms_field_sources(piping_class, flat_data) if piping_class else get_field_sources(flat_data)
-    return {
+    piping_class = data.get("piping_class", decoded.piping_class)
+    sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
+
+    result = {
         "vds_code": vds_code,
-        "data": flat_data,
-        "field_sources": ml_sources,
-        "source": "ml_prediction",
+        "data": data,
+        "field_sources": sources,
+        "source": "rule_engine",
         "completion_pct": completion,
         "validation": {"is_valid": True, "warnings": validation.warnings},
     }
+    if applied_overrides:
+        result["applied_overrides"] = applied_overrides
+    return result
 
 
 async def _handle_find_piping_class(input_data: dict) -> dict:

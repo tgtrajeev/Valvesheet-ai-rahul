@@ -1,4 +1,4 @@
-"""Engine module — VDS decoding, validation, combination generation, and knowledge base."""
+"""Engine module — VDS decoding, validation, combination generation, knowledge base, and rule engine."""
 
 from .vds_decoder import decode_vds
 from .validator import validate_combination
@@ -13,6 +13,7 @@ from .pms_resolver import (
     resolve_design_pressure,
     get_pms_field_sources,
 )
+from .rule_engine import generate_datasheet
 
 __all__ = [
     "decode_vds",
@@ -29,4 +30,5 @@ __all__ = [
     "resolve_nuts",
     "resolve_design_pressure",
     "get_pms_field_sources",
+    "generate_datasheet",
 ]
