@@ -1,0 +1,326 @@
+# VDS Number Code Structure Rules
+# =================================
+# FPSO Albacora — Shapoorji Pallonji Energy / Petrobras
+# Project No. 20250501
+# PMS Doc 50501-SPE-80000-PP-ET-0001 Rev C1
+#
+# New 5-part format (Version 2.0):
+#   [VALVE TYPE 2] + [DESIGN 1] + [SEAT 1] + [PIPING SPEC CODE] + [END CONNECTION]
+#
+# Examples:
+#   BLRTA1R   = BL(Ball) + R(Reduced) + T(PTFE) + A1 + R(RF)
+#   GAYMA1R   = GA(Gate) + Y(Screw&Yoke) + M(Metal) + A1 + R(RF)
+#   BLRPE1J   = BL(Ball) + R(Reduced) + P(PEEK) + E1 + J(RTJ)
+#   DBRPE1JT  = DB(DBB) + R(Reduced) + P(PEEK) + E1 + JT(RTJ+NPT)
+#   NEIPT50AT = NE(Needle) + I(Inline) + P(PEEK) + T50A + T(NPT)
+
+version: "2.0"
+
+# ---------------------------------------------------------------------------
+# Valve Types — New 2-char format (FPSO Albacora PMS Rev C1)
+# ---------------------------------------------------------------------------
+valve_types:
+  BL:
+    name: "Ball Valve"
+    primary_standard: "API SPEC 6D / ISO 14313"
+    secondary_standards: ["ASME B16.34", "ISO 17292"]
+    valid_designs: [R, F, M]
+
+  BF:
+    name: "Butterfly Valve"
+    primary_standard: "API STD 609"
+    secondary_standards: ["MSS SP-68", "ASME B16.34"]
+    valid_designs: [W, T, P]
+
+  GA:
+    name: "Gate Valve"
+    primary_standard: "API STD 602 / API STD 600 / ISO 10434"
+    secondary_standards: ["API 6D", "ASME B16.34"]
+    valid_designs: [Y, W, S]
+
+  GL:
+    name: "Globe Valve"
+    primary_standard: "BS 1873"
+    secondary_standards: ["API 602", "ASME B16.34"]
+    valid_designs: [Y]
+
+  CH:
+    name: "Check Valve"
+    primary_standard: "API STD 594 / API STD 602"
+    secondary_standards: ["API 6D", "ASME B16.34"]
+    valid_designs: [P, S, D, W]
+
+  DB:
+    name: "Double Block and Bleed Valve"
+    primary_standard: "API SPEC 6D"
+    secondary_standards: ["ASME B16.34"]
+    valid_designs: [P, M]
+
+  NE:
+    name: "Needle Valve"
+    primary_standard: "Manufacturer Standard"
+    secondary_standards: ["API 602"]
+    valid_designs: [I, A]
+
+  BS:
+    name: "Ball Valve (SDSS ISO 17292)"
+    primary_standard: "API SPEC 6D / ISO 17292"
+    secondary_standards: ["ASME B16.34"]
+    valid_designs: [R, F, M]
+
+# ---------------------------------------------------------------------------
+# Legacy valve type prefixes — backward compatibility (3-char and 2-char)
+# ---------------------------------------------------------------------------
+valve_type_prefixes:
+  BSF:
+    name: "Ball Valve, Full Bore"
+    bore_types: [F, R, M]
+    default_bore: F
+  BSR:
+    name: "Ball Valve, Reduced Bore"
+    bore_types: [F, R, M]
+    default_bore: R
+  GAW:
+    name: "Gate Valve"
+    bore_types: [F]
+    default_bore: F
+  GLS:
+    name: "Globe Valve"
+    bore_types: [F]
+    default_bore: F
+  CHP:
+    name: "Check Valve, Piston Type"
+    bore_types: [F]
+    default_bore: F
+  CSW:
+    name: "Check Valve, Swing Type"
+    bore_types: [F]
+    default_bore: F
+  CDP:
+    name: "Check Valve, Dual Plate"
+    bore_types: [F]
+    default_bore: F
+  BFD:
+    name: "Butterfly Valve"
+    bore_types: [F]
+    default_bore: F
+  DSR:
+    name: "Double Block and Bleed Valve"
+    bore_types: [R]
+    default_bore: R
+  DSF:
+    name: "Double Block and Bleed Valve"
+    bore_types: [F]
+    default_bore: F
+  NEE:
+    name: "Needle Valve"
+    bore_types: [F]
+    default_bore: F
+  BS:
+    name: "Ball Valve"
+    bore_types: [F, R]
+    default_bore: F
+  GS:
+    name: "Gate Valve"
+    bore_types: [F]
+    default_bore: F
+  CS:
+    name: "Check Valve"
+    bore_types: [F]
+    default_bore: F
+  PS:
+    name: "Plug Valve"
+    bore_types: [F]
+    default_bore: F
+
+# ---------------------------------------------------------------------------
+# Valve Designs (position 2 in new format)
+# ---------------------------------------------------------------------------
+valve_designs:
+  R:
+    name: "Reduced Bore"
+    description: "Reduced-opening ball valve per API 6D"
+    applicable_to: [BL, BS]
+
+  F:
+    name: "Full Bore"
+    description: "Full-opening ball valve per API 6D"
+    applicable_to: [BL, BS]
+
+  M:
+    name: "Metal Seated"
+    description: "Metal seated design — 2500# and above"
+    applicable_to: [BL, BS, DB]
+
+  Y:
+    name: "Screw and Yoke"
+    description: "Outside Screw and Yoke stem design"
+    applicable_to: [GA, GL]
+
+  W:
+    name: "Wafer/Wedge"
+    description: "Wafer-type body (BF/CH) or wedge gate design (GA)"
+    applicable_to: [GA, BF, CH]
+
+  S:
+    name: "Slab Gate / Swing"
+    description: "Slab gate (GA) or swing-type check valve (CH)"
+    applicable_to: [GA, CH]
+
+  P:
+    name: "Piston"
+    description: "Piston-type check or DBB valve"
+    applicable_to: [CH, DB]
+
+  D:
+    name: "Dual Plate"
+    description: "Dual plate / wafer check valve"
+    applicable_to: [CH]
+
+  T:
+    name: "Triple Offset"
+    description: "Triple offset butterfly valve (HM service)"
+    applicable_to: [BF]
+
+  I:
+    name: "Straight Inline"
+    description: "Straight inline needle valve"
+    applicable_to: [NE]
+
+  A:
+    name: "Angle"
+    description: "Angle-type needle valve"
+    applicable_to: [NE]
+
+# ---------------------------------------------------------------------------
+# Seat Types (position 3 in new format)
+# ---------------------------------------------------------------------------
+seat_types:
+  T:
+    name: "PTFE"
+    description: "Soft Seated — PTFE / Reinforced PTFE, Self-energised, Renewable"
+    max_temp_c: 200
+
+  P:
+    name: "PEEK"
+    description: "PEEK Seated"
+    max_temp_c: 200
+
+  M:
+    name: "Metal Seated"
+    description: "Metal seated, hard faced, Renewable — TCC Coated 150-250 micron, min 1050 Vickers"
+    max_temp_c: null
+
+# ---------------------------------------------------------------------------
+# Bore Types (legacy / backward compatibility)
+# ---------------------------------------------------------------------------
+bore_types:
+  F:
+    name: "Full Bore"
+  R:
+    name: "Reduced Bore"
+  M:
+    name: "Metal Seated"
+  T:
+    name: "Tube Connection"
+  Y:
+    name: "Screw and Yoke"
+  W:
+    name: "Wafer"
+  P:
+    name: "Piston"
+  S:
+    name: "Swing / Slab Gate"
+  D:
+    name: "Dual Plate"
+  I:
+    name: "Straight Inline"
+  A:
+    name: "Angle"
+
+# ---------------------------------------------------------------------------
+# Piping Class (SPEC) — positions 4 to second-to-last in new format
+# ---------------------------------------------------------------------------
+piping_class:
+  standard_pattern: "^[A-G]\\d+[LN]*$"
+  instrumentation_pattern: "^T\\d+[A-C]$"
+  modifiers:
+    N: "NACE Compliant (NACE MR-01-75 / ISO 15156)"
+    L: "Low Temperature Service (-45°C and below)"
+    LN: "Low Temperature + NACE"
+
+# ---------------------------------------------------------------------------
+# End Connections
+# ---------------------------------------------------------------------------
+end_connections:
+  R:
+    name: "RF"
+    full_name: "Raised Face"
+    standard: "ASME B16.5"
+    description: "Flanged ASME B16.5 RF"
+
+  J:
+    name: "RTJ"
+    full_name: "Ring Type Joint"
+    standard: "ASME B16.5"
+    description: "Flanged ASME B16.5 RTJ"
+
+  F:
+    name: "FF"
+    full_name: "Flat Face"
+    standard: "ASME B16.5"
+    description: "Flanged ASME B16.5 FF"
+
+  H:
+    name: "HUB"
+    full_name: "Hub Connector"
+    standard: "Norsok L-005"
+    description: "Hub end connection"
+
+  T:
+    name: "NPT"
+    full_name: "NPT Female"
+    standard: "ASME B1.20.1"
+    description: "NPT Female threaded"
+
+  JT:
+    name: "RTJ+NPT"
+    full_name: "RTJ with NPT Female"
+    standard: "ASME B16.5 / ASME B1.20.1"
+    description: "RTJ with NPT Female (instrument valves / DBB-Inst)"
+
+# ---------------------------------------------------------------------------
+# Validation
+# ---------------------------------------------------------------------------
+validation:
+  min_length: 6
+  max_length: 12
+  required_positions:
+    - valve_type
+    - valve_design
+    - seat_type
+    - piping_class
+    - end_connection
+
+# ---------------------------------------------------------------------------
+# Pressure class size limits (ASME)
+# ---------------------------------------------------------------------------
+pressure_class_max_nps:
+  150: 24
+  300: 24
+  400: 24
+  600: 24
+  900: 24
+  1500: 16
+  2500: 12
+
+# ---------------------------------------------------------------------------
+# Notes
+# ---------------------------------------------------------------------------
+# Format detection logic (implemented in VDSDecoder):
+#   New format = vds[:2] in {BL,BF,GA,GL,CH,DB,NE,BS}
+#                AND vds[3] in {T,P,M}  (seat character position)
+#   Old format = 3-char prefix (BSF, GAW, ...) or 2-char (BS, GS, ...)
+#
+# The piping class regex ^[A-G]\d+[LN]*$ covers:
+#   A1, B1N, G1LN, A10N, A20N, G25N, B25N, A1LN, G2LN, etc.

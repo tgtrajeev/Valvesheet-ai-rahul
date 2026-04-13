@@ -1,10 +1,32 @@
-.env
+# Python
 __pycache__/
+*.py[cod]
 *.pyc
 *.pyo
+*.egg-info/
 .venv/
 venv/
-*.egg-info/
+env/
 dist/
 build/
 .pytest_cache/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (large, generated)
+*.log
+*_backup_*.json
+
+# Node
+node_modules/
