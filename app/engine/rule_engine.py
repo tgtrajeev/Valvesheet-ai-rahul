@@ -245,13 +245,15 @@ VALVE_STANDARD = {
     "BS": "ISO 17292",
     "BF": "API STD 609",
     "GA": "API STD 600 / API STD 602",
-    "GL": "BS 1873",
-    ("CH", "P"): "API STD 602 / BS 1868",
-    ("CH", "S"): "API STD 594 / BS 1868",
+    "GA_CRA": "API STD 603 (Corrosion-Resistant Bolted Bonnet Gate Valves)",
+    "GL": "API STD 602 / BS EN ISO 15761 / BS 1873",
+    ("CH", "P"): "API STD 602 / BS EN ISO 15761 / BS 1868",
+    ("CH", "S"): "API STD 594 / API 6D / BS 1868",
     ("CH", "D"): "API STD 594",
     ("CH", "W"): "API STD 594",
     "DB": "API SPEC 6D",
-    "NE": "Manufacturer Standard",
+    "NE": "BS EN ISO 15761",
+    "BL_METAL": "API STD 608 / API SPEC 6D",
 }
 
 FIRE_RATING = {
@@ -528,8 +530,8 @@ CONSTRUCTION = {
         "operation": "Lever (Ball)/ T-Bar (Needle), with Position Indicator",
     },
     "NE": {
-        "body_construction": "Integral body, straight or angle pattern",
-        "stem_construction": "Non-rotating stem tip",
+        "body_construction": "Integral body, straight or angle pattern, Outside Screw and Yoke (OS&Y) per MY-K-20-PI-SP-0002 §6.5",
+        "stem_construction": "Non-rotating stem tip, Outside Screw and Yoke (OS&Y), Back Seated",
         "operation": "Hand wheel / T-bar handle",
     },
 }
@@ -554,11 +556,17 @@ SEAL_MATERIAL_GATE = {"M": "Flexible Graphite", "T": "PTFE"}
 PROJECT_CONSTANTS = {
     "marking_purchaser": "Hard marked with Valve Type on a stainless steel label, attached using tamper resistant stainless steel fastener, and with Unique Valve Tag Number",
     "marking_manufacturer": "MSS-SP-25",
-    "inspection_testing": "ASME B16.34, API 598",
+    "inspection_testing": "ASME B16.34, API 598, BS EN 12266-1/2",
     "leakage_rate": "As per API 598",
+    "pressure_testing_standards": "API STD 598, BS EN ISO 5208, BS 6755 (production pressure testing)",
     "pneumatic_test": "5.5 barg",
-    "material_certification": "Pressure Retaining Parts EN 10204 3.2, Other parts EN 10204 3.1",
+    "material_certification": "Pressure Retaining Parts BS EN 10204 Type 3.2, Other parts BS EN 10204 Type 3.1",
+    "casting_quality_standard": "MSS SP-55 (Quality Standard for Steel Castings for Valves)",
+    "flange_surface_finish": "Per ASME B46.1 / MSS SP-6 (Standard Finishes for Contact Faces)",
+    "welding_procedure": "WPS per BS EN 288-2, PQR per BS EN 287-1, welding per ASME B31.3 / ASME SEC.IX",
     "finish": "General Specification for Paint and Protective Coating doc : 50501-SPE-80000-ME-ET-0006",
+    "quality_system": "BS EN ISO 9001 compliant",
+    "design_life": "15 years per MY-K-20-PI-SP-0002 §6.8",
 }
 
 
@@ -566,32 +574,47 @@ PROJECT_CONSTANTS = {
 # END CONNECTION RESOLUTION
 # ============================================================================
 
-def _resolve_end_connection(end_conn: EndConnection, piping_class: str, cat: str) -> str:
-    """Derive the full end connection description from the end connection code."""
+def _resolve_end_connection(end_conn: EndConnection, piping_class: str, cat: str,
+                            size_inches: float | None = None) -> str:
+    """Derive the full end connection description from the end connection code.
+
+    Per MY-K-20-PI-SP-0002 §6.22:
+      - Flanges ≤24" per ASME B16.5
+      - Flanges 26"+ per ASME B16.47 Series A
+    """
     ec = end_conn.value
     letter = piping_class[0] if piping_class else "A"
 
-    # ASME B16.5 standard flanged connections
+    # Select flange standard based on size (§6.22.1)
+    flange_std = "ASME B16.5"
+    if size_inches is not None and size_inches >= 26:
+        flange_std = "ASME B16.47 Series A"
+
     ec_map = {
-        "R": "Flanged ASME B16.5 RF (Raised Face)",
-        "J": "Flanged ASME B16.5 RTJ (Ring Type Joint)",
-        "F": "Flanged ASME B16.5 FF (Flat Face)",
+        "R": f"Flanged {flange_std} RF (Raised Face)",
+        "J": f"Flanged {flange_std} RTJ (Ring Type Joint)",
+        "F": f"Flanged {flange_std} FF (Flat Face)",
         "W": "Butt Weld, ASME B16.25",
         "S": "Socket Weld, ASME B16.11",
-        "H": "Hub Connector (Grayloc / Vector type)",
+        "H": "Hub Connector (Grayloc® / Techlok® / G-Lok® compatible), per NORSOK L-005",
         "T": "NPT Female, ASME B1.20.1",
-        "JT": "Flanged ASME B16.5 RTJ + NPT Female",
+        "JT": f"Flanged {flange_std} RTJ + NPT Female",
     }
 
-    base = ec_map.get(ec, f"Flanged ASME B16.5 {ec}")
+    base = ec_map.get(ec, f"Flanged {flange_std} {ec}")
 
     # Cu-Ni / GRE / CPVC use different flange standards
     if cat in ("CUNI",):
-        base = base.replace("ASME B16.5", "EEMUA 234")
+        base = base.replace(flange_std, "EEMUA 234")
     elif cat in ("GRE", "GRE_BONSTRAND"):
-        base = base.replace("ASME B16.5", "GRE Flange")
+        base = base.replace(flange_std, "GRE Flange")
     elif cat in ("CPVC",):
-        base = base.replace("ASME B16.5", "CPVC Flange")
+        base = base.replace(flange_std, "CPVC Flange")
+
+    # Compact flange note for CL 1500+ and size ≥3" (§6.22.1)
+    pc_num_local = _PRESSURE_CLASS_NUM.get(letter, 150)
+    if pc_num_local >= 1500 and size_inches is not None and size_inches >= 3:
+        base += " (Compact Flanges / Hub Clamp Connector also acceptable per §6.22.1)"
 
     return base
 
@@ -691,10 +714,143 @@ def _calc_hydrotest(design_pressure_str: str) -> tuple[str, str]:
 
 
 # ============================================================================
+# SIZE-DEPENDENT ENGINEERING RULES (MY-K-20-PI-SP-0002)
+# ============================================================================
+
+# Ball valve: Floating vs Trunnion thresholds
+_BALL_MOUNTING = {
+    150: {"max_floating": 8, "min_trunnion": 10},
+    300: {"max_floating": 4, "min_trunnion": 6},
+    600: {"max_floating": 1.5, "min_trunnion": 2},
+    900: {"max_floating": 0, "min_trunnion": 0},
+    1500: {"max_floating": 0, "min_trunnion": 0},
+    2500: {"max_floating": 0, "min_trunnion": 0},
+}
+
+# Gearbox thresholds (min size for gear operation)
+_GEARBOX = {
+    "BL": {150: 6, 300: 6, 600: 4, 900: 3, 1500: 3, 2500: 3},
+    "BS": {150: 6, 300: 6, 600: 4, 900: 3, 1500: 3, 2500: 3},
+    "BF": {150: 6, 300: 6},
+    "GA": {150: 14, 300: 14, 600: 12, 900: 6, 1500: 3, 2500: 3},
+    "GL": {150: 10, 300: 8, 600: 6, 900: 6, 1500: 3, 2500: 3},
+}
+
+# Sealant injection thresholds (min size)
+_SEALANT_INJECTION = {150: 10, 300: 6, 600: 2, 900: 0, 1500: 0, 2500: 0}
+
+_PRESSURE_CLASS_NUM = {"A": 150, "B": 300, "D": 600, "E": 900, "F": 1500, "G": 2500}
+
+# NDT RT extent by pressure class and DN threshold (inches)
+_NDT_EXTENT = {
+    150: [(24, "25%"), (999, "100%")],      # DN<=600 (24") -> 25%, above -> 100%
+    300: [(16, "25%"), (999, "100%")],       # DN<=400 (16") -> 25%, above -> 100%
+    600: [(0, "100%")],
+    900: [(0, "100%")],
+    1500: [(0, "100%")],
+    2500: [(0, "100%")],
+}
+
+
+def _resolve_ball_mounting(size_inches: float | None, pressure_class: int) -> dict:
+    """Determine floating vs trunnion mounting per MY-K-20-PI-SP-0002 Clause 5."""
+    thresholds = _BALL_MOUNTING.get(pressure_class, _BALL_MOUNTING[150])
+    max_float = thresholds["max_floating"]
+
+    if max_float == 0:
+        # All trunnion for 900+
+        return {
+            "type": "Trunnion",
+            "description": f"Trunnion Mounted (Class {pressure_class} - all sizes)",
+        }
+
+    if size_inches is None:
+        return {
+            "type": "Mixed",
+            "description": f'Floating ({max_float}" and below), Trunnion mounted ({thresholds["min_trunnion"]}" and above)',
+        }
+
+    if size_inches <= max_float:
+        return {"type": "Floating", "description": f"Floating Ball ({size_inches}\")"}
+    return {"type": "Trunnion", "description": f"Trunnion Mounted ({size_inches}\")"}
+
+
+def _resolve_operation(vt: str, size_inches: float | None, pressure_class: int) -> str:
+    """Compute operation method per MY-K-20-PI-SP-0002 Clause 9."""
+    gear_table = _GEARBOX.get(vt, {})
+    gear_min = gear_table.get(pressure_class)
+
+    if vt in ("BL", "BS"):
+        if size_inches is not None and gear_min is not None and size_inches >= gear_min:
+            return f'Gear operated c/w Handwheel ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
+        if size_inches is not None and size_inches <= 4:
+            return f'Lever ({size_inches}"), with Position Indicator'
+        return 'Lever (4" and below), Gear operated c/w Handwheel (6" and above), Fully enclosed, dust proof, with Position Indicator'
+
+    if vt == "BF":
+        if size_inches is not None and gear_min is not None and size_inches >= gear_min:
+            return f'Gear operated ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
+        return 'Lever Operated for 4" and below; Gear box for 6" and above, Fully enclosed, dust proof, with Position Indicator'
+
+    if vt == "GA":
+        if size_inches is not None and gear_min is not None and size_inches >= gear_min:
+            return f'Gear operated c/w Handwheel ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
+        return 'Handwheel, Non-rising (Gear for 14" and above, Fully enclosed, dust proof), with Position Indicator'
+
+    if vt == "GL":
+        if size_inches is not None and gear_min is not None and size_inches >= gear_min:
+            return f'Gear operated c/w Handwheel ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
+        return 'Handwheel, Non-rising (Gear for 10" and above, Fully enclosed, dust proof), with Position Indicator'
+
+    if vt == "DB":
+        return "Lever (Ball) / T-Bar (Needle), with Position Indicator"
+
+    if vt == "NE":
+        return "Handwheel / T-bar handle"
+
+    return CONSTRUCTION.get(vt, {}).get("operation", "Handwheel")
+
+
+def _resolve_ndt_extent(pressure_class: int, size_inches: float | None, cat: str) -> str:
+    """Determine NDT/RT inspection extent per MY-K-20-PI-SP-0002 Clause 15."""
+    # NACE / SS / alloys always 100%
+    if cat in ("CS_NACE", "LTCS_NACE", "SS316L", "SS316L_NACE", "DSS",
+               "SDSS", "SDSS_NACE", "CUNI", "COPPER"):
+        return "100% RT per ASME B16.34 Annexure B (alloy / NACE material)"
+
+    extents = _NDT_EXTENT.get(pressure_class, [(0, "100%")])
+    if size_inches is not None:
+        for max_size, extent in extents:
+            if size_inches <= max_size:
+                return f"{extent} RT per ASME B16.34 Annexure B"
+    return f"Per ASME B16.34 Annexure B (provide size for exact extent)"
+
+
+def _resolve_extended_stem(size_inches: float | None) -> str:
+    """Return extended stem requirement for insulated lines per MY-K-20-PI-SP-0002 Clause 10."""
+    if size_inches is None:
+        return '75mm (1/2"-1-1/2"), 100mm (2"-6"), 150mm (8" and above) — if insulated line'
+    if size_inches <= 1.5:
+        return "75 mm extension (for insulated lines)"
+    if size_inches <= 6:
+        return "100 mm extension (for insulated lines)"
+    return "150 mm extension (for insulated lines)"
+
+
+def _resolve_wedge_type(size_inches: float | None) -> str:
+    """Gate valve wedge type per MY-K-20-PI-SP-0002 Clause 6."""
+    if size_inches is None:
+        return 'Solid wedge (1-1/2" and below), Flexible wedge (2" and above)'
+    if size_inches <= 1.5:
+        return "Solid wedge, One piece"
+    return "Flexible wedge"
+
+
+# ============================================================================
 # MAIN ENTRY POINT
 # ============================================================================
 
-def generate_datasheet(decoded: DecodedVDS) -> dict[str, str]:
+def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) -> dict[str, str]:
     """Generate a complete valve datasheet from a decoded VDS using engineering rules.
 
     This is the core intelligence of the system. Instead of looking up a static
@@ -704,9 +860,11 @@ def generate_datasheet(decoded: DecodedVDS) -> dict[str, str]:
       - Construction from valve type
       - Bolting/gaskets/hydrotest from PMS data (authoritative) or rules (fallback)
       - Standards and constants from project requirements
+      - Size-dependent rules from MY-K-20-PI-SP-0002
 
     Args:
         decoded: A DecodedVDS object from vds_decoder.decode_vds()
+        size_inches: Optional valve size for size-dependent rules
 
     Returns:
         Flat dict of field_name -> value, ready to populate a datasheet card.
@@ -723,8 +881,9 @@ def generate_datasheet(decoded: DecodedVDS) -> dict[str, str]:
     # Material category drives most material selections
     cat = _get_material_category(pc)
 
-    # Pressure class letter
+    # Pressure class letter and number
     pc_letter = pc[0] if pc else "A"
+    pc_num = _PRESSURE_CLASS_NUM.get(pc_letter, 150)
 
     # ── Resolve PMS data first (authoritative) ──
     pms = _resolve_from_pms(pc, cat, is_rtj)
@@ -741,8 +900,21 @@ def generate_datasheet(decoded: DecodedVDS) -> dict[str, str]:
     data["service"] = pms.get("service", SERVICE_FALLBACK.get(pc, ""))
     data["size_range"] = pms.get("size_range", SIZE_RANGE_FALLBACK.get(pc, '1/2" - 24"'))
 
-    # Standards
-    data["valve_standard"] = VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, ""))
+    # Standards — context-dependent selection per VMS §6.1, §6.2
+    if vt == "GA" and cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE"):
+        # API STD 603 for corrosion-resistant gate valves (VMS §6.2)
+        data["valve_standard"] = VALVE_STANDARD.get("GA_CRA", VALVE_STANDARD.get("GA", ""))
+    elif vt in ("BL", "BS") and seat == "M":
+        # API STD 608 for metal ball valves (VMS §4.3)
+        data["valve_standard"] = VALVE_STANDARD.get("BL_METAL", VALVE_STANDARD.get(vt, ""))
+    elif vt in ("BL", "BS"):
+        # ISO 17292 only up to 24", CL 600 and below; above that API 6D (VMS §6.1)
+        if size_inches is not None and (size_inches > 24 or pc_num > 600):
+            data["valve_standard"] = "API SPEC 6D / ISO 14313"
+        else:
+            data["valve_standard"] = VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, ""))
+    else:
+        data["valve_standard"] = VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, ""))
     data["pressure_class"] = PRESSURE_CLASS.get(pc_letter, "")
 
     # Design pressure — PMS first, then fallback
@@ -769,69 +941,237 @@ def generate_datasheet(decoded: DecodedVDS) -> dict[str, str]:
     data["design_code"] = "ASME B31.3"
 
     # End connections
-    data["end_connections"] = _resolve_end_connection(ec, pc, cat)
+    data["end_connections"] = _resolve_end_connection(ec, pc, cat, size_inches)
 
     # Face to face
     data["face_to_face"] = FACE_TO_FACE.get((vt, design), FACE_TO_FACE.get(vt, ""))
 
     # ── Construction (from valve type template) ──
-    # For check valves, use design-specific template
     tmpl_key = f"{vt}_{design}" if vt == "CH" else vt
     tmpl = CONSTRUCTION.get(tmpl_key, CONSTRUCTION.get(vt, {}))
     for field, value in tmpl.items():
         data[field] = value
 
+    # ── Size-dependent construction (MY-K-20-PI-SP-0002) ──
+    if vt in ("BL", "BS"):
+        mounting = _resolve_ball_mounting(size_inches, pc_num)
+        data["ball_construction"] = f'{mounting["description"]}, no vent hole, Solid Type'
+        data["ball_mounting_type"] = mounting["type"]
+        if mounting["type"] == "Trunnion":
+            data["dbb_feature"] = "Double Block and Bleed capability"
+            data["seat_loading"] = "Spring-loaded seat rings"
+            data["body_vent_drain"] = "Body vent and drain fitted with NPT threaded plugs"
+            sealant_min = _SEALANT_INJECTION.get(pc_num, 0)
+            if size_inches is None or size_inches >= sealant_min:
+                data["sealant_injection"] = "Seat sealant injection system fitted"
+        elif mounting["type"] == "Floating":
+            data["body_cavity_relief"] = "Body cavity pressure relief required"
+
+    if vt == "GA":
+        data["wedge_construction"] = _resolve_wedge_type(size_inches)
+
+    if vt == "DB" and size_inches is not None:
+        if size_inches <= 2:
+            data["body_construction"] = "One-piece forged body, integral construction"
+            data["dbb_end_connection"] = 'Flange x 1/2" NPT'
+        else:
+            data["body_construction"] = "Three-piece bolted body"
+            data["dbb_end_connection"] = "Flanged both ends"
+
+    # Check valve: piston type required for small bore 1/2"-1.5" per VMS §6.2
+    if vt == "CH" and size_inches is not None and size_inches <= 1.5:
+        data["body_construction"] = "Integral Flanged, Bolted Cover (Piston Type required for 1/2\"-1-1/2\")"
+        data["seat_construction"] = "Spring assisted Metal to metal, Renewable Seat Ring"
+        data["operation"] = "Horizontal installation only (piston type check valve)"
+        data["check_valve_note"] = "Small bore check valves (1/2\"-1-1/2\") SHALL be Piston Type, horizontal only per MY-K-20-PI-SP-0002 §6.2"
+
+    # End flange class/face table per VMS §6.22.1
+    if ec in (EndConnection.RF, EndConnection.RTJ, EndConnection.FF):
+        if pc_num <= 600:
+            data["flange_face_note"] = f"CL {pc_num}: Raised Face (RF) per MY-K-20-PI-SP-0002 §6.22.1"
+        else:
+            data["flange_face_note"] = f"CL {pc_num}: Ring Type Joint (RTJ) per MY-K-20-PI-SP-0002 §6.22.1"
+
+    data["operation"] = _resolve_operation(vt, size_inches, pc_num)
+
+    # Body form
+    if size_inches is not None and size_inches <= 1.5:
+        data["body_form"] = "Forged"
+    elif size_inches is not None:
+        data["body_form"] = "Cast or Forged"
+    else:
+        data["body_form"] = 'Forged (1-1/2" and below), Cast or Forged (2" and above)'
+
     # ── Materials (from material category) ──
-    data["body_material"] = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
+    body_mat = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
+    if size_inches is not None and size_inches <= 1.5:
+        parts = body_mat.split("/")
+        forged_parts = [p.strip() for p in parts if "forged" in p.lower()]
+        if forged_parts:
+            body_mat = forged_parts[0]
+    data["body_material"] = body_mat
     data["stem_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
     data["gland_material"] = GLAND_MATERIAL.get(cat, GLAND_MATERIAL["CS"])
     data["gland_packing"] = GLAND_PACKING.get(cat, _GLAND_PACKING_STD)
     data["lever_handwheel"] = "Solid ASTM A47 HDG/ ASTM A220 HDG/ SS316"
     data["spring_material"] = "Inconel 750"
 
-    # Ball/seat/seal materials (valve-type-specific)
     if vt in ("BL", "BS", "DB"):
         data["ball_material"] = BALL_MATERIAL.get(cat, BALL_MATERIAL["CS"])
         data["seat_material"] = SEAT_MATERIAL.get(seat, "Metal seated, hard faced, Renewable")
         data["seal_material"] = SEAL_MATERIAL_BALL.get(seat, "Viton AED")
-        # Seat construction for ball valves depends on seat type
-        if vt != "DB":  # DB already has seat_construction in template
+        if vt != "DB":
             data["seat_construction"] = SEAT_CONSTRUCTION_BY_SEAT.get(seat, "")
+        if seat == "M" and vt in ("BL", "BS"):
+            data["seat_coating"] = "Tungsten Carbide overlay, min 1050 HV, 150-250 \u03bcm thickness"
+            if cat.startswith("CS"):
+                data["hardness_requirement"] = "Body/disc min 250 BHN, min 50 BHN differential"
+            data["stellite_overlay"] = "Stellite 6 by deposition, min 1.6 mm finished thickness"
     elif vt == "GA":
         data["wedge_material"] = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"]) + ", Hard faced"
         data["seal_material"] = SEAL_MATERIAL_GATE.get(seat, "Flexible Graphite")
+        if cat.startswith("CS") and seat == "M":
+            data["hardness_requirement"] = "Body seat and wedge min 250 BHN, min 50 BHN differential"
     elif vt == "GL":
         data["disc_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"]) + ", Hard faced"
     elif vt == "CH":
         data["disc_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
-        if design in ("S",):
+        if design == "S":
             data["hinge_pin_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
     elif vt == "BF":
         data["shaft_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
         data["seat_material"] = SEAT_MATERIAL.get(seat, "Reinforced PTFE (max 200\u00b0C)")
     elif vt == "NE":
         data["needle_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+        data["minimum_bore"] = "10 mm (instrument connections)"
 
-    # ── Bolting & gaskets — PMS authoritative, rule-based fallback ──
+    # Backseat for GA, GL, NE
+    if vt in ("GA", "GL", "NE"):
+        data["backseat"] = "Back seated, renewable"
+
+    # Seat pocket CRA overlay in corrosive service (VMS §6.15)
+    if vt in ("GA", "GL", "CH") and is_nace and cat.startswith("CS"):
+        data["seat_pocket_overlay"] = (
+            "Body seat pockets overlayed with corrosion resistant material "
+            "per MY-K-20-PI-SP-0002 §6.15 (CS valve in corrosive service)"
+        )
+
+    # Elastomer explosive decompression resistance (VMS §7.9)
+    if is_nace or cat in ("CS_NACE", "LTCS_NACE"):
+        data["elastomer_requirement"] = (
+            "All elastomers in HC gas/liquid service with H\u2082, CH\u2084, or CO\u2082 "
+            "shall have proven resistance to explosive decompression. "
+            "Max O-ring section: 7 mm diameter per MY-K-20-PI-SP-0002 §7.9. "
+            "No precautions needed for gaseous service <30 barg."
+        )
+
+    # FFKM for methanol service (VMS §7.8)
+    service_str = data.get("service", "").lower()
+    if "methanol" in service_str or "glycol" in service_str:
+        data["seal_material_note"] = "FFKM recommended for Methanol/Glycol service per MY-K-20-PI-SP-0002 §7.8"
+
+    # Preferred resilient seating materials (VMS §7.8)
+    if seat in ("T", "P"):
+        data["resilient_seat_note"] = (
+            "Preferred resilient seating: Nitrile, Viton, or RPTFE for -18\u00b0C to 93\u00b0C. "
+            "Below -18\u00b0C: use softer materials (Kel-F, unreinforced PTFE). "
+            "Not recommended where solids/abrasives present per MY-K-20-PI-SP-0002 §7.8."
+        )
+
+    # Torque and operation limits (VMS §6.11.2)
+    data["max_torque"] = "Max 150 Nm (handwheel), Max 270 Nm (lever) per MY-K-20-PI-SP-0002 §6.11.2"
+    data["max_handwheel_diameter"] = "750 mm max per MY-K-20-PI-SP-0002 §6.11.2"
+    data["max_lever_length"] = "500 mm max each side per MY-K-20-PI-SP-0002 §6.11.2"
+    data["operating_force"] = "Max 45 kg (100 lbs) to break open/close, 35 kg (75 lbs) at mid-stroke"
+
+    # ── Bolting & gaskets ──
     data["bolts"] = pms.get("bolts", BOLT_MATERIAL.get(cat, BOLT_MATERIAL["CS"]))
     data["nuts"] = pms.get("nuts", NUT_MATERIAL.get(cat, NUT_MATERIAL["CS"]))
     data["gaskets"] = pms.get("gaskets", GASKET_MATERIAL.get((cat, is_rtj), GASKET_MATERIAL.get((cat, False), "")))
+    data["bolt_plating"] = "No cadmium plating. XYLAN 1070 or equivalent fluoropolymer coating"
 
-    # Bonnet material (same family as body for most types)
     if vt in ("GA", "GL"):
         data["bonnet_material"] = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
 
-    # ── Hydrotest — PMS first, then calculate from design pressure ──
+    # ── Hydrotest ──
     if "hydrotest_shell" in pms:
         data["hydrotest_shell"] = pms["hydrotest_shell"]
         data["hydrotest_closure"] = pms["hydrotest_closure"]
     else:
         data["hydrotest_shell"], data["hydrotest_closure"] = _calc_hydrotest(data.get("design_pressure", ""))
 
-    # Fire rating
-    data["fire_rating"] = FIRE_RATING.get(vt, "N/A")
+    # Fire rating — size-dependent for ball valves
+    if vt in ("BL", "BS"):
+        mt = data.get("ball_mounting_type", "Mixed")
+        if mt == "Trunnion":
+            data["fire_rating"] = "API SPEC 6FA (Trunnion), third-party witnessed"
+        elif mt == "Floating":
+            data["fire_rating"] = "API STD 607 / BS EN ISO 10497 (Floating), third-party witnessed"
+        else:
+            data["fire_rating"] = "API SPEC 6FA (Trunnion) / API STD 607 (Floating), third-party witnessed"
+    else:
+        data["fire_rating"] = FIRE_RATING.get(vt, "N/A")
 
-    # Project constants
+    if seat in ("T", "P"):
+        data["fire_test"] = "Required \u2014 BS EN ISO 10497 / API 607, third-party witnessed"
+        data["antistatic_device"] = "Required for soft-seated valve"
+
+    # ── Inspection & testing (MY-K-20-PI-SP-0002) ──
+    data["ndt_extent"] = _resolve_ndt_extent(pc_num, size_inches, cat)
+    data["functional_test"] = "5 cycles at manufacturer, 5 at fabrication yard, 5 offshore"
+
+    # Pressure test standard selection (VMS §9.1)
+    if pc_num <= 150:
+        data["pressure_test_standard"] = "Designed per ASME B16.34, tested per API STD 598"
+    else:
+        data["pressure_test_standard"] = f"Designed and tested per API 6D (CL {pc_num}) and applicable valve type codes"
+    if vt in ("BL", "BS") and seat == "M":
+        data["leakage_rate"] = "Leakage rate not more than Rate 'B' per API 6D / ISO 5208 (metal seated ball valve)"
+    data["pressure_test_sequence"] = "1) Body hydro test, 2) Seat hydro test, 3) Low pressure pneumatic seat test"
+
+    # Forged valve NDT (VMS §7.5)
+    if size_inches is not None and size_inches >= 2 and pc_num >= 600:
+        if cat in ("LTCS_NACE",):
+            data["forged_valve_ndt"] = "MPE per ASTM A-275, acceptance per ASME B16.34 Annexe C (LTCS forged \u22652\", \u2265600#)"
+        elif cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE"):
+            data["forged_valve_ndt"] = "LPE per ASTM E-165, acceptance per ASME B16.34 Annexe D (SS/alloy forged \u22652\", \u2265600#)"
+
+    # Austenitic SS specific requirements (VMS §7.2)
+    if cat in ("SS316L", "SS316L_NACE"):
+        data["austenitic_ss_requirements"] = (
+            "Carbon content \u22640.03% max for Type 316L including overlay. "
+            "Capable of passing intergranular corrosion test per ASTM A262 Practice E. "
+            "Class 1500/2500 castings: LP and RT examined."
+        )
+        data["chloride_restriction"] = (
+            "300-series SS SHALL NOT be used where chloride >5 ppm AND temperature >60\u00b0C "
+            "(stress corrosion cracking region) per MY-K-20-PI-SP-0002 \u00a77.2. "
+            "Gaskets exempted for T \u2264120\u00b0C."
+        )
+
+    if is_nace:
+        data["fugitive_emissions_test"] = "ISO 15848-1, Tightness Class BH, Endurance CC1/CO1"
+        # Only set basic elastomer requirement if the detailed one wasn't already set
+        if "elastomer_requirement" not in data:
+            data["elastomer_requirement"] = "Explosive decompression resistant per NORSOK M-710"
+        data["auxiliary_connections"] = "Flanged welded construction only (no socket weld or seal-welded threads)"
+    if is_lt:
+        data["impact_test"] = "Charpy V-notch impact test per ASME B31.3 / ASME B16.34"
+    if cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE", "CUNI"):
+        data["pmi"] = "Required \u2014 Positive Material Identification per project document, random PMI per mill cert"
+    if vt != "CH" and "locks" not in data:
+        data["locks"] = "Valve lockable using padlock - Full Open, Fully Closed"
+    if vt in ("BL", "BS", "BF", "DB"):
+        data["position_indicator"] = "Visual position indicator required"
+    data["extended_stem"] = _resolve_extended_stem(size_inches)
+    data["lifting_lug"] = "Required if weight >= 25 kg (design load 2x, 5\u00b0 tilt)"
+    data["asbestos_free"] = "All packing, gaskets, and seals shall be asbestos-free"
+    data["nameplate"] = "SS316, 3 mm thick, per MSS-SP-25"
+
     data.update(PROJECT_CONSTANTS)
+
+    # Override leakage rate for metal seated ball valves (must be AFTER PROJECT_CONSTANTS)
+    if vt in ("BL", "BS") and seat == "M":
+        data["leakage_rate"] = "Leakage rate not more than Rate 'B' per API 6D / ISO 5208 (metal seated ball valve)"
 
     return data

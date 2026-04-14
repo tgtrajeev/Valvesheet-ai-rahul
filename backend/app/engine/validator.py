@@ -362,6 +362,61 @@ def validate_combination(
                 f"gear operation REQUIRED (threshold: >= {gear_min}\") per MY-K-20-PI-SP-0002 Clause 9."
             )
 
+    # Rule: ISO 17292 limit — only up to 24", CL 600 and below (VMS §6.1)
+    if vt in ("BL", "BS") and pressure_class and size_inches is not None:
+        if (size_inches > 24 or pressure_class > 600):
+            warnings.append(
+                f"ISO 17292 NOT applicable for size {size_inches}\", class {pressure_class} "
+                f"(limit: 24\" / CL 600). API SPEC 6D / ISO 14313 applies per MY-K-20-PI-SP-0002 §6.1."
+            )
+
+    # Rule: Check valve piston type for small bore (VMS §6.2)
+    if vt == "CH" and size_inches is not None and size_inches <= 1.5:
+        if design and design.upper() not in ("P",):
+            errors.append(
+                f"Check valve at {size_inches}\" MUST be Piston Type per MY-K-20-PI-SP-0002 §6.2. "
+                f"Small bore check valves (1/2\"-1-1/2\") shall be Piston Type, horizontal installation only."
+            )
+            suggestions.append(Suggestion(
+                type="fix",
+                title="Use Piston type check valve",
+                description="Change check valve design to P (Piston) for small bore",
+                action={"design": "P"},
+            ))
+
+    # Rule: Flange size standard enforcement (VMS §6.22.1)
+    if size_inches is not None and size_inches >= 26:
+        warnings.append(
+            f"Size {size_inches}\" (\u226526\"): flanges per ASME B16.47 Series A, NOT ASME B16.5 "
+            "per MY-K-20-PI-SP-0002 \u00a76.22.1."
+        )
+
+    # Rule: End flange class/face table (VMS §6.22.1)
+    if pressure_class and ec:
+        if pressure_class <= 600 and ec == "J":
+            warnings.append(
+                f"Class {pressure_class} (≤600): standard face is RF (Raised Face). "
+                "RTJ specified — verify this is intentional per MY-K-20-PI-SP-0002 §6.22.1."
+            )
+        if pressure_class >= 900 and ec == "R":
+            errors.append(
+                f"Class {pressure_class} (≥900): RTJ face REQUIRED per MY-K-20-PI-SP-0002 §6.22.1. "
+                "RF (Raised Face) is not acceptable for classes 900-2500."
+            )
+            suggestions.append(Suggestion(
+                type="fix",
+                title="Use RTJ end connection",
+                description=f"Change to J (RTJ) for class {pressure_class}",
+                action={"end_conn": "J"},
+            ))
+
+    # Rule: Compact flange for CL 1500+ at 3"+ (VMS §6.22.1)
+    if pressure_class and pressure_class >= 1500 and size_inches is not None and size_inches >= 3:
+        warnings.append(
+            f"Class {pressure_class}, size {size_inches}\": Compact flanges / Hub clamp connector "
+            "acceptable per MY-K-20-PI-SP-0002 §6.22.1."
+        )
+
     # NACE / sour service warnings
     if "N" in sp and st != "M":
         warnings.append(f"NACE spec '{sp}' — ensure all materials comply with NACE MR-01-75 / ISO 15156")
@@ -387,6 +442,104 @@ def validate_combination(
         warnings.append(
             "Fire test certification required (API 607 / BS EN ISO 10497) for valves with "
             "non-metallic seats/seals per MY-K-20-PI-SP-0002 Clause 15."
+        )
+
+    # Rule: Pressure test standard selection (VMS §9.1)
+    if pressure_class:
+        if pressure_class <= 150:
+            warnings.append(
+                f"CL {pressure_class}: design per ASME B16.34, test per API STD 598 per MY-K-20-PI-SP-0002 §9.1."
+            )
+        else:
+            warnings.append(
+                f"CL {pressure_class}: design and test per API 6D for ball valves "
+                "and applicable codes per valve type per MY-K-20-PI-SP-0002 §9.1."
+            )
+
+    # Rule: Metal seated ball valve leak rate (VMS §9.1)
+    if vt in ("BL", "BS") and st == "M":
+        warnings.append(
+            "Metal seated ball valve: leakage rate shall NOT exceed Rate 'B' per API 6D / ISO 5208 "
+            "per MY-K-20-PI-SP-0002 §9.1."
+        )
+
+    # Rule: Forged valve additional NDT (VMS §7.5)
+    if size_inches is not None and size_inches >= 2 and pressure_class and pressure_class >= 600:
+        # Determine material category for NDT rule
+        m = re.match(r"[A-G](\d+)", sp)
+        mat_num = int(m.group(1)) if m else 1
+        is_lt_spec = "L" in sp
+        is_nace_spec = sp.endswith("N") or sp.endswith("LN")
+        if is_lt_spec and is_nace_spec:
+            warnings.append(
+                f"LTCS forged valve {size_inches}\", CL {pressure_class}: "
+                "MPE required per ASTM A-275, acceptance per ASME B16.34 Annexe C (MY-K-20-PI-SP-0002 §7.5)."
+            )
+        elif mat_num in (10, 20, 25):
+            warnings.append(
+                f"SS/alloy forged valve {size_inches}\", CL {pressure_class}: "
+                "LPE required per ASTM E-165, acceptance per ASME B16.34 Annexe D (MY-K-20-PI-SP-0002 §7.5)."
+            )
+
+    # Rule: Chloride/temperature limit for 300-series SS (VMS §7.2)
+    m = re.match(r"[A-G](\d+)", sp)
+    mat_num = int(m.group(1)) if m else 1
+    if mat_num == 10:
+        warnings.append(
+            "300-series SS (316/316L): SHALL NOT be used where chloride >5 ppm AND "
+            "temperature >60\u00b0C (stress corrosion cracking region) per MY-K-20-PI-SP-0002 §7.2. "
+            "Verify service conditions. Gaskets exempted for T \u2264120\u00b0C."
+        )
+
+    # Rule: Austenitic SS carbon content and testing (VMS §7.2)
+    if mat_num == 10:
+        warnings.append(
+            "Austenitic SS 316L: carbon content \u22640.03% max (including overlay). "
+            "Must be capable of passing intergranular corrosion test per ASTM A262 Practice E. "
+            "CL 1500/2500 castings require LP and RT examination per MY-K-20-PI-SP-0002 §7.2."
+        )
+
+    # Rule: Needle valve OS&Y design requirement (VMS §6.5)
+    if vt == "NE":
+        warnings.append(
+            "Needle valve SHALL be Outside Screw and Yoke (OS&Y) type for 1/2\" to 2\" "
+            "per MY-K-20-PI-SP-0002 §6.5."
+        )
+
+    # Rule: Seat pocket CRA overlay in corrosive service (VMS §6.15)
+    if vt in ("GA", "GL", "CH") and is_hc:
+        # CS body in corrosive service needs CRA overlay on seat pockets
+        if not sp.startswith(("A10", "B10", "D10", "E10", "F10", "G10",
+                              "A20", "B20", "D20", "E20", "F20", "G20",
+                              "A25", "B25", "D25", "E25", "F25", "G25")):
+            warnings.append(
+                "CS valve in corrosive service: body seat pockets SHALL be overlayed with "
+                "corrosion resistant material per MY-K-20-PI-SP-0002 §6.15."
+            )
+
+    # Rule: Elastomer explosive decompression resistance (VMS §7.9)
+    if is_hc and st in ("T", "P"):
+        warnings.append(
+            "Elastomers in HC gas/liquid service with H\u2082, CH\u2084, or CO\u2082 "
+            "SHALL have proven resistance to explosive decompression. "
+            "Max O-ring section 7 mm. No precautions needed for gaseous <30 barg "
+            "per MY-K-20-PI-SP-0002 §7.9."
+        )
+
+    # Rule: FFKM for methanol service (VMS §7.8)
+    # Note: service info may not be available at validation time, but flag for NACE/glycol specs
+    if sp in ("A1N", "B1N", "D1N", "E1N", "F1N", "G1N"):
+        warnings.append(
+            "Glycol/flare gas service: FFKM recommended for Methanol service seals "
+            "per MY-K-20-PI-SP-0002 §7.8."
+        )
+
+    # Rule: Torque limits (VMS §6.11.2)
+    if size_inches is not None and vt in ("BL", "BS", "BF", "GA", "GL", "NE"):
+        warnings.append(
+            "Operation limits per MY-K-20-PI-SP-0002 §6.11.2: max 150 Nm handwheel, "
+            "270 Nm lever, handwheel max 750 mm, lever max 500 mm/side, "
+            "break force max 45 kg, mid-stroke max 35 kg."
         )
 
     is_valid = len(errors) == 0
@@ -496,6 +649,69 @@ def validate_datasheet(
         warnings.append(
             "Auxiliary body connections in HC service must be flanged welded construction "
             "(no socket weld or seal-welded threads) per MY-K-20-PI-SP-0002 Clause 12."
+        )
+
+    # Rule: Casting quality standard (VMS §4.3 MSS SP-55)
+    body_form = data.get("body_form", "")
+    if "cast" in body_form.lower():
+        warnings.append(
+            "Cast valve body: casting quality per MSS SP-55 (Quality Standard for Steel Castings "
+            "for Valves, Flanges, Fittings & Other Piping Components). "
+            "100% RT per ASME B16.34 Annexure B irrespective of rating per MY-K-20-PI-SP-0002 §9.2."
+        )
+
+    # Rule: Flange surface finish (VMS §4.3 ASME B46.1 / MSS SP-6)
+    end_conn = data.get("end_connections", "")
+    if "flanged" in end_conn.lower():
+        warnings.append(
+            "Flange jointing faces: machine finished per ASME B16.5 Para 6.4.5, "
+            "surface finish per ASME B46.1 / MSS SP-6. No radial tool marks permitted. "
+            "RTJ groove hardness per corresponding piping class per MY-K-20-PI-SP-0002 §6.22.1."
+        )
+
+    # Rule: Material certification (VMS §8.0, BS EN 10204)
+    warnings.append(
+        "Material certification: Pressure retaining parts per BS EN 10204 Type 3.2, "
+        "other parts per BS EN 10204 Type 3.1 per MY-K-20-PI-SP-0002 §8.0."
+    )
+
+    # Rule: Pressure testing standards (VMS §9.1, BS 6755, BS EN ISO 5208)
+    warnings.append(
+        "Pressure testing per API STD 598 / BS EN ISO 5208 / BS 6755 as applicable. "
+        "Test sequence: body hydro, seat hydro, LP pneumatic seat per MY-K-20-PI-SP-0002 §9.1."
+    )
+
+    # Rule: Welding procedure (VMS §6.0, BS EN 288)
+    if "butt weld" in end_conn.lower() or "weld" in body_form.lower():
+        warnings.append(
+            "Welding per ASME B31.3 / ASME SEC.IX. WPS per BS EN 288-2, PQR per BS EN 287-1 "
+            "per MY-K-20-PI-SP-0002 §6.0."
+        )
+
+    # Rule: Needle valve OS&Y check (VMS §6.5)
+    if vt == "NE":
+        stem = data.get("stem_construction", "")
+        if "os&y" not in stem.lower() and "outside screw" not in stem.lower():
+            warnings.append(
+                "Needle valve SHALL be Outside Screw and Yoke (OS&Y) type for 1/2\"-2\" "
+                "per MY-K-20-PI-SP-0002 §6.5."
+            )
+
+    # Rule: Check valve orientation — piston type horizontal only (VMS §6.2)
+    if vt == "CH" and size_inches is not None and size_inches <= 1.5:
+        operation = data.get("operation", "")
+        if "horizontal" not in operation.lower():
+            errors.append(
+                f"Piston type check valve at {size_inches}\" SHALL be horizontal installation only "
+                "per MY-K-20-PI-SP-0002 §6.2."
+            )
+
+    # Rule: Compact flange / hub compatibility (VMS §6.22.5)
+    if "hub" in end_conn.lower() or "compact" in end_conn.lower():
+        warnings.append(
+            "Hub ends shall be compatible with Grayloc\u00ae, Techlok\u00ae, or G-Lok\u00ae clamps. "
+            "Dimensions may differ between manufacturers — confirm with Contractor "
+            "per MY-K-20-PI-SP-0002 §6.22.5."
         )
 
     return ValidationResult(
