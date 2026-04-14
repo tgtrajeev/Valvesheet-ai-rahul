@@ -16,7 +16,7 @@ import yaml
 
 from ..config import settings
 from ..engine.knowledge import get_knowledge_base, PRESSURE_CLASS_MAP, MATERIAL_DESCRIPTIONS
-from ..engine.validator import validate_combination, VALID_SPEC_CODES
+from ..engine.validator import validate_combination, validate_datasheet, parse_size_inches, VALID_SPEC_CODES
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources
@@ -170,8 +170,10 @@ TOOL_DEFINITIONS = [
                 "valve_type": {"type": "string", "description": "2-char code: BL, BF, GA, GL, CH, DB, NE"},
                 "seat": {"type": "string", "description": "Seat code: T (PTFE), P (PEEK), M (Metal)"},
                 "spec": {"type": "string", "description": "Piping spec code: A1, B1N, E1, T50A"},
-                "end_conn": {"type": "string", "description": "End connection (optional, auto-derived from spec)"},
+                "end_conn": {"type": "string", "description": "End connection: R (RF), J (RTJ), F (FF), T (NPT), H (Hub)"},
                 "bore": {"type": "string", "description": "Bore for Ball valves: R (Reduced), F (Full)"},
+                "size": {"type": "string", "description": "Valve size in inches: 1/2, 2, 8, 10. Needed for mounting, gearbox, body form checks."},
+                "service": {"type": "string", "description": "Service type if known: hydrocarbon, seawater, clean, etc."},
             },
             "required": ["valve_type", "seat", "spec"],
         },
@@ -362,7 +364,11 @@ async def _handle_generate(input_data: dict) -> dict:
             "hint": "Use find_valves to search for valid specs instead of guessing codes.",
         }
 
-    # Validate the decoded combination
+    # Parse size from overrides for size-dependent validation
+    size_str = overrides.get("size") or overrides.get("size_range") or overrides.get("nominal_size")
+    size_val = parse_size_inches(size_str) if size_str else None
+
+    # Validate the decoded combination (Phase 1)
     seat_code = decoded.seat_type.value if decoded.seat_type else "M"
     validation = validate_combination(
         valve_type=decoded.valve_type.value,
@@ -370,6 +376,7 @@ async def _handle_generate(input_data: dict) -> dict:
         spec=decoded.piping_class,
         end_conn=decoded.end_connection.value,
         bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
+        size_inches=size_val,
     )
 
     if not validation.is_valid:
@@ -384,7 +391,7 @@ async def _handle_generate(input_data: dict) -> dict:
 
     # ── Step 3: Valid combination — generate datasheet from rules + PMS data ──
     from ..engine.rule_engine import generate_datasheet as rule_generate
-    data = rule_generate(decoded)
+    data = rule_generate(decoded, size_inches=size_val)
 
     # Apply user overrides
     applied_overrides = {}
@@ -395,6 +402,16 @@ async def _handle_generate(input_data: dict) -> dict:
             data[field_key] = val.strip()
             applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
+    # Phase 2 validation (size-dependent spec rules)
+    phase2 = validate_datasheet(
+        data=data,
+        valve_type=decoded.valve_type.value,
+        design=decoded.design,
+        seat=seat_code,
+        spec=decoded.piping_class,
+        size_inches=size_val,
+    )
+
     total = len(data)
     filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
     completion = round((filled / total * 100) if total else 0, 1)
@@ -402,13 +419,18 @@ async def _handle_generate(input_data: dict) -> dict:
     piping_class = data.get("piping_class", decoded.piping_class)
     sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
+    all_warnings = (validation.warnings or []) + (phase2.warnings or [])
     result = {
         "vds_code": vds_code,
         "data": data,
         "field_sources": sources,
         "source": "rule_engine",
         "completion_pct": completion,
-        "validation": {"is_valid": True, "warnings": validation.warnings},
+        "validation": {
+            "is_valid": True,
+            "warnings": all_warnings,
+            "spec_notes": phase2.errors if phase2.errors else [],
+        },
     }
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
@@ -440,13 +462,16 @@ async def _handle_find_piping_class(input_data: dict) -> dict:
 
 
 async def _handle_validate(input_data: dict) -> dict:
-    """Validate a VDS component combination."""
+    """Validate a VDS component combination against spec rules."""
+    size_val = parse_size_inches(input_data.get("size"))
     result = validate_combination(
         valve_type=input_data["valve_type"],
         seat=input_data["seat"],
         spec=input_data["spec"],
         end_conn=input_data.get("end_conn"),
         bore=input_data.get("bore"),
+        size_inches=size_val,
+        service=input_data.get("service"),
     )
     return result.model_dump()
 
