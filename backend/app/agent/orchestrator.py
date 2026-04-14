@@ -399,6 +399,10 @@ async def run_agent(
                 if result.get("error") and result.get("validation"):
                     yield AgentEvent(type="validation", data=result["validation"])
                 elif not result.get("error"):
+                    # Emit validation event for warnings/spec_notes even on success
+                    val = result.get("validation")
+                    if val and (val.get("warnings") or val.get("spec_notes") or val.get("errors")):
+                        yield AgentEvent(type="validation", data=val)
                     yield AgentEvent(type="datasheet", data=result)
 
             # ── Truncate tool result before appending to messages (saves tokens) ──
