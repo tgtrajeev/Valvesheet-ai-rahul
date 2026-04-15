@@ -1,0 +1,75 @@
+{
+  "project_id": "demo-b1n",
+  "entries": [
+    {
+      "vds_code": "BLRTB1NR",
+      "piping_class": "B1N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "BLRTB1NR",
+      "piping_class": "B1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB1NR",
+      "piping_class": "B1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "CHECK",
+      "nps_min": 0.5,
+      "nps_max": 3.0
+    },
+    {
+      "vds_code": "CHSMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "CHECK",
+      "nps_min": 4.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "CHECK",
+      "nps_min": 4.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTB1NR",
+      "piping_class": "B1N",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 6.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFTPB1NR",
+      "piping_class": "B1N",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 6.0,
+      "nps_max": 24.0
+    }
+  ]
+}
