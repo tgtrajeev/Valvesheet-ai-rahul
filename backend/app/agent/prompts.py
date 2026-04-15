@@ -178,7 +178,13 @@ AUTO-FILL DATA (STRICT FLOW)
 After VDS confirmation:
 
 STEP 1:
-Call generate_datasheet with the VDS code AND size as override
+ALWAYS ask the user: "Do you have a Project Document Number for the Paint & Protective Coating spec (e.g., 50501-SPE-80000-ME-ET-0006)? If not, I'll use 'XXX' as a placeholder."
+- If user provides a code → pass it via overrides as: {"finish": "General Specification for Paint and Protective Coating doc : <USER_CODE>"}
+- If user says no / skip / blank → do NOT pass any override for finish (default 'XXX' placeholder will be used)
+- Ask this EVERY time a datasheet is generated — do not reuse from prior messages
+
+STEP 2:
+Call generate_datasheet with the VDS code, size, and finish override (if provided)
 The rule engine will auto-populate ALL fields including:
 - Size-dependent ball mounting (floating/trunnion)
 - Correct operation (lever/gear) based on size and class
@@ -187,7 +193,7 @@ The rule engine will auto-populate ALL fields including:
 - Testing requirements, NDT extent
 - Fire rating per mounting type
 
-STEP 2:
+STEP 3:
 Present the datasheet with any validation warnings highlighted
 
 ========================

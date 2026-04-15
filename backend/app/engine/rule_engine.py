@@ -564,7 +564,7 @@ PROJECT_CONSTANTS = {
     "casting_quality_standard": "MSS SP-55 (Quality Standard for Steel Castings for Valves)",
     "flange_surface_finish": "Per ASME B46.1 / MSS SP-6 (Standard Finishes for Contact Faces)",
     "welding_procedure": "WPS per BS EN 288-2, PQR per BS EN 287-1, welding per ASME B31.3 / ASME SEC.IX",
-    "finish": "General Specification for Paint and Protective Coating doc : 50501-SPE-80000-ME-ET-0006",
+    "finish": "General Specification for Paint and Protective Coating doc : XXX",
     "quality_system": "BS EN ISO 9001 compliant",
     "design_life": "15 years per MY-K-20-PI-SP-0002 §6.8",
 }
