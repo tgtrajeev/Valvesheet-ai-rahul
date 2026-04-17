@@ -188,6 +188,12 @@ sections:
         default: 'Forged, Two Piece (<=1.5"), Cast, Two/Three Piece (>1.5")'
         description: "Body construction from VDS Index"
 
+      stem_construction:
+        display_name: "Stem"
+        source: VDS_INDEX
+        is_required: false
+        description: "Stem construction from VDS Index"
+
       ball_construction:
         display_name: "Ball"
         source: VDS_INDEX
@@ -206,12 +212,6 @@ sections:
         is_required: false
         description: "Wedge construction from VDS Index (Gate valves only)"
 
-      stem_construction:
-        display_name: "Stem"
-        source: VDS_INDEX
-        is_required: false
-        description: "Stem construction from VDS Index"
-
       shaft_construction:
         display_name: "Shaft"
         source: VDS_INDEX
@@ -224,13 +224,6 @@ sections:
         is_required: true
         default: "Soft seated, Renewable"
         description: "Seat construction from VDS Index"
-
-      locks:
-        display_name: "Locks"
-        source: VDS_INDEX
-        is_required: false
-        default: "Valve lockable using padlock - Full Open, Fully Closed"
-        description: "Locks from VDS Index"
 
       back_seat_construction:
         display_name: "Back Seat"
@@ -249,6 +242,13 @@ sections:
         source: VDS_INDEX
         is_required: false
         description: "Bonnet construction (Needle valves)"
+
+      locks:
+        display_name: "Locks"
+        source: VDS_INDEX
+        is_required: false
+        default: "Valve lockable using padlock - Full Open, Fully Closed"
+        description: "Locks from VDS Index"
 
   # ====================
   # MATERIAL SECTION
@@ -280,6 +280,18 @@ sections:
         is_required: false
         description: "Wedge material from VDS Index (Gate valves only)"
 
+      needle_material:
+        display_name: "Needle Material"
+        source: VDS_INDEX
+        is_required: false
+        description: "Needle material (Needle/DBB valves)"
+
+      stem_material:
+        display_name: "Stem Material"
+        source: VDS_INDEX
+        is_required: false
+        description: "Stem material from VDS Index"
+
       trim_material:
         display_name: "Trim Material"
         source: VDS_INDEX
@@ -299,12 +311,6 @@ sections:
         is_required: false
         default: "PTFE"
         description: "Seal material from VDS Index"
-
-      stem_material:
-        display_name: "Stem Material"
-        source: VDS_INDEX
-        is_required: false
-        description: "Stem material from VDS Index"
 
       shaft_material:
         display_name: "Shaft Material"
@@ -326,6 +332,13 @@ sections:
         default: "Graphite / PTFE"
         description: "Gland packing from VDS Index"
 
+      spring_material:
+        display_name: "Spring"
+        source: VDS_INDEX
+        is_required: false
+        default: "Inconel 750"
+        description: "Spring material from VDS Index"
+
       lever_handwheel:
         display_name: "Lever / Handwheel"
         source: VDS_INDEX
@@ -333,12 +346,11 @@ sections:
         default: "Carbon Steel, Painted"
         description: "Lever/Handwheel from VDS Index"
 
-      spring_material:
-        display_name: "Spring"
+      hinge_pin_material:
+        display_name: "Hinge / Hinge Pin Material"
         source: VDS_INDEX
         is_required: false
-        default: "Inconel 750"
-        description: "Spring material from VDS Index"
+        description: "Hinge/Hinge Pin material (Check valves)"
 
       bonnet_material:
         display_name: "Bonnet Material"
@@ -403,18 +415,6 @@ sections:
         is_required: true
         default: "ASTM A194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated, min 50 μm combined"
         description: "Hex nut specification per FPSO Albacora PMS Table 3.4"
-
-      needle_material:
-        display_name: "Needle Material"
-        source: VDS_INDEX
-        is_required: false
-        description: "Needle material (Needle/DBB valves)"
-
-      hinge_pin_material:
-        display_name: "Hinge / Hinge Pin Material"
-        source: VDS_INDEX
-        is_required: false
-        description: "Hinge/Hinge Pin material (Check valves)"
 
   # ====================
   # TESTING SECTION
