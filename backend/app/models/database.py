@@ -51,6 +51,26 @@ class AgentDownload(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class PMSSheet(Base):
+    """Per-project, per-piping-class PMS record.
+
+    Each row stores one parsed piping class (e.g. B1N) for a project.
+    Source can be 'xlsx_upload' (manual) or 'api_sync' (external PMS API).
+    """
+    __tablename__ = "pms_sheets"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(String(100), nullable=False, index=True)
+    project_name = Column(String(255))
+    spec_code = Column(String(20), nullable=False, index=True)
+    source = Column(String(20), nullable=False, default="xlsx_upload")  # xlsx_upload | api_sync
+    source_file = Column(String(255))
+    pms_data = Column(JSON, nullable=False)       # full PipingClass dict
+    status = Column(String(20), default="draft")  # draft | approved | syncing
+    synced_at = Column(DateTime)                   # last API sync time
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class IngestedDocument(Base):
     __tablename__ = "ingested_documents"
     id = Column(Integer, primary_key=True, autoincrement=True)

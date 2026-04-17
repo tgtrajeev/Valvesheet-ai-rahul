@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     agent_max_tokens: int = 4096
     agent_max_tool_calls: int = 10
 
+    # PMS external API (for syncing PMS from project systems)
+    pms_api_base_url: str = ""          # empty = disabled; set when API is ready
+    pms_api_key: str = ""
+    pms_sync_enabled: bool = False      # flip to True once API is live
+
     # CORS — comma-separated origins for production
     frontend_url: str = "http://localhost:5173"
     cors_origins: str = ""

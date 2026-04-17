@@ -29,12 +29,12 @@ TOOL_RETRY_DELAYS = [0.5, 1.0, 2.0]       # max 2 retries
 API_RETRY_DELAYS = [1.0, 2.0, 4.0]         # max 3 retries for rate limits
 
 
-async def _retry_tool(tool_name: str, tool_input: dict) -> dict:
+async def _retry_tool(tool_name: str, tool_input: dict, project_id: str | None = None) -> dict:
     """Execute a tool with retries on failure."""
     last_error = None
     for attempt in range(1 + len(TOOL_RETRY_DELAYS)):
         try:
-            return await execute_tool(tool_name, tool_input)
+            return await execute_tool(tool_name, tool_input, project_id=project_id)
         except Exception as e:
             last_error = e
             if attempt < len(TOOL_RETRY_DELAYS):
@@ -50,6 +50,7 @@ async def run_agent(
     messages: list[dict],
     session_id: str | None = None,
     prior_agent_messages: list[dict] | None = None,
+    project_id: str | None = None,
 ) -> AsyncGenerator[AgentEvent, None]:
     """Run the agent loop, yielding SSE events.
 
@@ -58,6 +59,7 @@ async def run_agent(
         session_id: Session ID for tracking.
         prior_agent_messages: Full Anthropic message history from a previous session
                               for conversation resumption.
+        project_id: Optional project ID for project-scoped PMS resolution.
     """
     if not session_id:
         session_id = uuid.uuid4().hex[:16]
@@ -70,6 +72,26 @@ async def run_agent(
         return
 
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+
+    # Build system prompt — inject project context if available
+    system_prompt = SYSTEM_PROMPT
+    if project_id:
+        from ..pms import store as pms_store
+        project_pms = pms_store.load_pms(project_id)
+        if project_pms:
+            class_codes = project_pms.class_codes()
+            system_prompt = (
+                SYSTEM_PROMPT
+                + f"\n\n========================\n"
+                f"ACTIVE PROJECT CONTEXT\n"
+                f"========================\n"
+                f"Project: {project_pms.metadata.name} (ID: {project_id})\n"
+                f"Available piping classes: {', '.join(class_codes)}\n"
+                f"Total classes: {len(class_codes)}\n"
+                f"When the user asks about PMS data or piping classes, check this project's "
+                f"data first using query_pms or query_project_pms. The project_id '{project_id}' "
+                f"is automatically applied to all tool calls.\n"
+            )
 
     # Build message history: prior session + new messages
     if prior_agent_messages:
@@ -104,7 +126,7 @@ async def run_agent(
                     model=settings.agent_model,
                     max_tokens=settings.agent_max_tokens,
                     temperature=settings.agent_temperature,
-                    system=SYSTEM_PROMPT,
+                    system=system_prompt,
                     messages=anthropic_messages,
                     tools=TOOL_DEFINITIONS,
                 )
@@ -241,7 +263,7 @@ async def run_agent(
             })
 
             # Execute with retry
-            result = await _retry_tool(tool_block.name, tool_block.input)
+            result = await _retry_tool(tool_block.name, tool_block.input, project_id=project_id)
             result_str = json.dumps(result)
 
             # Emit tool_result event

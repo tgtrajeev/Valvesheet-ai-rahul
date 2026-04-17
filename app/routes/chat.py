@@ -63,6 +63,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
             messages,
             session_id=session_id,
             prior_agent_messages=prior_agent_messages,
+            project_id=request.project_id,
         ):
             # Capture agent_messages and token usage from orchestrator
             if event.type == "_agent_state":

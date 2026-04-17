@@ -15,6 +15,7 @@ from .routes.ingest import router as ingest_router
 from .routes.metadata import router as metadata_router
 from .routes.suggest import router as suggest_router
 from .routes.downloads import router as downloads_router
+from .routes.pms import router as pms_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,6 +53,7 @@ app.include_router(ingest_router, prefix="/api")
 app.include_router(metadata_router, prefix="/api")
 app.include_router(suggest_router, prefix="/api")
 app.include_router(downloads_router, prefix="/api")
+app.include_router(pms_router, prefix="/api")
 
 
 @app.get("/health")

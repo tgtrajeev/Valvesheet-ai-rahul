@@ -125,12 +125,12 @@ _CACHED_SYSTEM = _build_system_with_cache()
 _CACHED_TOOLS = _build_tools_with_cache()
 
 
-async def _retry_tool(tool_name: str, tool_input: dict) -> dict:
+async def _retry_tool(tool_name: str, tool_input: dict, project_id: str | None = None) -> dict:
     """Execute a tool with retries on failure."""
     last_error = None
     for attempt in range(1 + len(TOOL_RETRY_DELAYS)):
         try:
-            return await execute_tool(tool_name, tool_input)
+            return await execute_tool(tool_name, tool_input, project_id=project_id)
         except Exception as e:
             last_error = e
             if attempt < len(TOOL_RETRY_DELAYS):
@@ -146,6 +146,7 @@ async def run_agent(
     messages: list[dict],
     session_id: str | None = None,
     prior_agent_messages: list[dict] | None = None,
+    project_id: str | None = None,
 ) -> AsyncGenerator[AgentEvent, None]:
     """Run the agent loop, yielding SSE events.
 
@@ -170,6 +171,32 @@ async def run_agent(
         return
 
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+
+    # Build system prompt — inject project context if available
+    system_prompt = _CACHED_SYSTEM
+    if project_id:
+        from .tools import pms_store
+        project_pms = pms_store.load_pms(project_id)
+        if project_pms:
+            class_codes = project_pms.class_codes()
+            project_context = (
+                f"\n\n========================\n"
+                f"ACTIVE PROJECT CONTEXT\n"
+                f"========================\n"
+                f"Project: {project_pms.metadata.name} (ID: {project_id})\n"
+                f"Available piping classes: {', '.join(class_codes)}\n"
+                f"Total classes: {len(class_codes)}\n"
+                f"When the user asks about PMS data or piping classes, check this project's "
+                f"data first using query_pms or query_project_pms. The project_id '{project_id}' "
+                f"is automatically applied to all tool calls.\n"
+            )
+            system_prompt = [
+                {
+                    "type": "text",
+                    "text": SYSTEM_PROMPT + project_context,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ]
 
     # Build message history: prior session + new messages
     if prior_agent_messages:
@@ -356,7 +383,7 @@ async def run_agent(
                 result = session_tool_cache[ck]
                 logger.info(f"Tool cache hit: {tool_block.name} (saved API call)")
             else:
-                result = await _retry_tool(tool_block.name, tool_block.input)
+                result = await _retry_tool(tool_block.name, tool_block.input, project_id=project_id)
                 # Cache successful results (don't cache errors)
                 if not result.get("error"):
                     session_tool_cache[ck] = result

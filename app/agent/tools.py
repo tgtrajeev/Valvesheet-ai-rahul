@@ -20,6 +20,8 @@ from ..engine.validator import validate_combination, VALID_SPEC_CODES
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources
+from ..pms import store as pms_store
+from ..pms.query import query as pms_generic_query
 
 # ── Tool definitions (JSON schema for Claude) ────────────────────────────────
 
@@ -233,12 +235,57 @@ TOOL_DEFINITIONS = [
             "required": ["piping_class"],
         },
     },
+    {
+        "name": "query_project_pms",
+        "description": (
+            "Generic, project-scoped query against any uploaded PMS. Filters are a list of "
+            "{path, op, value}. Path examples: 'spec_code', 'pressure_rating.numeric', "
+            "'material_description.tokens', 'service.tokens', 'corrosion_allowance.numeric'. "
+            "Operators: eq, neq, gt, gte, lt, lte, in, not_in, contains, contains_any, "
+            "contains_all, regex, exists. Returns matching piping classes with their valve "
+            "assignments (so the agent can derive which VDS codes are valid). Use this whenever "
+            "the user asks 'what piping class for ...' or refers to a specific project PMS."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "project_id": {"type": "string", "description": "Project slug (e.g. 'fpso-albacora', 'demo-b1n')."},
+                "filters": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "path": {"type": "string"},
+                            "op": {"type": "string"},
+                            "value": {},
+                        },
+                        "required": ["path"],
+                    },
+                },
+                "limit": {"type": "integer", "default": 20},
+            },
+            "required": ["project_id", "filters"],
+        },
+    },
+    {
+        "name": "list_projects",
+        "description": "List all PMS projects available in the system, with their class counts.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
 ]
 
 # ── Tool execution ────────────────────────────────────────────────────────────
 
-async def execute_tool(name: str, input_data: dict) -> dict:
+# Module-level project context — set per tool execution by the orchestrator.
+# This lets tools resolve PMS from the correct project without changing every signature.
+_current_project_id: str | None = None
+
+
+async def execute_tool(name: str, input_data: dict, project_id: str | None = None) -> dict:
     """Dispatch a tool call to the appropriate handler."""
+    global _current_project_id
+    _current_project_id = project_id
+
     handlers = {
         "find_valves": _handle_find_valves,
         "get_piping_class_info": _handle_piping_class_info,
@@ -248,6 +295,8 @@ async def execute_tool(name: str, input_data: dict) -> dict:
         "explain_field": _handle_explain,
         "compare_valves": _handle_compare,
         "query_pms": _handle_query_pms,
+        "query_project_pms": _handle_query_project_pms,
+        "list_projects": _handle_list_projects,
     }
     handler = handlers.get(name)
     if not handler:
@@ -518,15 +567,24 @@ def _normalize_field_name(name: str) -> str:
 
 
 async def _handle_query_pms(input_data: dict) -> dict:
-    """Query PMS extracted data for a specific piping class.
+    """Query PMS data for a specific piping class.
 
-    Returns comprehensive PMS data: materials, gaskets, bolts, nuts,
-    flanges, design pressure, hydrotest, PT ratings, service, etc.
+    Project-aware: if a project_id is set in session context, tries
+    the project's PMS data first, then falls back to global pms_extracted.json.
     """
     piping_class = input_data.get("piping_class", "").upper().strip()
     if not piping_class:
         return {"error": "piping_class is required. Provide a class code like A1, B1N, T50A."}
 
+    # ── Try project-scoped PMS first ──
+    if _current_project_id:
+        project_pms = pms_store.load_pms(_current_project_id)
+        if project_pms:
+            pc = project_pms.piping_classes.get(piping_class)
+            if pc:
+                return _format_project_pms_response(piping_class, pc, _current_project_id)
+
+    # ── Fallback to global pms_extracted.json ──
     try:
         from ..engine.pms_loader import get_pms_loader
         pms = get_pms_loader()
@@ -536,10 +594,15 @@ async def _handle_query_pms(input_data: dict) -> dict:
 
     if not spec:
         available = pms.spec_codes[:20]
+        hint_parts = [f"Available classes include: {', '.join(available)}..."]
+        if _current_project_id:
+            project_pms = pms_store.load_pms(_current_project_id)
+            if project_pms:
+                hint_parts.append(f"Project '{_current_project_id}' has: {', '.join(project_pms.class_codes())}")
         return {
             "error": f"Piping class '{piping_class}' not found in PMS data.",
             "available_classes": available,
-            "hint": f"Available classes include: {', '.join(available)}...",
+            "hint": " | ".join(hint_parts),
         }
 
     result: dict = {
@@ -601,6 +664,123 @@ async def _handle_query_pms(input_data: dict) -> dict:
         result["pressure_temperature_ratings"] = spec.pt_ratings[:8]
 
     return result
+
+
+def _format_project_pms_response(piping_class: str, pc, project_id: str) -> dict:
+    """Format a project-scoped PipingClass into the same shape as query_pms output."""
+    result: dict = {
+        "piping_class": piping_class,
+        "source": f"project:{project_id}",
+    }
+    # Extract key attributes
+    for key in ("pressure_rating", "material_description", "corrosion_allowance",
+                "design_code", "service", "mill_tolerance"):
+        attr = pc.attributes.get(key)
+        if attr:
+            result[key] = attr.raw
+
+    # NACE detection from material description
+    mat_tokens = []
+    mat_attr = pc.attributes.get("material_description")
+    if mat_attr and mat_attr.tokens:
+        mat_tokens = mat_attr.tokens
+    result["nace_compliant"] = "nace" in mat_tokens
+
+    # PT ratings
+    if pc.pt_ratings:
+        result["pt_ratings"] = [
+            {"temperature_c": pt.temperature_c, "max_pressure_barg": pt.max_pressure_barg}
+            for pt in pc.pt_ratings[:8]
+        ]
+
+    # Hydrotest
+    ht_attr = pc.attributes.get("hydrotest_pressure_barg")
+    if ht_attr and ht_attr.numeric:
+        shell = round(ht_attr.numeric, 2)
+        closure = round((shell / 1.5) * 1.1, 2)
+        result["hydrotest_shell_barg"] = shell
+        result["hydrotest_closure_barg"] = closure
+
+    # Bolting/gaskets
+    for key in ("bolting_stud_bolt", "bolting_hex_nut", "bolting_gasket"):
+        attr = pc.attributes.get(key)
+        if attr:
+            clean_key = key.replace("bolting_", "")
+            result[clean_key] = attr.raw
+
+    # Flanges
+    for key in ("flange_type", "flange_rating", "flange_face", "flange_moc"):
+        attr = pc.attributes.get(key)
+        if attr:
+            result[key] = attr.raw
+
+    # Valve assignments
+    if pc.valve_assignments:
+        result["valve_assignments"] = [
+            {
+                "valve_type": va.valve_type,
+                "nps_min": va.nps_min,
+                "nps_max": va.nps_max,
+                "vds_codes": va.vds_codes,
+            }
+            for va in pc.valve_assignments[:10]
+        ]
+
+    # Available NPS sizes from pipe schedule
+    if pc.pipe_schedule:
+        sizes = sorted(set(ps.nps_inch for ps in pc.pipe_schedule))
+        if sizes:
+            result["available_sizes_inch"] = sizes
+            result["size_range"] = f'{sizes[0]}" - {sizes[-1]}"'
+
+    return result
+
+
+# ── Dynamic per-project PMS handlers ─────────────────────────────────────────
+
+async def _handle_list_projects(input_data: dict) -> dict:
+    projects = pms_store.list_projects()
+    out = []
+    for m in projects:
+        pms = pms_store.load_pms(m.project_id)
+        idx = pms_store.load_vds_index(m.project_id)
+        out.append({
+            "project_id": m.project_id,
+            "name": m.name,
+            "status": m.status,
+            "source_file": m.source_file,
+            "class_count": len(pms.piping_classes) if pms else 0,
+            "vds_count": len(idx.valid_codes()) if idx else 0,
+        })
+    return {"projects": out}
+
+
+async def _handle_query_project_pms(input_data: dict) -> dict:
+    project_id = input_data.get("project_id") or _current_project_id
+    filters = input_data.get("filters") or []
+    limit = input_data.get("limit") or 20
+    if not project_id:
+        return {"error": "project_id is required. No project context set for this session."}
+    pms = pms_store.load_pms(project_id)
+    if not pms:
+        return {"error": f"project '{project_id}' not found"}
+    results = pms_generic_query(pms, filters, limit=limit)
+    summary = []
+    for pc in results:
+        summary.append({
+            "spec_code": pc.spec_code,
+            "attributes": {k: v.raw for k, v in pc.attributes.items()},
+            "valve_assignments": [
+                {
+                    "valve_type": va.valve_type,
+                    "nps_min": va.nps_min,
+                    "nps_max": va.nps_max,
+                    "vds_codes": va.vds_codes,
+                }
+                for va in pc.valve_assignments
+            ],
+        })
+    return {"count": len(summary), "results": summary, "project_id": project_id}
 
 
 async def _handle_compare(input_data: dict) -> dict:

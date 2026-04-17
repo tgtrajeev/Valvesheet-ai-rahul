@@ -1,0 +1,4954 @@
+{
+  "project_id": "fpso-albacora",
+  "entries": [
+    {
+      "vds_code": "BLRTA1R",
+      "piping_class": "A1",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 36.0
+    },
+    {
+      "vds_code": "BLFTA1R",
+      "piping_class": "A1",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 36.0
+    },
+    {
+      "vds_code": "GAYMA1R",
+      "piping_class": "A1",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 36.0
+    },
+    {
+      "vds_code": "GLYMA1R",
+      "piping_class": "A1",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 36.0
+    },
+    {
+      "vds_code": "CHPMA1R",
+      "piping_class": "A1",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA1R",
+      "piping_class": "A1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 36.0
+    },
+    {
+      "vds_code": "CHDMA1R",
+      "piping_class": "A1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 36.0
+    },
+    {
+      "vds_code": "BLRTB1R",
+      "piping_class": "B1",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB1R",
+      "piping_class": "B1",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB1R",
+      "piping_class": "B1",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB1R",
+      "piping_class": "B1",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB1R",
+      "piping_class": "B1",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB1R",
+      "piping_class": "B1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB1R",
+      "piping_class": "B1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPD1R",
+      "piping_class": "D1",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD1R",
+      "piping_class": "D1",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD1R",
+      "piping_class": "D1",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD1R",
+      "piping_class": "D1",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD1R",
+      "piping_class": "D1",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD1R",
+      "piping_class": "D1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD1R",
+      "piping_class": "D1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE1J",
+      "piping_class": "E1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE1J",
+      "piping_class": "E1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME1J",
+      "piping_class": "E1",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME1J",
+      "piping_class": "E1",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME1J",
+      "piping_class": "E1",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME1J",
+      "piping_class": "E1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME1J",
+      "piping_class": "E1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE1JT",
+      "piping_class": "E1",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE1J",
+      "piping_class": "E1",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF1J",
+      "piping_class": "F1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF1J",
+      "piping_class": "F1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF1J",
+      "piping_class": "F1",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF1J",
+      "piping_class": "F1",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF1J",
+      "piping_class": "F1",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF1J",
+      "piping_class": "F1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF1J",
+      "piping_class": "F1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF1JT",
+      "piping_class": "F1",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF1J",
+      "piping_class": "F1",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG1J",
+      "piping_class": "G1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG1J",
+      "piping_class": "G1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG1J",
+      "piping_class": "G1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG1J",
+      "piping_class": "G1",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMG1J",
+      "piping_class": "G1",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMG1J",
+      "piping_class": "G1",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMG1J",
+      "piping_class": "G1",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG1J",
+      "piping_class": "G1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG1J",
+      "piping_class": "G1",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPG1JT",
+      "piping_class": "G1",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG1J",
+      "piping_class": "G1",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRMG1J",
+      "piping_class": "G1",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA1NR",
+      "piping_class": "A1N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLFTA1NR",
+      "piping_class": "A1N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAYMA1NR",
+      "piping_class": "A1N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLYMA1NR",
+      "piping_class": "A1N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPMA1NR",
+      "piping_class": "A1N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA1NR",
+      "piping_class": "A1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHDMA1NR",
+      "piping_class": "A1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLRTB1NR",
+      "piping_class": "B1N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB1NR",
+      "piping_class": "B1N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB1NR",
+      "piping_class": "B1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPD1NR",
+      "piping_class": "D1N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD1NR",
+      "piping_class": "D1N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD1NR",
+      "piping_class": "D1N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD1NR",
+      "piping_class": "D1N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD1NR",
+      "piping_class": "D1N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD1NR",
+      "piping_class": "D1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD1NR",
+      "piping_class": "D1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE1NJ",
+      "piping_class": "E1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE1NJ",
+      "piping_class": "E1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME1NJ",
+      "piping_class": "E1N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME1NJ",
+      "piping_class": "E1N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME1NJ",
+      "piping_class": "E1N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME1NJ",
+      "piping_class": "E1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME1NJ",
+      "piping_class": "E1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE1NJT",
+      "piping_class": "E1N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE1NJ",
+      "piping_class": "E1N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF1NJT",
+      "piping_class": "F1N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF1NJ",
+      "piping_class": "F1N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPG1NJT",
+      "piping_class": "G1N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRMG1NJ",
+      "piping_class": "G1N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA2NR",
+      "piping_class": "A2N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLFTA2NR",
+      "piping_class": "A2N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GAYMA2NR",
+      "piping_class": "A2N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GLYMA2NR",
+      "piping_class": "A2N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHPMA2NR",
+      "piping_class": "A2N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA2NR",
+      "piping_class": "A2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHDMA2NR",
+      "piping_class": "A2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLRTB2NR",
+      "piping_class": "B2N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB2NR",
+      "piping_class": "B2N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB2NR",
+      "piping_class": "B2N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB2NR",
+      "piping_class": "B2N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB2NR",
+      "piping_class": "B2N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB2NR",
+      "piping_class": "B2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB2NR",
+      "piping_class": "B2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPD2NR",
+      "piping_class": "D2N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD2NR",
+      "piping_class": "D2N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD2NR",
+      "piping_class": "D2N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD2NR",
+      "piping_class": "D2N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD2NR",
+      "piping_class": "D2N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD2NR",
+      "piping_class": "D2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD2NR",
+      "piping_class": "D2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE2NJ",
+      "piping_class": "E2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE2NJ",
+      "piping_class": "E2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHSME2NJ",
+      "piping_class": "E2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME2NJ",
+      "piping_class": "E2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF2NJ",
+      "piping_class": "F2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF2NJ",
+      "piping_class": "F2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHSMF2NJ",
+      "piping_class": "F2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF2NJ",
+      "piping_class": "F2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG2NJ",
+      "piping_class": "G2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG2NJ",
+      "piping_class": "G2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG2NJ",
+      "piping_class": "G2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG2NJ",
+      "piping_class": "G2N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHSMG2NJ",
+      "piping_class": "G2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG2NJ",
+      "piping_class": "G2N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA1LR",
+      "piping_class": "A1L",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLFTA1LR",
+      "piping_class": "A1L",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GAYMA1LR",
+      "piping_class": "A1L",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GLYMA1LR",
+      "piping_class": "A1L",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHPMA1LR",
+      "piping_class": "A1L",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA1LR",
+      "piping_class": "A1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHDMA1LR",
+      "piping_class": "A1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLRTB1LR",
+      "piping_class": "B1L",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB1LR",
+      "piping_class": "B1L",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB1LR",
+      "piping_class": "B1L",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB1LR",
+      "piping_class": "B1L",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB1LR",
+      "piping_class": "B1L",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB1LR",
+      "piping_class": "B1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB1LR",
+      "piping_class": "B1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTD1LR",
+      "piping_class": "D1L",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTD1LR",
+      "piping_class": "D1L",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD1LR",
+      "piping_class": "D1L",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD1LR",
+      "piping_class": "D1L",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD1LR",
+      "piping_class": "D1L",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD1LR",
+      "piping_class": "D1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD1LR",
+      "piping_class": "D1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE1LJ",
+      "piping_class": "E1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE1LJ",
+      "piping_class": "E1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME1LJ",
+      "piping_class": "E1L",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME1LJ",
+      "piping_class": "E1L",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME1LJ",
+      "piping_class": "E1L",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME1LJ",
+      "piping_class": "E1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME1LJ",
+      "piping_class": "E1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE1LJT",
+      "piping_class": "E1L",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE1LJ",
+      "piping_class": "E1L",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF1LJT",
+      "piping_class": "F1L",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF1LJ",
+      "piping_class": "F1L",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPG1LJT",
+      "piping_class": "G1L",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRMG1LJ",
+      "piping_class": "G1L",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA1LNR",
+      "piping_class": "A1LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLFTA1LNR",
+      "piping_class": "A1LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GAYMA1LNR",
+      "piping_class": "A1LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GLYMA1LNR",
+      "piping_class": "A1LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHPMA1LNR",
+      "piping_class": "A1LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA1LNR",
+      "piping_class": "A1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHDMA1LNR",
+      "piping_class": "A1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLRTB1LNR",
+      "piping_class": "B1LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB1LNR",
+      "piping_class": "B1LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB1LNR",
+      "piping_class": "B1LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB1LNR",
+      "piping_class": "B1LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB1LNR",
+      "piping_class": "B1LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB1LNR",
+      "piping_class": "B1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB1LNR",
+      "piping_class": "B1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTD1LNR",
+      "piping_class": "D1LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTD1LNR",
+      "piping_class": "D1LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD1LNR",
+      "piping_class": "D1LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD1LNR",
+      "piping_class": "D1LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD1LNR",
+      "piping_class": "D1LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD1LNR",
+      "piping_class": "D1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD1LNR",
+      "piping_class": "D1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE1LNJT",
+      "piping_class": "E1LN",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE1LNJ",
+      "piping_class": "E1LN",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF1LNJT",
+      "piping_class": "F1LN",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF1LNJ",
+      "piping_class": "F1LN",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPG1LNJT",
+      "piping_class": "G1LN",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRMG1LNJ",
+      "piping_class": "G1LN",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA2LNR",
+      "piping_class": "A2LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLFTA2LNR",
+      "piping_class": "A2LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GAYMA2LNR",
+      "piping_class": "A2LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "GLYMA2LNR",
+      "piping_class": "A2LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHPMA2LNR",
+      "piping_class": "A2LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA2LNR",
+      "piping_class": "A2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "CHDMA2LNR",
+      "piping_class": "A2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 30.0
+    },
+    {
+      "vds_code": "BLRTB2LNR",
+      "piping_class": "B2LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB2LNR",
+      "piping_class": "B2LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB2LNR",
+      "piping_class": "B2LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB2LNR",
+      "piping_class": "B2LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB2LNR",
+      "piping_class": "B2LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB2LNR",
+      "piping_class": "B2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB2LNR",
+      "piping_class": "B2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTD2LNR",
+      "piping_class": "D2LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTD2LNR",
+      "piping_class": "D2LN",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD2LNR",
+      "piping_class": "D2LN",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD2LNR",
+      "piping_class": "D2LN",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD2LNR",
+      "piping_class": "D2LN",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD2LNR",
+      "piping_class": "D2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD2LNR",
+      "piping_class": "D2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE2LNJ",
+      "piping_class": "E2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE2LNJ",
+      "piping_class": "E2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHSME2LNJ",
+      "piping_class": "E2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME2LNJ",
+      "piping_class": "E2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF2LNJ",
+      "piping_class": "F2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF2LNJ",
+      "piping_class": "F2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHSMF2LNJ",
+      "piping_class": "F2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF2LNJ",
+      "piping_class": "F2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG2LNJ",
+      "piping_class": "G2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG2LNJ",
+      "piping_class": "G2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG2LNJ",
+      "piping_class": "G2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG2LNJ",
+      "piping_class": "G2LN",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHSMG2LNJ",
+      "piping_class": "G2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG2LNJ",
+      "piping_class": "G2LN",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA3R",
+      "piping_class": "A3",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTA3R",
+      "piping_class": "A3",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMA3R",
+      "piping_class": "A3",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMA3R",
+      "piping_class": "A3",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMA3R",
+      "piping_class": "A3",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA3R",
+      "piping_class": "A3",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMA3R",
+      "piping_class": "A3",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTA3R",
+      "piping_class": "A3",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA4R",
+      "piping_class": "A4",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTA4R",
+      "piping_class": "A4",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMA4R",
+      "piping_class": "A4",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMA4R",
+      "piping_class": "A4",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMA4R",
+      "piping_class": "A4",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA4R",
+      "piping_class": "A4",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMA4R",
+      "piping_class": "A4",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTA4R",
+      "piping_class": "A4",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTB4R",
+      "piping_class": "B4",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB4R",
+      "piping_class": "B4",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB4R",
+      "piping_class": "B4",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB4R",
+      "piping_class": "B4",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB4R",
+      "piping_class": "B4",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB4R",
+      "piping_class": "B4",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB4R",
+      "piping_class": "B4",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTB4R",
+      "piping_class": "B4",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPD4R",
+      "piping_class": "D4",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD4R",
+      "piping_class": "D4",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD4R",
+      "piping_class": "D4",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD4R",
+      "piping_class": "D4",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD4R",
+      "piping_class": "D4",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD4R",
+      "piping_class": "D4",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD4R",
+      "piping_class": "D4",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTD4R",
+      "piping_class": "D4",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA5R",
+      "piping_class": "A5",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTA5R",
+      "piping_class": "A5",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMA5R",
+      "piping_class": "A5",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMA5R",
+      "piping_class": "A5",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMA5R",
+      "piping_class": "A5",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA5R",
+      "piping_class": "A5",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMA5R",
+      "piping_class": "A5",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTA5R",
+      "piping_class": "A5",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA6R",
+      "piping_class": "A6",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTA6R",
+      "piping_class": "A6",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMA6R",
+      "piping_class": "A6",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMA6R",
+      "piping_class": "A6",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMA6R",
+      "piping_class": "A6",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA6R",
+      "piping_class": "A6",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMA6R",
+      "piping_class": "A6",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTA6R",
+      "piping_class": "A6",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA10R",
+      "piping_class": "A10",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTA10R",
+      "piping_class": "A10",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMA10R",
+      "piping_class": "A10",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMA10R",
+      "piping_class": "A10",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMA10R",
+      "piping_class": "A10",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA10R",
+      "piping_class": "A10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMA10R",
+      "piping_class": "A10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTA10R",
+      "piping_class": "A10",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTB10R",
+      "piping_class": "B10",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB10R",
+      "piping_class": "B10",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB10R",
+      "piping_class": "B10",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB10R",
+      "piping_class": "B10",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB10R",
+      "piping_class": "B10",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB10R",
+      "piping_class": "B10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB10R",
+      "piping_class": "B10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPD10R",
+      "piping_class": "D10",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD10R",
+      "piping_class": "D10",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD10R",
+      "piping_class": "D10",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD10R",
+      "piping_class": "D10",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD10R",
+      "piping_class": "D10",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD10R",
+      "piping_class": "D10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD10R",
+      "piping_class": "D10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE10J",
+      "piping_class": "E10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE10J",
+      "piping_class": "E10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME10J",
+      "piping_class": "E10",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME10J",
+      "piping_class": "E10",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME10J",
+      "piping_class": "E10",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME10J",
+      "piping_class": "E10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME10J",
+      "piping_class": "E10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE10JT",
+      "piping_class": "E10",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE10J",
+      "piping_class": "E10",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF10J",
+      "piping_class": "F10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF10J",
+      "piping_class": "F10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF10J",
+      "piping_class": "F10",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF10J",
+      "piping_class": "F10",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF10J",
+      "piping_class": "F10",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF10J",
+      "piping_class": "F10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF10J",
+      "piping_class": "F10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF10JT",
+      "piping_class": "F10",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF10J",
+      "piping_class": "F10",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG10J",
+      "piping_class": "G10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLFPG10J",
+      "piping_class": "G10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLFMG10J",
+      "piping_class": "G10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLRMG10J",
+      "piping_class": "G10",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "GAYMG10J",
+      "piping_class": "G10",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "GLYMG10J",
+      "piping_class": "G10",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "CHPMG10J",
+      "piping_class": "G10",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG10J",
+      "piping_class": "G10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "CHDMG10J",
+      "piping_class": "G10",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "DBRPG10JT",
+      "piping_class": "G10",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG10J",
+      "piping_class": "G10",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "DBRMG10J",
+      "piping_class": "G10",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLRTA10NR",
+      "piping_class": "A10N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTA10NR",
+      "piping_class": "A10N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMA10NR",
+      "piping_class": "A10N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMA10NR",
+      "piping_class": "A10N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMA10NR",
+      "piping_class": "A10N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA10NR",
+      "piping_class": "A10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMA10NR",
+      "piping_class": "A10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTB10NR",
+      "piping_class": "B10N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFTB10NR",
+      "piping_class": "B10N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMB10NR",
+      "piping_class": "B10N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMB10NR",
+      "piping_class": "B10N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMB10NR",
+      "piping_class": "B10N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB10NR",
+      "piping_class": "B10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMB10NR",
+      "piping_class": "B10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPD10NR",
+      "piping_class": "D10N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD10NR",
+      "piping_class": "D10N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD10NR",
+      "piping_class": "D10N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD10NR",
+      "piping_class": "D10N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD10NR",
+      "piping_class": "D10N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD10NR",
+      "piping_class": "D10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD10NR",
+      "piping_class": "D10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE10NJ",
+      "piping_class": "E10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE10NJ",
+      "piping_class": "E10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME10NJ",
+      "piping_class": "E10N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME10NJ",
+      "piping_class": "E10N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME10NJ",
+      "piping_class": "E10N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME10NJ",
+      "piping_class": "E10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME10NJ",
+      "piping_class": "E10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE10NJT",
+      "piping_class": "E10N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE10NJ",
+      "piping_class": "E10N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF10NJT",
+      "piping_class": "F10N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF10NJ",
+      "piping_class": "F10N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLFPG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLFMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLRMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "GAYMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "GLYMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "CHPMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "CHDMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "DBRPG10NJT",
+      "piping_class": "G10N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "DBRMG10NJ",
+      "piping_class": "G10N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 12.0
+    },
+    {
+      "vds_code": "BLRTA20R",
+      "piping_class": "A20",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLFTA20R",
+      "piping_class": "A20",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAYMA20R",
+      "piping_class": "A20",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLYMA20R",
+      "piping_class": "A20",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPMA20R",
+      "piping_class": "A20",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA20R",
+      "piping_class": "A20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHDMA20R",
+      "piping_class": "A20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLRTB20R",
+      "piping_class": "B20",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLFTB20R",
+      "piping_class": "B20",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAYMB20R",
+      "piping_class": "B20",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLYMB20R",
+      "piping_class": "B20",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPMB20R",
+      "piping_class": "B20",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB20R",
+      "piping_class": "B20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHDMB20R",
+      "piping_class": "B20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLRPD20R",
+      "piping_class": "D20",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD20R",
+      "piping_class": "D20",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD20R",
+      "piping_class": "D20",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD20R",
+      "piping_class": "D20",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD20R",
+      "piping_class": "D20",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD20R",
+      "piping_class": "D20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD20R",
+      "piping_class": "D20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE20J",
+      "piping_class": "E20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE20J",
+      "piping_class": "E20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME20J",
+      "piping_class": "E20",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME20J",
+      "piping_class": "E20",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME20J",
+      "piping_class": "E20",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME20J",
+      "piping_class": "E20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME20J",
+      "piping_class": "E20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE20JT",
+      "piping_class": "E20",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE20J",
+      "piping_class": "E20",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF20J",
+      "piping_class": "F20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF20J",
+      "piping_class": "F20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF20J",
+      "piping_class": "F20",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF20J",
+      "piping_class": "F20",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF20J",
+      "piping_class": "F20",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF20J",
+      "piping_class": "F20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF20J",
+      "piping_class": "F20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF20JT",
+      "piping_class": "F20",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF20J",
+      "piping_class": "F20",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG20J",
+      "piping_class": "G20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLFPG20J",
+      "piping_class": "G20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLFMG20J",
+      "piping_class": "G20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLRMG20J",
+      "piping_class": "G20",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "GAYMG20J",
+      "piping_class": "G20",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "GLYMG20J",
+      "piping_class": "G20",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "CHPMG20J",
+      "piping_class": "G20",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG20J",
+      "piping_class": "G20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "CHDMG20J",
+      "piping_class": "G20",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "DBRPG20JT",
+      "piping_class": "G20",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG20J",
+      "piping_class": "G20",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "DBRMG20J",
+      "piping_class": "G20",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLRTA20NR",
+      "piping_class": "A20N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLFTA20NR",
+      "piping_class": "A20N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAYMA20NR",
+      "piping_class": "A20N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLYMA20NR",
+      "piping_class": "A20N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPMA20NR",
+      "piping_class": "A20N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA20NR",
+      "piping_class": "A20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHDMA20NR",
+      "piping_class": "A20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLRTB20NR",
+      "piping_class": "B20N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLFTB20NR",
+      "piping_class": "B20N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAYMB20NR",
+      "piping_class": "B20N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLYMB20NR",
+      "piping_class": "B20N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPMB20NR",
+      "piping_class": "B20N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMB20NR",
+      "piping_class": "B20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHDMB20NR",
+      "piping_class": "B20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLRPD20NR",
+      "piping_class": "D20N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPD20NR",
+      "piping_class": "D20N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMD20NR",
+      "piping_class": "D20N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMD20NR",
+      "piping_class": "D20N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMD20NR",
+      "piping_class": "D20N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMD20NR",
+      "piping_class": "D20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMD20NR",
+      "piping_class": "D20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPE20NJ",
+      "piping_class": "E20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPE20NJ",
+      "piping_class": "E20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME20NJ",
+      "piping_class": "E20N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME20NJ",
+      "piping_class": "E20N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME20NJ",
+      "piping_class": "E20N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME20NJ",
+      "piping_class": "E20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME20NJ",
+      "piping_class": "E20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE20NJT",
+      "piping_class": "E20N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE20NJ",
+      "piping_class": "E20N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF20NJT",
+      "piping_class": "F20N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF20NJ",
+      "piping_class": "F20N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLFPG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLFMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLRMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "GAYMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "GLYMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "CHPMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "CHDMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "DBRPG20NJT",
+      "piping_class": "G20N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "DBRMG20NJ",
+      "piping_class": "G20N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 18.0
+    },
+    {
+      "vds_code": "BLRTA25R",
+      "piping_class": "A25",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLFTA25R",
+      "piping_class": "A25",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAYMA25R",
+      "piping_class": "A25",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLYMA25R",
+      "piping_class": "A25",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPMA25R",
+      "piping_class": "A25",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA25R",
+      "piping_class": "A25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHDMA25R",
+      "piping_class": "A25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BFWTA25R",
+      "piping_class": "A25",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BSRB25R",
+      "piping_class": "B25",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BSFB25R",
+      "piping_class": "B25",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAWB25R",
+      "piping_class": "B25",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLSB25R",
+      "piping_class": "B25",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPB25R",
+      "piping_class": "B25",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CSWB25R",
+      "piping_class": "B25",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CDPB25R",
+      "piping_class": "B25",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BFWTB25R",
+      "piping_class": "B25",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BSRD25R",
+      "piping_class": "D25",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSFD25R",
+      "piping_class": "D25",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAWD25R",
+      "piping_class": "D25",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLSD25R",
+      "piping_class": "D25",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPD25R",
+      "piping_class": "D25",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CSWD25R",
+      "piping_class": "D25",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CDPD25R",
+      "piping_class": "D25",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BFWTD25R",
+      "piping_class": "D25",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSRE25J",
+      "piping_class": "E25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSFE25J",
+      "piping_class": "E25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME25J",
+      "piping_class": "E25",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME25J",
+      "piping_class": "E25",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME25J",
+      "piping_class": "E25",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME25J",
+      "piping_class": "E25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME25J",
+      "piping_class": "E25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE25JT",
+      "piping_class": "E25",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE25J",
+      "piping_class": "E25",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSRF25J",
+      "piping_class": "F25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSFF25J",
+      "piping_class": "F25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF25J",
+      "piping_class": "F25",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF25J",
+      "piping_class": "F25",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF25J",
+      "piping_class": "F25",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF25J",
+      "piping_class": "F25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF25J",
+      "piping_class": "F25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF25JT",
+      "piping_class": "F25",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF25J",
+      "piping_class": "F25",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG25J",
+      "piping_class": "G25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG25J",
+      "piping_class": "G25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG25J",
+      "piping_class": "G25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG25J",
+      "piping_class": "G25",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMG25J",
+      "piping_class": "G25",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMG25J",
+      "piping_class": "G25",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMG25J",
+      "piping_class": "G25",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG25J",
+      "piping_class": "G25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG25J",
+      "piping_class": "G25",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPG25JT",
+      "piping_class": "G25",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG25J",
+      "piping_class": "G25",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRMG25J",
+      "piping_class": "G25",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA25NR",
+      "piping_class": "A25N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BLFTA25NR",
+      "piping_class": "A25N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAYMA25NR",
+      "piping_class": "A25N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLYMA25NR",
+      "piping_class": "A25N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPA25NR",
+      "piping_class": "A25N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA25NR",
+      "piping_class": "A25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHDMA25NR",
+      "piping_class": "A25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BSRB25NR",
+      "piping_class": "B25N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BSFB25NR",
+      "piping_class": "B25N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GAWB25NR",
+      "piping_class": "B25N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "GLSB25NR",
+      "piping_class": "B25N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CHPB25NR",
+      "piping_class": "B25N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CSWB25NR",
+      "piping_class": "B25N",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "CDPB25NR",
+      "piping_class": "B25N",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 32.0
+    },
+    {
+      "vds_code": "BSRD25NR",
+      "piping_class": "D25N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSFD25NR",
+      "piping_class": "D25N",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAWD25NR",
+      "piping_class": "D25N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLSD25NR",
+      "piping_class": "D25N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPD25NR",
+      "piping_class": "D25N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CSWD25NR",
+      "piping_class": "D25N",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CDPD25NR",
+      "piping_class": "D25N",
+      "valve_type": "CHECK",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSRE25NJ",
+      "piping_class": "E25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSFE25NJ",
+      "piping_class": "E25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYME25NJ",
+      "piping_class": "E25N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYME25NJ",
+      "piping_class": "E25N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPME25NJ",
+      "piping_class": "E25N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSME25NJ",
+      "piping_class": "E25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDME25NJ",
+      "piping_class": "E25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPE25NJT",
+      "piping_class": "E25N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPE25NJ",
+      "piping_class": "E25N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSRF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BSFF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPF25NJT",
+      "piping_class": "F25N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPF25NJ",
+      "piping_class": "F25N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRPG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFPG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLFMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "BALL",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GAYMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "GLYMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHPMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "CHDMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRPG25NJT",
+      "piping_class": "G25N",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 2.0
+    },
+    {
+      "vds_code": "DBRPG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "DBRMG25NJ",
+      "piping_class": "G25N",
+      "valve_type": "DBB_PROCESS",
+      "nps_min": 0.5,
+      "nps_max": 24.0
+    },
+    {
+      "vds_code": "BLRTA30F",
+      "piping_class": "A30",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "BLFTA30F",
+      "piping_class": "A30",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "GAYMA30F",
+      "piping_class": "A30",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "GLYMA30F",
+      "piping_class": "A30",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "CHPMA30F",
+      "piping_class": "A30",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA30F",
+      "piping_class": "A30",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "CHDMA30F",
+      "piping_class": "A30",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "BFWTA30F",
+      "piping_class": "A30",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "BLRTA40F",
+      "piping_class": "A40",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 4.0
+    },
+    {
+      "vds_code": "BLFTA40F",
+      "piping_class": "A40",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 4.0
+    },
+    {
+      "vds_code": "GAYMA40F",
+      "piping_class": "A40",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 4.0
+    },
+    {
+      "vds_code": "GLYMA40F",
+      "piping_class": "A40",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 4.0
+    },
+    {
+      "vds_code": "CHPMA40F",
+      "piping_class": "A40",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA40F",
+      "piping_class": "A40",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 4.0
+    },
+    {
+      "vds_code": "CHDMA40F",
+      "piping_class": "A40",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 4.0
+    },
+    {
+      "vds_code": "BFWTA40F",
+      "piping_class": "A40",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 4.0
+    },
+    {
+      "vds_code": "BLRTA50F",
+      "piping_class": "A50",
+      "valve_type": "BALL",
+      "nps_min": 1.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "BLFTA50F",
+      "piping_class": "A50",
+      "valve_type": "BALL",
+      "nps_min": 1.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "GAYMA50F",
+      "piping_class": "A50",
+      "valve_type": "GATE",
+      "nps_min": 1.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "GLYMA50F",
+      "piping_class": "A50",
+      "valve_type": "GLOBE",
+      "nps_min": 1.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "CHPMA50F",
+      "piping_class": "A50",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 1.0,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA50F",
+      "piping_class": "A50",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "CHDMA50F",
+      "piping_class": "A50",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "BFWTA50F",
+      "piping_class": "A50",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "BLRTA51F",
+      "piping_class": "A51",
+      "valve_type": "BALL",
+      "nps_min": 1.0,
+      "nps_max": 6.0
+    },
+    {
+      "vds_code": "BLFTA51F",
+      "piping_class": "A51",
+      "valve_type": "BALL",
+      "nps_min": 1.0,
+      "nps_max": 6.0
+    },
+    {
+      "vds_code": "GAYMA51F",
+      "piping_class": "A51",
+      "valve_type": "GATE",
+      "nps_min": 1.0,
+      "nps_max": 6.0
+    },
+    {
+      "vds_code": "CHPMA51F",
+      "piping_class": "A51",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 1.0,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA51F",
+      "piping_class": "A51",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 6.0
+    },
+    {
+      "vds_code": "CHDMA51F",
+      "piping_class": "A51",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 6.0
+    },
+    {
+      "vds_code": "BFWTA51F",
+      "piping_class": "A51",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 6.0
+    },
+    {
+      "vds_code": "BLRTA52F",
+      "piping_class": "A52",
+      "valve_type": "BALL",
+      "nps_min": 1.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "BLFTA52F",
+      "piping_class": "A52",
+      "valve_type": "BALL",
+      "nps_min": 1.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "GAYMA52F",
+      "piping_class": "A52",
+      "valve_type": "GATE",
+      "nps_min": 1.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "CHPMA52F",
+      "piping_class": "A52",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 1.0,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA52F",
+      "piping_class": "A52",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "CHDMA52F",
+      "piping_class": "A52",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "BFWTA52F",
+      "piping_class": "A52",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 3.0,
+      "nps_max": 40.0
+    },
+    {
+      "vds_code": "BLRTA60F",
+      "piping_class": "A60",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 8.0
+    },
+    {
+      "vds_code": "BLFTA60F",
+      "piping_class": "A60",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 8.0
+    },
+    {
+      "vds_code": "GAYMA60F",
+      "piping_class": "A60",
+      "valve_type": "GATE",
+      "nps_min": 0.5,
+      "nps_max": 8.0
+    },
+    {
+      "vds_code": "GLYMA60F",
+      "piping_class": "A60",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 8.0
+    },
+    {
+      "vds_code": "CHPMA60F",
+      "piping_class": "A60",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHSMA60F",
+      "piping_class": "A60",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 8.0
+    },
+    {
+      "vds_code": "CHDMA60F",
+      "piping_class": "A60",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 2.0,
+      "nps_max": 8.0
+    },
+    {
+      "vds_code": "BFWTA60F",
+      "piping_class": "A60",
+      "valve_type": "BUTTERFLY",
+      "nps_min": 2.5,
+      "nps_max": 8.0
+    },
+    {
+      "vds_code": "BLRPA70R",
+      "piping_class": "A70",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "BLFPA70R",
+      "piping_class": "A70",
+      "valve_type": "BALL",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "GLYMA70R",
+      "piping_class": "A70",
+      "valve_type": "GLOBE",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "CHSMA70R",
+      "piping_class": "A70",
+      "valve_type": "CHECK_SWING",
+      "nps_min": 0.5,
+      "nps_max": 28.0
+    },
+    {
+      "vds_code": "NEIPA70R",
+      "piping_class": "A70",
+      "valve_type": "NEEDLE",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "DBFPT80AJT",
+      "piping_class": "T80A",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "NEIPT80AJT",
+      "piping_class": "T80A",
+      "valve_type": "NEEDLE_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "BLFPT80AJT",
+      "piping_class": "T80A",
+      "valve_type": "BALL_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHPMT80AJT",
+      "piping_class": "T80A",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "DBFPT80BJT",
+      "piping_class": "T80B",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "NEIPT80BJT",
+      "piping_class": "T80B",
+      "valve_type": "NEEDLE_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "BLFPT80BJT",
+      "piping_class": "T80B",
+      "valve_type": "BALL_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHPMT80BJT",
+      "piping_class": "T80B",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "DBFPT80CJT",
+      "piping_class": "T80C",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "NEIPT80CJT",
+      "piping_class": "T80C",
+      "valve_type": "NEEDLE_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "BLFPT80CJT",
+      "piping_class": "T80C",
+      "valve_type": "BALL_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHPMT80CJT",
+      "piping_class": "T80C",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "DBFPT90AJT",
+      "piping_class": "T90A",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "NEIPT90AJT",
+      "piping_class": "T90A",
+      "valve_type": "NEEDLE_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "BLFPT90AJT",
+      "piping_class": "T90A",
+      "valve_type": "BALL_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHPMT90AJT",
+      "piping_class": "T90A",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "DBFPT90BJT",
+      "piping_class": "T90B",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "NEIPT90BJT",
+      "piping_class": "T90B",
+      "valve_type": "NEEDLE_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "BLFPT90BJT",
+      "piping_class": "T90B",
+      "valve_type": "BALL_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHPMT90BJT",
+      "piping_class": "T90B",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "DBFPT90CJT",
+      "piping_class": "T90C",
+      "valve_type": "DBB_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "NEIPT90CJT",
+      "piping_class": "T90C",
+      "valve_type": "NEEDLE_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "BLFPT90CJT",
+      "piping_class": "T90C",
+      "valve_type": "BALL_INST",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    },
+    {
+      "vds_code": "CHPMT90CJT",
+      "piping_class": "T90C",
+      "valve_type": "CHECK_PISTON",
+      "nps_min": 0.5,
+      "nps_max": 1.5
+    }
+  ]
+}

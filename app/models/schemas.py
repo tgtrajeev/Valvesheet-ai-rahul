@@ -12,6 +12,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
     session_id: Optional[str] = None
+    project_id: Optional[str] = None    # project context for PMS resolution
 
 
 class ValidateRequest(BaseModel):
