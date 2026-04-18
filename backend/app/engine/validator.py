@@ -64,6 +64,49 @@ VALVE_TYPE_NAMES = {
 
 SEAT_NAMES = {"T": "PTFE", "P": "PEEK", "M": "Metal"}
 
+SEAT_MAX_TEMP_C = {"T": 200, "P": 250}
+
+
+def seat_from_vds_code(vds_code: str) -> str | None:
+    """Extract seat code (T/P/M) from VDS code. Returns None if unparseable.
+
+    VDS convention: 2-char type + 1-char design + 1-char seat + spec + end
+    e.g. BFWTA1R = BF + W + T + A1 + R → seat "T"
+    """
+    code = (vds_code or "").upper().strip()
+    if len(code) < 4:
+        return None
+    c = code[3]
+    return c if c in ("T", "P", "M") else None
+
+
+def check_seat_design_temperature(design_pressure: str, seat: str | None) -> list[str]:
+    """Deterministic check: flag soft seat vs high design-temperature conflicts.
+
+    Parses every temperature in the design_pressure string (e.g.
+    "19.6 @ -29°C, 10.2 @ 300°C") and returns an error if the maximum
+    exceeds the seat material's rated upper limit. Applies to every VDS code.
+
+    Only the upper bound is checked — reinforced PTFE grades handle low-temp
+    service (-100°C or lower) in the approved VDS index, so the min bound
+    varies by grade/filler and is not enforced here.
+    """
+    if not seat or seat not in SEAT_MAX_TEMP_C or not design_pressure:
+        return []
+    temps = [float(t) for t in re.findall(r"(-?\d+(?:\.\d+)?)\s*°?\s*C", design_pressure)]
+    if not temps:
+        return []
+    t_max = max(temps)
+    max_allowed = SEAT_MAX_TEMP_C[seat]
+    if t_max > max_allowed:
+        name = SEAT_NAMES[seat]
+        return [
+            f"{name} seat incompatible with design temperature: seat rated max "
+            f"{max_allowed}°C, datasheet shows {t_max:g}°C. Use metal (M) seat for "
+            f"high-temperature service or reduce design temperature."
+        ]
+    return []
+
 # ============================================================================
 # PRESSURE CLASS MAPPING
 # ============================================================================

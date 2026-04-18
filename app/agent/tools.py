@@ -16,7 +16,7 @@ import yaml
 
 from ..config import settings
 from ..engine.knowledge import get_knowledge_base, PRESSURE_CLASS_MAP, MATERIAL_DESCRIPTIONS
-from ..engine.validator import validate_combination, VALID_SPEC_CODES
+from ..engine.validator import validate_combination, VALID_SPEC_CODES, check_seat_design_temperature, seat_from_vds_code
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources
@@ -389,14 +389,24 @@ async def _handle_generate(input_data: dict) -> dict:
         # Use PMS-aware field sources with granular provenance
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
+        seat_errors = check_seat_design_temperature(
+            data.get("design_pressure", ""), seat_from_vds_code(vds_code)
+        )
         result = {
             "vds_code": vds_code,
             "data": data,
             "field_sources": sources,
             "source": "vds_index",
             "completion_pct": completion,
-            "validation": {"is_valid": True, "source": "known_spec"},
+            "validation": {
+                "is_valid": not seat_errors,
+                "source": "known_spec",
+                "errors": seat_errors,
+                "warnings": [],
+            },
         }
+        if seat_errors:
+            result["draft"] = True
         if applied_overrides:
             result["applied_overrides"] = applied_overrides
         return result
@@ -444,6 +454,8 @@ async def _handle_generate(input_data: dict) -> dict:
     sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
     val_dump = validation.model_dump()
+    seat_errors = check_seat_design_temperature(data.get("design_pressure", ""), seat_code)
+    all_errors = list(val_dump.get("errors", [])) + seat_errors
     result = {
         "vds_code": vds_code,
         "data": data,
@@ -451,12 +463,12 @@ async def _handle_generate(input_data: dict) -> dict:
         "source": "rule_engine",
         "completion_pct": completion,
         "validation": {
-            "is_valid": validation.is_valid,
-            "errors": val_dump.get("errors", []),
+            "is_valid": validation.is_valid and not seat_errors,
+            "errors": all_errors,
             "warnings": val_dump.get("warnings", []),
         },
     }
-    if not validation.is_valid:
+    if all_errors:
         result["draft"] = True  # Flag so the AI can warn the user
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
