@@ -304,6 +304,9 @@ async def run_agent(
                 if result.get("error") and result.get("validation"):
                     yield AgentEvent(type="validation", data=result["validation"])
                 elif not result.get("error"):
+                    # Emit validation event first (so frontend can attach errors/warnings)
+                    if result.get("validation"):
+                        yield AgentEvent(type="validation", data=result["validation"])
                     yield AgentEvent(type="datasheet", data=result)
 
             tool_results_content.append({

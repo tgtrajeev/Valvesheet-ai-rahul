@@ -421,17 +421,9 @@ async def _handle_generate(input_data: dict) -> dict:
         bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
     )
 
-    if not validation.is_valid:
-        # Block generation — return validation errors + suggestions
-        return {
-            "error": "Invalid VDS combination — cannot generate datasheet.",
-            "vds_code": vds_code,
-            "decoded": decoded.to_dict(),
-            "validation": validation.model_dump(),
-            "hint": "Fix the errors above or use find_valves to search for valid specs.",
-        }
-
-    # ── Step 3: Valid combination — generate datasheet from rules + PMS data ──
+    # ── Step 3: Generate datasheet from rules + PMS data ──
+    # Generate even when validation has errors (draft mode) so the Excel
+    # download can include the red error section for client review.
     from ..engine.rule_engine import generate_datasheet as rule_generate
     data = rule_generate(decoded)
 
@@ -451,14 +443,21 @@ async def _handle_generate(input_data: dict) -> dict:
     piping_class = data.get("piping_class", decoded.piping_class)
     sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
+    val_dump = validation.model_dump()
     result = {
         "vds_code": vds_code,
         "data": data,
         "field_sources": sources,
         "source": "rule_engine",
         "completion_pct": completion,
-        "validation": {"is_valid": True, "warnings": validation.warnings},
+        "validation": {
+            "is_valid": validation.is_valid,
+            "errors": val_dump.get("errors", []),
+            "warnings": val_dump.get("warnings", []),
+        },
     }
+    if not validation.is_valid:
+        result["draft"] = True  # Flag so the AI can warn the user
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
     return result
