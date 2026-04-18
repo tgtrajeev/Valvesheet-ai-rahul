@@ -16,7 +16,14 @@ import yaml
 
 from ..config import settings
 from ..engine.knowledge import get_knowledge_base, PRESSURE_CLASS_MAP, MATERIAL_DESCRIPTIONS
-from ..engine.validator import validate_combination, VALID_SPEC_CODES, check_seat_design_temperature, seat_from_vds_code
+from ..engine.validator import (
+    validate_combination,
+    validate_datasheet,
+    parse_size_inches,
+    VALID_SPEC_CODES,
+    check_seat_design_temperature,
+    seat_from_vds_code,
+)
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources
@@ -389,9 +396,59 @@ async def _handle_generate(input_data: dict) -> dict:
         # Use PMS-aware field sources with granular provenance
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
+
+        # Seat vs design temperature (hard error, deterministic)
         seat_errors = check_seat_design_temperature(
             data.get("design_pressure", ""), seat_from_vds_code(vds_code)
         )
+
+        # Run full Phase 1 + Phase 2 validators (VMS/PMS rules) against index hits
+        # too, so warnings surface in chat + preview + download for every datasheet.
+        phase_warnings: list[str] = []
+        phase_errors: list[str] = []
+        try:
+            from ..engine.vds_decoder import decode_vds
+            decoded = decode_vds(vds_code)
+            size_str = (
+                overrides.get("size")
+                or overrides.get("size_range")
+                or overrides.get("nominal_size")
+                or data.get("size_range", "")
+            )
+            size_val = parse_size_inches(size_str) if size_str else None
+            seat_code = decoded.seat_type.value if decoded.seat_type else "M"
+
+            p1 = validate_combination(
+                valve_type=decoded.valve_type.value,
+                seat=seat_code,
+                spec=decoded.piping_class,
+                end_conn=decoded.end_connection.value,
+                bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
+                size_inches=size_val,
+            )
+            p2 = validate_datasheet(
+                data=data,
+                valve_type=decoded.valve_type.value,
+                design=decoded.design,
+                seat=seat_code,
+                spec=decoded.piping_class,
+                size_inches=size_val,
+            )
+            phase_warnings = list(p1.warnings or []) + list(p2.warnings or [])
+            # Index-hit codes are known-good per master reference — demote any
+            # Phase 1 errors to warnings (would indicate stale index, not a real
+            # invalid combination). Phase 2 errors are true conflicts (e.g.
+            # piston check valve must be horizontal) and stay as errors.
+            if p1.errors:
+                phase_warnings.extend(p1.errors)
+            if p2.errors:
+                phase_errors.extend(p2.errors)
+        except Exception:
+            # Decode failure on an index code shouldn't break generation —
+            # seat_errors alone still apply.
+            pass
+
+        all_errors = list(seat_errors) + phase_errors
         result = {
             "vds_code": vds_code,
             "data": data,
@@ -399,13 +456,13 @@ async def _handle_generate(input_data: dict) -> dict:
             "source": "vds_index",
             "completion_pct": completion,
             "validation": {
-                "is_valid": not seat_errors,
+                "is_valid": not all_errors,
                 "source": "known_spec",
-                "errors": seat_errors,
-                "warnings": [],
+                "errors": all_errors,
+                "warnings": phase_warnings,
             },
         }
-        if seat_errors:
+        if all_errors:
             result["draft"] = True
         if applied_overrides:
             result["applied_overrides"] = applied_overrides
@@ -421,7 +478,11 @@ async def _handle_generate(input_data: dict) -> dict:
             "hint": "Use find_valves to search for valid specs instead of guessing codes.",
         }
 
-    # Validate the decoded combination
+    # Parse size from overrides for size-dependent validation
+    size_str = overrides.get("size") or overrides.get("size_range") or overrides.get("nominal_size")
+    size_val = parse_size_inches(size_str) if size_str else None
+
+    # Validate the decoded combination (Phase 1)
     seat_code = decoded.seat_type.value if decoded.seat_type else "M"
     validation = validate_combination(
         valve_type=decoded.valve_type.value,
@@ -429,6 +490,7 @@ async def _handle_generate(input_data: dict) -> dict:
         spec=decoded.piping_class,
         end_conn=decoded.end_connection.value,
         bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
+        size_inches=size_val,
     )
 
     # ── Step 3: Generate datasheet from rules + PMS data ──
@@ -446,6 +508,16 @@ async def _handle_generate(input_data: dict) -> dict:
             data[field_key] = val.strip()
             applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
+    # Phase 2: size-dependent VMS/PMS rules
+    phase2 = validate_datasheet(
+        data=data,
+        valve_type=decoded.valve_type.value,
+        design=decoded.design,
+        seat=seat_code,
+        spec=decoded.piping_class,
+        size_inches=size_val,
+    )
+
     total = len(data)
     filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
     completion = round((filled / total * 100) if total else 0, 1)
@@ -455,7 +527,8 @@ async def _handle_generate(input_data: dict) -> dict:
 
     val_dump = validation.model_dump()
     seat_errors = check_seat_design_temperature(data.get("design_pressure", ""), seat_code)
-    all_errors = list(val_dump.get("errors", [])) + seat_errors
+    all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or []) + seat_errors
+    all_warnings = list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
     result = {
         "vds_code": vds_code,
         "data": data,
@@ -463,9 +536,9 @@ async def _handle_generate(input_data: dict) -> dict:
         "source": "rule_engine",
         "completion_pct": completion,
         "validation": {
-            "is_valid": validation.is_valid and not seat_errors,
+            "is_valid": not all_errors,
             "errors": all_errors,
-            "warnings": val_dump.get("warnings", []),
+            "warnings": all_warnings,
         },
     }
     if all_errors:
