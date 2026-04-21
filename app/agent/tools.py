@@ -27,6 +27,7 @@ from ..engine.validator import (
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources, resolve_piping_class, resolve_class_from_duty
+from ..engine.override_validator import validate_overrides
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
@@ -461,15 +462,35 @@ async def _handle_generate(input_data: dict) -> dict:
     if spec:
         data = dict(spec.data)  # copy so we don't mutate the index
 
-        # Apply user overrides — let users customize size, service, tag, etc.
-        applied_overrides = {}
-        for key, val in overrides.items():
-            if val and val.strip():
-                # Map common override names to VDS index field names
-                field_key = _normalize_field_name(key)
-                old_val = data.get(field_key, "")
-                data[field_key] = val.strip()
-                applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
+        # Validate user overrides BEFORE applying — P-T envelope, seat/temp,
+        # size/valve-type, structural-field lock. Rejected overrides are
+        # surfaced back to the agent so it can relay to the user; only
+        # "safe" (and "warning") overrides actually land on the data dict.
+        applied_overrides: dict = {}
+        rejected_overrides: list = []
+        override_warnings: list = []
+        if overrides:
+            try:
+                from ..engine.vds_decoder import decode_vds as _decode_for_validate
+                _decoded_for_validate = _decode_for_validate(vds_code)
+                ov = validate_overrides(
+                    _decoded_for_validate, data, overrides, _normalize_field_name
+                )
+                rejected_overrides = ov.rejected
+                override_warnings = ov.warnings
+                for field_key, val in ov.safe.items():
+                    old_val = data.get(field_key, "")
+                    data[field_key] = val
+                    applied_overrides[field_key] = {"from": old_val, "to": val}
+            except Exception:
+                # Decode failure → fall back to the old blind-merge so we don't
+                # regress on legacy codes that can't be decoded.
+                for key, val in overrides.items():
+                    if val and str(val).strip():
+                        field_key = _normalize_field_name(key)
+                        old_val = data.get(field_key, "")
+                        data[field_key] = str(val).strip()
+                        applied_overrides[field_key] = {"from": old_val, "to": str(val).strip()}
 
         # Inject standard footer notes if the index record doesn't carry them yet
         # (the index was extracted before footer_notes were introduced).
@@ -548,7 +569,7 @@ async def _handle_generate(input_data: dict) -> dict:
             pass
 
         all_errors = phase_errors
-        all_warnings = list(seat_warnings) + phase_warnings
+        all_warnings = list(seat_warnings) + phase_warnings + list(override_warnings)
         result = {
             "vds_code": vds_code,
             "data": data,
@@ -567,6 +588,8 @@ async def _handle_generate(input_data: dict) -> dict:
             result["draft"] = True
         if applied_overrides:
             result["applied_overrides"] = applied_overrides
+        if rejected_overrides:
+            result["rejected_overrides"] = rejected_overrides
         return result
 
     # ── Step 2: Decode + validate unknown code ──
@@ -600,14 +623,18 @@ async def _handle_generate(input_data: dict) -> dict:
     from ..engine.rule_engine import generate_datasheet as rule_generate
     data = rule_generate(decoded)
 
-    # Apply user overrides
-    applied_overrides = {}
-    for key, val in overrides.items():
-        if val and val.strip():
-            field_key = _normalize_field_name(key)
+    # Validate user overrides BEFORE applying (same flow as the index path).
+    applied_overrides: dict = {}
+    rejected_overrides: list = []
+    override_warnings: list = []
+    if overrides:
+        ov = validate_overrides(decoded, data, overrides, _normalize_field_name)
+        rejected_overrides = ov.rejected
+        override_warnings = ov.warnings
+        for field_key, val in ov.safe.items():
             old_val = data.get(field_key, "")
-            data[field_key] = val.strip()
-            applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
+            data[field_key] = val
+            applied_overrides[field_key] = {"from": old_val, "to": val}
 
     # Phase 2: size-dependent VMS/PMS rules
     phase2 = validate_datasheet(
@@ -630,7 +657,12 @@ async def _handle_generate(input_data: dict) -> dict:
     # Seat vs design temp — warning, not fatal (see rationale in the index branch above)
     seat_warnings = check_seat_design_temperature(data.get("design_pressure", ""), seat_code)
     all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or [])
-    all_warnings = list(seat_warnings) + list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
+    all_warnings = (
+        list(seat_warnings)
+        + list(val_dump.get("warnings", []))
+        + list(phase2.warnings or [])
+        + list(override_warnings)
+    )
     all_notes = list(val_dump.get("notes", [])) + list(phase2.notes or [])
     result = {
         "vds_code": vds_code,
@@ -649,6 +681,8 @@ async def _handle_generate(input_data: dict) -> dict:
         result["draft"] = True  # Flag so the AI can warn the user
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
+    if rejected_overrides:
+        result["rejected_overrides"] = rejected_overrides
     return result
 
 
