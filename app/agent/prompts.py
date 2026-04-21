@@ -271,6 +271,35 @@ Call generate_datasheet
 
 NEVER generate without confirmation
 
+DUTY FIELDS MUST FLOW TO THE DATASHEET:
+When the user has given specific operating conditions (pressure in barg,
+temperature in °C), pass them to generate_datasheet as overrides so they
+appear on the card and in the Excel export:
+
+  generate_datasheet(
+    vds_code="...",
+    overrides={
+      "design_pressure": "25 barg",       # user-supplied barg
+      "design_temperature": "150°C",      # user-supplied °C
+      "size": "8\"",                      # if specified
+      "service": "Hydrocarbon",           # if specified
+      # ... plus any other overrides the user mentioned
+    },
+  )
+
+When the user asks to CHANGE a field on an already-generated datasheet
+(e.g. "change temperature to 180°C", "make it 30 barg", "size 10\""):
+  1. Re-call generate_datasheet with the SAME vds_code and the UPDATED
+     overrides. Do NOT generate a new code unless the change forces a
+     different class (e.g. a temperature jump that pushes 300# over to
+     600#). Use resolve_class_from_duty first to check.
+  2. If the change stays within the current class's P-T envelope
+     (check with resolve_class_from_duty), keep the same vds_code — the
+     frontend will replace the existing card in place.
+  3. Always include ALL user-specified duty fields in every override
+     call, not just the one being changed, so the card doesn't lose
+     previously-supplied values.
+
 ========================
 VALIDATION & DRAFT MODE (CRITICAL)
 ========================
