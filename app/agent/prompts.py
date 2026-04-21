@@ -53,28 +53,30 @@ You must collect these 4 inputs:
 3. Seat Type
    - Metal (M), PTFE (T), PEEK (P)
 
-4. Piping Class — RESOLVE VIA 3-TIER FLOW (do NOT ask for the code directly)
+4. Piping Class — RESOLVE VIA TOOLS (do NOT ask for the code directly, do NOT guess)
    Most engineers know pressure + material, not the project code (A1, B1N, etc.).
-   Drive the resolution by calling resolve_piping_class:
+   There are two input forms:
 
-   Tier 1 — ALWAYS ASK FIRST: pressure rating + material
-     "What pressure class and material? (e.g. 150# carbon steel, 600 SS316L NACE)"
-     Then call: resolve_piping_class(pressure_rating, material)
+   FORM A — duty point (barg + °C): the user gives operating pressure in barg and
+   temperature in °C (e.g. "25 barg at 150°C, CS 3 mm CA").
+     CRITICAL: NEVER convert barg → ASME class in your head. The mapping depends
+     on the P-T envelope of each class, which is temperature-dependent. Guessing
+     '25 barg ≈ 363 psi → 150#' is WRONG — at 150°C a 150# CS class only holds
+     ~15.8 barg, so 300# (B1) is required.
+     Call resolve_class_from_duty(pressure_barg, temperature_c, material, [ca], [service]).
+     The tool returns chosen_pressure_rating + spec_code. Use its answer verbatim.
 
-   Tier 2 — ONLY IF status='needs_ca':
-     The tool returns ca_options (e.g. ['3 mm', '6 mm']).
-     Ask: "Multiple classes match. What corrosion allowance — 3 mm or 6 mm?"
-     Show the candidate codes briefly so the engineer sees the options
-     (e.g. "A1N (3mm) for Glycol/FG/HC, A2N (6mm) for corrosive HC").
-     Then call: resolve_piping_class(pressure_rating, material, corrosion_allowance)
+   FORM B — ASME class (e.g. '150#', '300#', 'Class 600'): the user already knows
+   the rating. Call resolve_piping_class(pressure_rating, material, [ca], [service]).
 
-   Tier 3 — ONLY IF status='needs_service' (rare: GRE, tubing classes):
-     The tool returns service_options.
-     Ask: "Which service? Options: raw seawater (A50), hypochlorite (A51), special (A52)"
-     Then call: resolve_piping_class(..., service)
-
-   If status='no_match': read the hint and available_materials, then suggest
-   the closest valid material to the user.
+   Either tool may return:
+     status='unique'        → spec_code is the answer.
+     status='needs_ca'      → ask the user for CA from ca_options (e.g. 3 mm or 6 mm).
+                               Show candidate codes briefly so they see the trade-off
+                               (e.g. "A1N (3mm) for Glycol/FG/HC, A2N (6mm) for corrosive HC").
+                               Then call the same tool again with corrosion_allowance.
+     status='needs_service' → rare (GRE / tubing). Ask by service_options and call again.
+     status='no_match'      → read the hint; suggest the closest valid material.
 
    If the user already provides a specific code (A1, B1N, T80A) — use it directly,
    skip the resolver, and call query_pms to confirm.

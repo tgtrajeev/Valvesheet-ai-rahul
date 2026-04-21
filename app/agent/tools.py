@@ -26,7 +26,7 @@ from ..engine.validator import (
 )
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
-from ..engine.pms_resolver import get_pms_field_sources, resolve_piping_class
+from ..engine.pms_resolver import get_pms_field_sources, resolve_piping_class, resolve_class_from_duty
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
@@ -173,6 +173,46 @@ TOOL_DEFINITIONS = [
                 },
             },
             "required": [],
+        },
+    },
+    {
+        "name": "resolve_class_from_duty",
+        "description": (
+            "Pick the smallest ASME piping class whose P-T envelope safely holds a "
+            "duty point given in barg + °C. CALL THIS — do NOT guess — whenever the "
+            "user provides operating pressure in barg and temperature in °C instead "
+            "of an ASME class ('150#', '300#', ...). The tool interpolates each "
+            "class's P-T curve at the given temperature and returns the minimum rating "
+            "that holds the duty, then runs the standard CA / service disambiguation.\n"
+            "Never convert barg → ASME class in your head — this tool owns that lookup.\n"
+            "Returns the same shape as resolve_piping_class plus: chosen_pressure_rating, "
+            "allowable_at_temp_barg, duty, candidates_by_rating."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pressure_barg": {
+                    "type": "number",
+                    "description": "Operating / design pressure in barg (e.g. 25)."
+                },
+                "temperature_c": {
+                    "type": "number",
+                    "description": "Operating / design temperature in °C (e.g. 150)."
+                },
+                "material": {
+                    "type": "string",
+                    "description": "Line material — CS, CS NACE, LTCS, LTCS NACE, SS316L, SS316L NACE, DSS, DSS NACE, SDSS, SDSS NACE, CS GALV, etc. Natural-language synonyms accepted."
+                },
+                "corrosion_allowance": {
+                    "type": "string",
+                    "description": "Corrosion allowance — '3 mm', '6 mm', '1.5 mm', or 'NIL'. Optional; pass when the user specified CA."
+                },
+                "service": {
+                    "type": "string",
+                    "description": "Service type — 'hydrocarbon', 'seawater', etc. Optional; pass on follow-up if status='needs_service'."
+                },
+            },
+            "required": ["pressure_barg", "temperature_c", "material"],
         },
     },
     {
@@ -337,6 +377,7 @@ async def execute_tool(name: str, input_data: dict, project_id: str | None = Non
         "get_piping_class_info": _handle_piping_class_info,
         "generate_datasheet": _handle_generate,
         "resolve_piping_class": _handle_resolve_piping_class,
+        "resolve_class_from_duty": _handle_resolve_class_from_duty,
         "find_piping_class": _handle_find_piping_class,
         "validate_combination": _handle_validate,
         "explain_field": _handle_explain,
@@ -615,6 +656,25 @@ async def _handle_resolve_piping_class(input_data: dict) -> dict:
     """Deterministic 3-tier resolver: pressure+material -> CA -> service."""
     return resolve_piping_class(
         pressure_rating=input_data.get("pressure_rating"),
+        material=input_data.get("material"),
+        corrosion_allowance=input_data.get("corrosion_allowance"),
+        service=input_data.get("service"),
+    )
+
+
+async def _handle_resolve_class_from_duty(input_data: dict) -> dict:
+    """Pick the smallest ASME class whose P-T envelope holds (barg, °C)."""
+    try:
+        pressure_barg = float(input_data.get("pressure_barg"))
+        temperature_c = float(input_data.get("temperature_c"))
+    except (TypeError, ValueError):
+        return {
+            "status": "needs_input",
+            "hint": "pressure_barg and temperature_c are required numbers (e.g. 25, 150).",
+        }
+    return resolve_class_from_duty(
+        pressure_barg=pressure_barg,
+        temperature_c=temperature_c,
         material=input_data.get("material"),
         corrosion_allowance=input_data.get("corrosion_allowance"),
         service=input_data.get("service"),

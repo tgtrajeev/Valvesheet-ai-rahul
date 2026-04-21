@@ -298,6 +298,130 @@ def resolve_piping_class(
     }
 
 
+def _interpolate_pressure(breakpoints: list[dict], temperature_c: float) -> float | None:
+    """Linear interpolation on PT breakpoints. Returns None if temperature is above
+    the last breakpoint (no extrapolation — material/curve limit reached).
+
+    Below the first breakpoint the curve is flat (P at first breakpoint), matching
+    ASME B16.5 behavior for ambient-and-below temperatures.
+    """
+    pts: list[tuple[float, float]] = []
+    for b in breakpoints or []:
+        t = b.get("temp_c")
+        p = b.get("press_barg")
+        if t is None or p is None:
+            continue
+        pts.append((float(t), float(p)))
+    if not pts:
+        return None
+    pts.sort(key=lambda x: x[0])
+    if temperature_c <= pts[0][0]:
+        return pts[0][1]
+    if temperature_c > pts[-1][0]:
+        return None
+    for i in range(len(pts) - 1):
+        t_lo, p_lo = pts[i]
+        t_hi, p_hi = pts[i + 1]
+        if t_lo <= temperature_c <= t_hi:
+            if t_hi == t_lo:
+                return p_lo
+            frac = (temperature_c - t_lo) / (t_hi - t_lo)
+            return round(p_lo + frac * (p_hi - p_lo), 2)
+    return None
+
+
+def _rating_to_int(rating: str | None) -> int | None:
+    if not rating:
+        return None
+    m = re.search(r"\d+", rating)
+    return int(m.group(0)) if m else None
+
+
+def resolve_class_from_duty(
+    pressure_barg: float,
+    temperature_c: float,
+    material: str | None = None,
+    corrosion_allowance: str | None = None,
+    service: str | None = None,
+) -> dict:
+    """Pick the smallest ASME piping class whose P-T envelope holds the duty point.
+
+    Use this when the user gives operating pressure in barg and temperature in °C
+    instead of an ASME class code. The function iterates piping classes that match
+    the material (and optional CA), interpolates each class's P-T curve at the given
+    temperature, and picks the minimum ASME rating ('150#', '300#', ...) that safely
+    holds the duty. It then delegates to resolve_piping_class() for any remaining
+    CA / service disambiguation.
+
+    Returns the same shape as resolve_piping_class(), enriched with:
+      - chosen_pressure_rating: the ASME class that got picked (e.g. '300#')
+      - allowable_at_temp_barg: allowable pressure at temperature_c for that class
+      - duty: {"pressure_barg": ..., "temperature_c": ...}
+      - candidates_by_rating: diagnostic list of all classes considered
+    """
+    loader = get_pms_loader()
+    mat_tokens = _material_tokens(material)
+
+    adequate: dict[int, list[tuple[PmsSpec, float]]] = {}
+    considered: list[dict] = []
+
+    for code in loader.spec_codes:
+        spec = loader.get_spec(code)
+        if not spec or not spec.index_row:
+            continue
+        if mat_tokens and not _material_matches(mat_tokens, spec.header.material_description):
+            continue
+        if corrosion_allowance is not None and not _ca_equal(corrosion_allowance, spec.header.corrosion_allowance):
+            continue
+
+        rating_int = _rating_to_int(spec.header.pressure_rating)
+        if rating_int is None:
+            # Tubing / non-ASME classes — not selectable by ASME rating duty
+            continue
+
+        allowable = _interpolate_pressure(spec.index_row.pt_breakpoints, temperature_c)
+        holds = allowable is not None and allowable >= pressure_barg
+
+        considered.append({
+            "spec_code": code,
+            "pressure_rating": spec.header.pressure_rating,
+            "allowable_at_temp_barg": allowable,
+            "holds_duty": holds,
+        })
+
+        if holds:
+            adequate.setdefault(rating_int, []).append((spec, allowable))
+
+    if not adequate:
+        return {
+            "status": "no_match",
+            "hint": (
+                f"No piping class with material='{material}' can hold "
+                f"{pressure_barg} barg at {temperature_c}°C. Either the temperature "
+                f"exceeds the material's max, or a higher-rated class is required."
+            ),
+            "duty": {"pressure_barg": pressure_barg, "temperature_c": temperature_c},
+            "material": material,
+            "candidates_by_rating": considered,
+        }
+
+    min_rating_int = min(adequate.keys())
+    min_rating_str = f"{min_rating_int}#"
+    allowable_at_temp = adequate[min_rating_int][0][1]
+
+    base = resolve_piping_class(
+        pressure_rating=min_rating_str,
+        material=material,
+        corrosion_allowance=corrosion_allowance,
+        service=service,
+    )
+    base["chosen_pressure_rating"] = min_rating_str
+    base["allowable_at_temp_barg"] = allowable_at_temp
+    base["duty"] = {"pressure_barg": pressure_barg, "temperature_c": temperature_c}
+    base["candidates_by_rating"] = considered
+    return base
+
+
 def get_pms_field_sources(spec_code: str, data: dict[str, str]) -> dict[str, str]:
     """Generate granular PMS-aware field source descriptions.
 
