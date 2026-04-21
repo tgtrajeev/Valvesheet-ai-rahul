@@ -26,7 +26,7 @@ from ..engine.validator import (
 )
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
-from ..engine.pms_resolver import get_pms_field_sources
+from ..engine.pms_resolver import get_pms_field_sources, resolve_piping_class
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
@@ -137,11 +137,50 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "resolve_piping_class",
+        "description": (
+            "Deterministically resolve a piping class code from user-provided pressure "
+            "rating + material via a 3-tier flow. Call this FIRST when the user gives "
+            "pressure & material instead of a class code (e.g. '150# carbon steel sour'). "
+            "Returns one of:\n"
+            "- status='unique': spec_code is the answer (e.g. A1N).\n"
+            "- status='needs_ca': multiple matches; ask the user for corrosion allowance "
+            "(ca_options gives the values to offer).\n"
+            "- status='needs_service': pressure+material+CA still ambiguous (GRE / tubing "
+            "specials only); ask the user which service from service_options.\n"
+            "- status='no_match': no class fits; suggest available_materials.\n"
+            "Always pass pressure_rating + material on first call. Add corrosion_allowance "
+            "and/or service on follow-up calls when the previous response asked for them."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pressure_rating": {
+                    "type": "string",
+                    "description": "ASME pressure rating: '150', '300', '600', '900', '1500', '2500'. Pass null/omit for tubing classes."
+                },
+                "material": {
+                    "type": "string",
+                    "description": "Line material: CS, CS NACE, LTCS, LTCS NACE, SS316L, SS316L NACE, DSS, DSS NACE, SDSS, SDSS NACE, CS GALV, GRE, Copper, CuNi, CPVC, Titanium, 6 MO. Natural-language synonyms ('carbon steel sour', 'low temp carbon steel', 'stainless 316L') are accepted."
+                },
+                "corrosion_allowance": {
+                    "type": "string",
+                    "description": "CA in mm — '3 mm', '6 mm', '1.5 mm', or 'NIL'. Only provide on a follow-up call after status='needs_ca'."
+                },
+                "service": {
+                    "type": "string",
+                    "description": "Service type — 'seawater', 'hypochlorite', 'fuel oil', etc. Only provide on a follow-up call after status='needs_service'."
+                },
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "find_piping_class",
         "description": (
-            "Find the right piping class when the user specifies requirements like "
-            "'carbon steel, class 150, NACE compliant'. Returns matching piping classes "
-            "with their properties. Use this when the user doesn't know the piping class code."
+            "Browse / filter piping classes by broad criteria (material family, pressure floor, "
+            "NACE/LT flags). Use for exploratory questions like 'show me all CS NACE classes'. "
+            "For deterministic resolution from user inputs, prefer resolve_piping_class instead."
         ),
         "input_schema": {
             "type": "object",
@@ -297,6 +336,7 @@ async def execute_tool(name: str, input_data: dict, project_id: str | None = Non
         "find_valves": _handle_find_valves,
         "get_piping_class_info": _handle_piping_class_info,
         "generate_datasheet": _handle_generate,
+        "resolve_piping_class": _handle_resolve_piping_class,
         "find_piping_class": _handle_find_piping_class,
         "validate_combination": _handle_validate,
         "explain_field": _handle_explain,
@@ -390,6 +430,20 @@ async def _handle_generate(input_data: dict) -> dict:
                 data[field_key] = val.strip()
                 applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
+        # Inject standard footer notes if the index record doesn't carry them yet
+        # (the index was extracted before footer_notes were introduced).
+        if not data.get("datasheet_notes"):
+            try:
+                from ..engine.rule_engine import footer_notes_as_text
+                from ..engine.vds_decoder import decode_vds as _decode_for_notes
+                _decoded_for_notes = _decode_for_notes(vds_code)
+                data["datasheet_notes"] = footer_notes_as_text(
+                    _decoded_for_notes.valve_type.value,
+                    _decoded_for_notes.is_nace,
+                )
+            except Exception:
+                pass
+
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
@@ -397,14 +451,17 @@ async def _handle_generate(input_data: dict) -> dict:
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
-        # Seat vs design temperature (hard error, deterministic)
-        seat_errors = check_seat_design_temperature(
+        # Seat vs design temperature — warning, not fatal. PMS has already
+        # endorsed the VDS code for this class; the P-T upper endpoint is a
+        # class ceiling, not necessarily the actual service temperature.
+        seat_warnings = check_seat_design_temperature(
             data.get("design_pressure", ""), seat_from_vds_code(vds_code)
         )
 
         # Run full Phase 1 + Phase 2 validators (VMS/PMS rules) against index hits
         # too, so warnings surface in chat + preview + download for every datasheet.
         phase_warnings: list[str] = []
+        phase_notes: list[str] = []
         phase_errors: list[str] = []
         try:
             from ..engine.vds_decoder import decode_vds
@@ -435,6 +492,7 @@ async def _handle_generate(input_data: dict) -> dict:
                 size_inches=size_val,
             )
             phase_warnings = list(p1.warnings or []) + list(p2.warnings or [])
+            phase_notes = list(p1.notes or []) + list(p2.notes or [])
             # Index-hit codes are known-good per master reference — demote any
             # Phase 1 errors to warnings (would indicate stale index, not a real
             # invalid combination). Phase 2 errors are true conflicts (e.g.
@@ -448,7 +506,8 @@ async def _handle_generate(input_data: dict) -> dict:
             # seat_errors alone still apply.
             pass
 
-        all_errors = list(seat_errors) + phase_errors
+        all_errors = phase_errors
+        all_warnings = list(seat_warnings) + phase_warnings
         result = {
             "vds_code": vds_code,
             "data": data,
@@ -459,7 +518,8 @@ async def _handle_generate(input_data: dict) -> dict:
                 "is_valid": not all_errors,
                 "source": "known_spec",
                 "errors": all_errors,
-                "warnings": phase_warnings,
+                "warnings": all_warnings,
+                "notes": phase_notes,
             },
         }
         if all_errors:
@@ -526,9 +586,11 @@ async def _handle_generate(input_data: dict) -> dict:
     sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
     val_dump = validation.model_dump()
-    seat_errors = check_seat_design_temperature(data.get("design_pressure", ""), seat_code)
-    all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or []) + seat_errors
-    all_warnings = list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
+    # Seat vs design temp — warning, not fatal (see rationale in the index branch above)
+    seat_warnings = check_seat_design_temperature(data.get("design_pressure", ""), seat_code)
+    all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or [])
+    all_warnings = list(seat_warnings) + list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
+    all_notes = list(val_dump.get("notes", [])) + list(phase2.notes or [])
     result = {
         "vds_code": vds_code,
         "data": data,
@@ -539,6 +601,7 @@ async def _handle_generate(input_data: dict) -> dict:
             "is_valid": not all_errors,
             "errors": all_errors,
             "warnings": all_warnings,
+            "notes": all_notes,
         },
     }
     if all_errors:
@@ -546,6 +609,16 @@ async def _handle_generate(input_data: dict) -> dict:
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
     return result
+
+
+async def _handle_resolve_piping_class(input_data: dict) -> dict:
+    """Deterministic 3-tier resolver: pressure+material -> CA -> service."""
+    return resolve_piping_class(
+        pressure_rating=input_data.get("pressure_rating"),
+        material=input_data.get("material"),
+        corrosion_allowance=input_data.get("corrosion_allowance"),
+        service=input_data.get("service"),
+    )
 
 
 async def _handle_find_piping_class(input_data: dict) -> dict:

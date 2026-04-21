@@ -8,8 +8,25 @@ from ..models.schemas import DatasheetResponse
 from ..engine.knowledge import get_knowledge_base
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources
+from ..engine.rule_engine import footer_notes_as_text
+from ..engine.vds_decoder import decode_vds
 
 router = APIRouter()
+
+
+def _inject_footer_notes(code: str, data: dict) -> dict:
+    """Add standard datasheet_notes field if the record doesn't already carry one."""
+    if data.get("datasheet_notes"):
+        return data
+    try:
+        decoded = decode_vds(code)
+        data = dict(data)
+        data["datasheet_notes"] = footer_notes_as_text(
+            decoded.valve_type.value, decoded.is_nace
+        )
+    except Exception:
+        pass
+    return data
 
 
 @router.get("/datasheets/{vds_code}")
@@ -21,7 +38,7 @@ async def get_datasheet(vds_code: str, include_empty: bool = False):
     kb = get_knowledge_base()
     spec = kb.get(code)
     if spec:
-        data = spec.data
+        data = _inject_footer_notes(code, spec.data)
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
@@ -77,7 +94,7 @@ async def generate_batch(vds_codes: list[str]):
         code = code.upper().strip()
         spec = kb.get(code)
         if spec:
-            data = spec.data
+            data = _inject_footer_notes(code, spec.data)
             total = len(data)
             filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
             completion = round((filled / total * 100) if total else 0, 1)

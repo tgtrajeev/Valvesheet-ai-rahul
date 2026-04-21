@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     agent_model: str = "claude-sonnet-4-20250514"
     agent_temperature: float = 0.1
     agent_max_tokens: int = 4096
-    agent_max_tool_calls: int = 10
+    agent_max_tool_calls: int = 50
 
     # PMS external API (for syncing PMS from project systems)
     pms_api_base_url: str = ""          # empty = disabled; set when API is ready

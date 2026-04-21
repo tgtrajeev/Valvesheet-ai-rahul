@@ -35,6 +35,7 @@ class ValidationResult(BaseModel):
     is_valid: bool
     errors: list[str] = []
     warnings: list[str] = []
+    notes: list[str] = []
     suggestions: list[Suggestion] = []
 
 

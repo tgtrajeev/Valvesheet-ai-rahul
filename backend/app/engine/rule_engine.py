@@ -846,6 +846,48 @@ def _resolve_wedge_type(size_inches: float | None) -> str:
     return "Flexible wedge"
 
 
+# Item-4 forged-part noun per valve type for the standard footer-notes block.
+_FORGED_PART_BY_VALVE_TYPE = {
+    "BL": "Ball",
+    "BS": "Ball",
+    "DB": "Ball",
+    "GA": "Wedge",
+    "BF": "Disc",
+    "CH": "Disc",
+    "GL": "Disc",
+    "NE": "Needle",
+}
+
+
+def build_footer_notes(valve_type: str, is_nace: bool) -> list[str]:
+    """Standard datasheet footer notes block.
+
+    Six notes for NACE valves, five for non-NACE (NACE compliance note dropped).
+    Item 4 noun varies by valve type (Ball / Wedge / Disc / Needle).
+    """
+    forged_part = _FORGED_PART_BY_VALVE_TYPE.get(valve_type, "Disc")
+    notes = [
+        "This data sheet shall be completed and returned with the quotation. "
+        "Failure to return the completed data sheet will deem the offer technically not acceptable.",
+        "Data sheet shall be read in conjunction with Piping Material Specification, "
+        "Doc No. 40801-SPE-80000-PP-SP-0001.",
+        "Hydrostatic shell test pressure shall be 1.5 times of Max. design pressure, "
+        "and hydraulic seat test shall be 1.1 times of Max. design pressure for seats.",
+        f"{forged_part}, Stem and Gland material shall be forged, Castings are not acceptable.",
+        "All stud bolts and nuts shall be XYLAR 2 + XYLAN 1070 coated with minimum "
+        "combined thickness of 50\u03bcm.",
+    ]
+    if is_nace:
+        notes.append("Valve shall be in accordance with NACE MR0175 /ISO 15156-1/2/3.")
+    return notes
+
+
+def footer_notes_as_text(valve_type: str, is_nace: bool) -> str:
+    """Return the footer notes as a single numbered multi-line string."""
+    items = build_footer_notes(valve_type, is_nace)
+    return "\n".join(f"{i}. {note}" for i, note in enumerate(items, start=1))
+
+
 # ============================================================================
 # MAIN ENTRY POINT
 # ============================================================================
@@ -1173,5 +1215,9 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     # Override leakage rate for metal seated ball valves (must be AFTER PROJECT_CONSTANTS)
     if vt in ("BL", "BS") and seat == "M":
         data["leakage_rate"] = "Leakage rate not more than Rate 'B' per API 6D / ISO 5208 (metal seated ball valve)"
+
+    # Standard datasheet footer notes (numbered list rendered in XLSX Notes section
+    # and returned in API response). NACE variant adds note 6 (NACE MR0175 compliance).
+    data["datasheet_notes"] = footer_notes_as_text(vt, is_nace)
 
     return data

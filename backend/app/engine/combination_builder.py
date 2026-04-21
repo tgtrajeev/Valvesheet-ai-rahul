@@ -134,10 +134,9 @@ def generate_combinations(
         if spec not in VALID_SPEC_CODES:
             continue
 
-        # End connection fully determined by spec prefix
-        rule_ends = end_conn_for_spec(spec)
-
         for vt in vt_list:
+            # End connection is fully determined by (valve_type, spec) per PMS rule.
+            rule_ends = end_conn_for_spec(spec, vt)
             # Filter seats to those valid for this valve type
             rule_seats = [s for s in (VALID_SEATS_BY_TYPE.get(vt, ALL_SEATS)) if s in seat_list]
             if not rule_seats:

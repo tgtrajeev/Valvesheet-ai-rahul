@@ -29,6 +29,77 @@ TOOL_RETRY_DELAYS = [0.5, 1.0, 2.0]       # max 2 retries
 API_RETRY_DELAYS = [1.0, 2.0, 4.0]         # max 3 retries for rate limits
 
 
+def _strip_orphan_tool_blocks(messages: list[dict]) -> list[dict]:
+    """Remove tool_use / tool_result blocks whose counterpart is missing in the
+    adjacent message. Drops messages that become content-empty.
+
+    Anthropic requires every `tool_use` in an assistant message to be followed
+    by a matching `tool_result` in the next user message — and every
+    `tool_result` requires a matching `tool_use` in the previous assistant
+    message. Saved sessions can violate either rule when:
+      - a turn is interrupted (browser close, network drop, server restart)
+        before tool_results are appended → orphan tool_use
+      - history is sliced for token control and the cut lands between a
+        tool_use and its tool_result → orphan on either side
+    Stripping orphan blocks (rather than stubbing them) lets Claude cleanly
+    re-attempt or move on, instead of seeing a fake "tool errored" message.
+    """
+    if not messages:
+        return messages
+    cleaned: list[dict] = []
+    for i, msg in enumerate(messages):
+        content = msg.get("content")
+        if not isinstance(content, list):
+            cleaned.append(msg)
+            continue
+        role = msg.get("role")
+        if role == "assistant":
+            next_msg = messages[i + 1] if i + 1 < len(messages) else None
+            next_result_ids: set[str] = set()
+            if next_msg and next_msg.get("role") == "user" and isinstance(next_msg.get("content"), list):
+                for b in next_msg["content"]:
+                    if isinstance(b, dict) and b.get("type") == "tool_result":
+                        tid = b.get("tool_use_id")
+                        if tid:
+                            next_result_ids.add(tid)
+            new_content = [
+                b for b in content
+                if not (
+                    isinstance(b, dict)
+                    and b.get("type") == "tool_use"
+                    and b.get("id") not in next_result_ids
+                )
+            ]
+            if new_content:
+                cleaned.append({**msg, "content": new_content})
+        elif role == "user":
+            prev_msg = messages[i - 1] if i > 0 else None
+            prev_use_ids: set[str] = set()
+            if prev_msg and prev_msg.get("role") == "assistant" and isinstance(prev_msg.get("content"), list):
+                for b in prev_msg["content"]:
+                    if isinstance(b, dict) and b.get("type") == "tool_use":
+                        tid = b.get("id")
+                        if tid:
+                            prev_use_ids.add(tid)
+            new_content = [
+                b for b in content
+                if not (
+                    isinstance(b, dict)
+                    and b.get("type") == "tool_result"
+                    and b.get("tool_use_id") not in prev_use_ids
+                )
+            ]
+            if new_content:
+                cleaned.append({**msg, "content": new_content})
+        else:
+            cleaned.append(msg)
+
+    # Anthropic requires the conversation to start with a user message
+    while cleaned and cleaned[0].get("role") == "assistant":
+        cleaned = cleaned[1:]
+    return cleaned
+
+
 async def _retry_tool(tool_name: str, tool_input: dict, project_id: str | None = None) -> dict:
     """Execute a tool with retries on failure."""
     last_error = None
@@ -95,7 +166,7 @@ async def run_agent(
 
     # Build message history: prior session + new messages
     if prior_agent_messages:
-        anthropic_messages = list(prior_agent_messages)
+        anthropic_messages = _strip_orphan_tool_blocks(list(prior_agent_messages))
         # Append only new user messages (the last user message from request)
         new_user_msgs = [m for m in messages if m["role"] == "user"]
         if new_user_msgs:
@@ -223,25 +294,36 @@ async def run_agent(
         anthropic_messages.append({"role": "assistant", "content": assistant_content})
 
         # ── If no tool calls, we're done ──
-        if final.stop_reason != "tool_use" or not tool_uses:
+        # NOTE: must check tool_uses presence, not stop_reason. If stop_reason
+        # is 'max_tokens' but tool_uses exist, we still MUST emit tool_result
+        # blocks for every tool_use — otherwise the saved session state has
+        # dangling tool_use IDs and the next API call returns 400.
+        if not tool_uses:
             break
 
         # ── Execute tool calls ──
+        # CRITICAL: every tool_use in the assistant message must get a matching
+        # tool_result, even if execution is skipped (limit hit, error, etc.).
+        # Anthropic rejects the whole conversation otherwise.
         tool_results_content = []
+        limit_hit = False
 
         for tool_block in tool_uses:
             tool_call_count += 1
 
             if tool_call_count > max_calls:
-                yield AgentEvent(type="error", data={
-                    "message": f"Tool call limit ({max_calls}) reached. Stopping."
-                })
+                if not limit_hit:
+                    yield AgentEvent(type="error", data={
+                        "message": f"Tool call limit ({max_calls}) reached. Stopping."
+                    })
+                    limit_hit = True
+                # Stub a tool_result so this tool_use isn't dangling.
                 tool_results_content.append({
                     "type": "tool_result",
                     "tool_use_id": tool_block.id,
-                    "content": json.dumps({"error": "Tool call limit reached"}),
+                    "content": json.dumps({"error": "Tool call limit reached, skipped"}),
                 })
-                break
+                continue
 
             # Emit status + tool_call events
             _friendly_tool_msgs = {
@@ -317,6 +399,11 @@ async def run_agent(
 
         # Append tool results to message history for next loop iteration
         anthropic_messages.append({"role": "user", "content": tool_results_content})
+
+        # If we hit the tool-call limit, stop now — don't call Claude again with
+        # stubbed errors and risk an infinite stub-loop.
+        if limit_hit:
+            break
 
     # ── Emit internal state for session persistence (not sent to client) ──
     yield AgentEvent(type="_agent_state", data={

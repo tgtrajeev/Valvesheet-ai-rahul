@@ -196,8 +196,20 @@ def parse_size_inches(size_str: str | None) -> float | None:
         return None
 
 
-def end_conn_for_spec(spec: str) -> list[str]:
-    """Return all valid end connection codes — any end type can be used with any spec."""
+def end_conn_for_spec(spec: str, valve_type: str | None = None) -> list[str]:
+    """Return valid end connection codes for this (valve_type, spec).
+
+    When valve_type is provided and the pair is present in PMS, returns the
+    single PMS-derived end connection (per the rule: end connection is fully
+    determined by valve type + piping class + pressure + material — verified
+    100% on pms_extracted.json 2026-04-20). Falls back to the permissive list
+    only when the pair isn't in PMS.
+    """
+    if valve_type:
+        from .pms_derivations import get_end_conn
+        ec = get_end_conn(valve_type, spec)
+        if ec is not None:
+            return [ec]
     return ["R", "J", "F", "T", "H", "JT"]
 
 
@@ -222,6 +234,7 @@ def validate_combination(
     """
     errors: list[str] = []
     warnings: list[str] = []
+    notes: list[str] = []
     suggestions: list[Suggestion] = []
 
     vt = valve_type.upper().strip()
@@ -263,7 +276,7 @@ def validate_combination(
 
     # 4. End connection compatibility
     if ec and sp in VALID_SPEC_CODES:
-        valid_ends = end_conn_for_spec(sp)
+        valid_ends = end_conn_for_spec(sp, vt)
         if ec not in valid_ends:
             end_names = {"R": "RF", "J": "RTJ", "F": "FF", "JT": "RTJ+NPT"}
             errors.append(
@@ -460,11 +473,11 @@ def validate_combination(
             "acceptable per MY-K-20-PI-SP-0002 §6.22.1."
         )
 
-    # NACE / sour service warnings
+    # NACE / sour service — informational
     if "N" in sp and st != "M":
-        warnings.append(f"NACE spec '{sp}' — ensure all materials comply with NACE MR-01-75 / ISO 15156")
+        notes.append(f"NACE spec '{sp}' — ensure all materials comply with NACE MR-01-75 / ISO 15156")
     if "L" in sp:
-        warnings.append(f"Low-temperature spec '{sp}' — LTCS materials required, impact tested to -46°C min")
+        notes.append(f"Low-temperature spec '{sp}' — LTCS materials required, impact tested to -46°C min")
 
     # Soft seat temperature limit
     if st in ("T", "P"):
@@ -487,14 +500,14 @@ def validate_combination(
             "non-metallic seats/seals per MY-K-20-PI-SP-0002 Clause 15."
         )
 
-    # Rule: Pressure test standard selection (VMS §9.1)
+    # Pressure test standard selection (VMS §9.1) — class-level boilerplate, same for every valve of this class
     if pressure_class:
         if pressure_class <= 150:
-            warnings.append(
+            notes.append(
                 f"CL {pressure_class}: design per ASME B16.34, test per API STD 598 per MY-K-20-PI-SP-0002 §9.1."
             )
         else:
-            warnings.append(
+            notes.append(
                 f"CL {pressure_class}: design and test per API 6D for ball valves "
                 "and applicable codes per valve type per MY-K-20-PI-SP-0002 §9.1."
             )
@@ -577,9 +590,9 @@ def validate_combination(
             "per MY-K-20-PI-SP-0002 §7.8."
         )
 
-    # Rule: Torque limits (VMS §6.11.2)
+    # Torque limits (VMS §6.11.2) — boilerplate limits, not a per-valve warning
     if size_inches is not None and vt in ("BL", "BS", "BF", "GA", "GL", "NE"):
-        warnings.append(
+        notes.append(
             "Operation limits per MY-K-20-PI-SP-0002 §6.11.2: max 150 Nm handwheel, "
             "270 Nm lever, handwheel max 750 mm, lever max 500 mm/side, "
             "break force max 45 kg, mid-stroke max 35 kg."
@@ -590,6 +603,7 @@ def validate_combination(
         is_valid=is_valid,
         errors=errors,
         warnings=warnings,
+        notes=notes,
         suggestions=suggestions,
     )
 
@@ -612,6 +626,7 @@ def validate_datasheet(
     """
     errors: list[str] = []
     warnings: list[str] = []
+    notes: list[str] = []
 
     vt = valve_type.upper()
     pressure_class = _pressure_class_from_spec(spec)
@@ -681,8 +696,8 @@ def validate_datasheet(
                 "per MY-K-20-PI-SP-0002 Clause 9."
             )
 
-    # Rule 38: Lifting lug if weight >= 25 kg
-    warnings.append(
+    # Rule 38: Lifting lug — conditional on weight (unknown at validation time), boilerplate reference
+    notes.append(
         "Lifting lug required if valve weight >= 25 kg (design load 2x lift weight) "
         "per MY-K-20-PI-SP-0002 Clause 14."
     )
@@ -703,23 +718,23 @@ def validate_datasheet(
             "100% RT per ASME B16.34 Annexure B irrespective of rating per MY-K-20-PI-SP-0002 §9.2."
         )
 
-    # Rule: Flange surface finish (VMS §4.3 ASME B46.1 / MSS SP-6)
+    # Flange surface finish (VMS §4.3 ASME B46.1 / MSS SP-6) — boilerplate for all flanged valves
     end_conn = data.get("end_connections", "")
     if "flanged" in end_conn.lower():
-        warnings.append(
+        notes.append(
             "Flange jointing faces: machine finished per ASME B16.5 Para 6.4.5, "
             "surface finish per ASME B46.1 / MSS SP-6. No radial tool marks permitted. "
             "RTJ groove hardness per corresponding piping class per MY-K-20-PI-SP-0002 §6.22.1."
         )
 
-    # Rule: Material certification (VMS §8.0, BS EN 10204)
-    warnings.append(
+    # Material certification (VMS §8.0, BS EN 10204) — applies to every valve
+    notes.append(
         "Material certification: Pressure retaining parts per BS EN 10204 Type 3.2, "
         "other parts per BS EN 10204 Type 3.1 per MY-K-20-PI-SP-0002 §8.0."
     )
 
-    # Rule: Pressure testing standards (VMS §9.1, BS 6755, BS EN ISO 5208)
-    warnings.append(
+    # Pressure testing standards (VMS §9.1) — applies to every valve
+    notes.append(
         "Pressure testing per API STD 598 / BS EN ISO 5208 / BS 6755 as applicable. "
         "Test sequence: body hydro, seat hydro, LP pneumatic seat per MY-K-20-PI-SP-0002 §9.1."
     )
@@ -761,4 +776,5 @@ def validate_datasheet(
         is_valid=len(errors) == 0,
         errors=errors,
         warnings=warnings,
+        notes=notes,
     )
