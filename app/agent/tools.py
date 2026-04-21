@@ -482,6 +482,20 @@ async def _handle_generate(input_data: dict) -> dict:
                     old_val = data.get(field_key, "")
                     data[field_key] = val
                     applied_overrides[field_key] = {"from": old_val, "to": val}
+
+                # Cascade: if the user's new size landed, re-derive every
+                # size-dependent field (operation, mounting, wedge, body_form,
+                # NDT, fire rating, …). Otherwise the card would carry the
+                # old size's operation alongside the new size.
+                if "size_range" in ov.safe:
+                    new_size_val = parse_size_inches(ov.safe["size_range"])
+                    if new_size_val is not None:
+                        from ..engine.rule_engine import apply_size_cascade
+                        cascaded = apply_size_cascade(
+                            data, _decoded_for_validate, new_size_val
+                        )
+                        if cascaded:
+                            applied_overrides["_cascaded_fields"] = cascaded
             except Exception:
                 # Decode failure → fall back to the old blind-merge so we don't
                 # regress on legacy codes that can't be decoded.
@@ -620,8 +634,10 @@ async def _handle_generate(input_data: dict) -> dict:
     # ── Step 3: Generate datasheet from rules + PMS data ──
     # Generate even when validation has errors (draft mode) so the Excel
     # download can include the red error section for client review.
-    from ..engine.rule_engine import generate_datasheet as rule_generate
-    data = rule_generate(decoded)
+    # Pass size_val so size-dependent fields (operation, mounting, wedge,
+    # NDT, fire_rating) come out correctly on the first pass.
+    from ..engine.rule_engine import generate_datasheet as rule_generate, apply_size_cascade
+    data = rule_generate(decoded, size_inches=size_val)
 
     # Validate user overrides BEFORE applying (same flow as the index path).
     applied_overrides: dict = {}
@@ -635,6 +651,15 @@ async def _handle_generate(input_data: dict) -> dict:
             old_val = data.get(field_key, "")
             data[field_key] = val
             applied_overrides[field_key] = {"from": old_val, "to": val}
+
+        # Cascade: if size was just edited (and differs from size_val above),
+        # re-derive size-dependent fields with the new value.
+        if "size_range" in ov.safe:
+            new_size_val = parse_size_inches(ov.safe["size_range"])
+            if new_size_val is not None and new_size_val != size_val:
+                cascaded = apply_size_cascade(data, decoded, new_size_val)
+                if cascaded:
+                    applied_overrides["_cascaded_fields"] = cascaded
 
     # Phase 2: size-dependent VMS/PMS rules
     phase2 = validate_datasheet(

@@ -894,6 +894,196 @@ def footer_notes_as_text(valve_type: str, is_nace: bool) -> str:
 
 
 # ============================================================================
+# SIZE CASCADE — re-derive size-dependent fields in place after a size edit
+# ============================================================================
+
+# Fields that are a pure function of size (and for some, size + class). When
+# the user changes size on an already-generated sheet, these must be
+# re-derived; otherwise the card shows a lever for a 24" gear-operated ball
+# or a solid wedge on a 10" gate. Fields driven by valve_type / seat / PMS
+# stay put — they don't depend on size.
+_SIZE_DEPENDENT_FIELDS = {
+    "operation",
+    "ball_construction",
+    "ball_mounting_type",
+    "dbb_feature",
+    "seat_loading",
+    "body_vent_drain",
+    "sealant_injection",
+    "body_cavity_relief",
+    "wedge_construction",
+    "body_construction",
+    "dbb_end_connection",
+    "seat_construction",
+    "check_valve_note",
+    "body_form",
+    "body_material",
+    "valve_standard",
+    "fire_rating",
+    "ndt_extent",
+    "extended_stem",
+    "forged_valve_ndt",
+    "size_range",
+}
+
+
+def apply_size_cascade(
+    data: dict[str, str],
+    decoded: DecodedVDS,
+    size_inches: float | None,
+) -> list[str]:
+    """Re-derive every size-dependent field in place for the new size.
+
+    Called after a user's size override has been accepted. Returns the list
+    of field names that actually changed, so callers can surface a cascade
+    summary to the user (e.g. "size 2\" → 8\" also updated: operation,
+    ball_mounting_type, ndt_extent").
+
+    Leaves non-size-dependent fields (materials, gaskets, bolting, PMS-sourced
+    values) untouched. Does NOT mutate decoded.
+    """
+    if size_inches is None:
+        return []
+
+    vt = decoded.valve_type.value
+    design = decoded.design
+    seat = decoded.seat_type.value if decoded.seat_type else "M"
+    pc = decoded.piping_class
+    ec = decoded.end_connection
+    is_nace = decoded.is_nace
+    cat = _get_material_category(pc)
+    pc_letter = pc[0] if pc else "A"
+    pc_num = _PRESSURE_CLASS_NUM.get(pc_letter, 150)
+
+    changed: list[str] = []
+
+    def _set(field: str, value: str) -> None:
+        if not value and value != 0:
+            return
+        if str(data.get(field, "")) != str(value):
+            data[field] = value
+            changed.append(field)
+
+    # Operation (lever vs gear vs handwheel — size × class × valve type)
+    _set("operation", _resolve_operation(vt, size_inches, pc_num))
+
+    # Valve standard — ball size/class bump to API 6D above 24" or >600#
+    if vt in ("BL", "BS") and seat == "M":
+        _set("valve_standard", VALVE_STANDARD.get("BL_METAL", VALVE_STANDARD.get(vt, "")))
+    elif vt in ("BL", "BS"):
+        if size_inches > 24 or pc_num > 600:
+            _set("valve_standard", "API SPEC 6D / ISO 14313")
+        else:
+            _set("valve_standard", VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, "")))
+
+    # Ball valve mounting + dependent construction (floating vs trunnion)
+    if vt in ("BL", "BS"):
+        mounting = _resolve_ball_mounting(size_inches, pc_num)
+        _set("ball_construction", f'{mounting["description"]}, no vent hole, Solid Type')
+        _set("ball_mounting_type", mounting["type"])
+        # Clear the "other mounting" fields so we don't leave stale text around.
+        if mounting["type"] == "Trunnion":
+            _set("dbb_feature", "Double Block and Bleed capability")
+            _set("seat_loading", "Spring-loaded seat rings")
+            _set("body_vent_drain", "Body vent and drain fitted with NPT threaded plugs")
+            sealant_min = _SEALANT_INJECTION.get(pc_num, 0)
+            if size_inches >= sealant_min:
+                _set("sealant_injection", "Seat sealant injection system fitted")
+            else:
+                _set("sealant_injection", "")
+            _set("body_cavity_relief", "")
+        elif mounting["type"] == "Floating":
+            _set("body_cavity_relief", "Body cavity pressure relief required")
+            _set("dbb_feature", "")
+            _set("seat_loading", "")
+            _set("body_vent_drain", "")
+            _set("sealant_injection", "")
+        # Fire rating follows mounting type
+        if mounting["type"] == "Trunnion":
+            _set("fire_rating", "API SPEC 6FA (Trunnion), third-party witnessed")
+        elif mounting["type"] == "Floating":
+            _set("fire_rating", "API STD 607 / BS EN ISO 10497 (Floating), third-party witnessed")
+
+    # Gate wedge type
+    if vt == "GA":
+        _set("wedge_construction", _resolve_wedge_type(size_inches))
+
+    # DBB construction (one-piece ≤ 2" vs three-piece > 2")
+    if vt == "DB":
+        if size_inches <= 2:
+            _set("body_construction", "One-piece forged body, integral construction")
+            _set("dbb_end_connection", 'Flange x 1/2" NPT')
+        else:
+            _set("body_construction", "Three-piece bolted body")
+            _set("dbb_end_connection", "Flanged both ends")
+
+    # Check valve small bore → piston type
+    if vt == "CH":
+        if size_inches <= 1.5:
+            _set(
+                "body_construction",
+                'Integral Flanged, Bolted Cover (Piston Type required for 1/2"-1-1/2")',
+            )
+            _set("seat_construction", "Spring assisted Metal to metal, Renewable Seat Ring")
+            _set("operation", "Horizontal installation only (piston type check valve)")
+            _set(
+                "check_valve_note",
+                'Small bore check valves (1/2"-1-1/2") SHALL be Piston Type, '
+                "horizontal only per MY-K-20-PI-SP-0002 §6.2",
+            )
+        else:
+            # Clear small-bore-only fields if the size moved up past 1.5"
+            _set("check_valve_note", "")
+
+    # Body form (forged threshold at 1.5")
+    if size_inches <= 1.5:
+        _set("body_form", "Forged")
+    else:
+        _set("body_form", "Cast or Forged")
+
+    # Body material — reduce to forged-only for small sizes
+    body_mat = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
+    if size_inches <= 1.5:
+        parts = body_mat.split("/")
+        forged_parts = [p.strip() for p in parts if "forged" in p.lower()]
+        if forged_parts:
+            body_mat = forged_parts[0]
+    _set("body_material", body_mat)
+
+    # End connection detail (may be size-dependent for some specs)
+    end_conn_str = _resolve_end_connection(ec, pc, cat, size_inches)
+    if end_conn_str:
+        _set("end_connections", end_conn_str)
+
+    # NDT extent (size × class × material)
+    _set("ndt_extent", _resolve_ndt_extent(pc_num, size_inches, cat))
+
+    # Extended stem (insulated lines — size-banded)
+    _set("extended_stem", _resolve_extended_stem(size_inches))
+
+    # Forged-valve NDT (size ≥ 2" and class ≥ 600)
+    if size_inches >= 2 and pc_num >= 600:
+        if cat in ("LTCS_NACE",):
+            _set(
+                "forged_valve_ndt",
+                'MPE per ASTM A-275, acceptance per ASME B16.34 Annexe C '
+                '(LTCS forged ≥2", ≥600#)',
+            )
+        elif cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE"):
+            _set(
+                "forged_valve_ndt",
+                'LPE per ASTM E-165, acceptance per ASME B16.34 Annexe D '
+                '(SS/alloy forged ≥2", ≥600#)',
+            )
+    else:
+        # Don't leave a stale forged-NDT string when size/class drops below the threshold
+        if "forged_valve_ndt" in data:
+            _set("forged_valve_ndt", "")
+
+    return changed
+
+
+# ============================================================================
 # MAIN ENTRY POINT
 # ============================================================================
 
