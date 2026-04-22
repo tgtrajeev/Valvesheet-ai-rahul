@@ -271,21 +271,54 @@ Call generate_datasheet
 
 NEVER generate without confirmation
 
-DUTY FIELDS MUST FLOW TO THE DATASHEET:
-When the user has given specific operating conditions (pressure in barg,
-temperature in °C), pass them to generate_datasheet as overrides so they
-appear on the card and in the Excel export:
+USER-MENTIONED FIELDS MUST FLOW TO THE DATASHEET (ALL OF THEM):
+Every value the user states in their prompt — duty, size, descriptive
+fields, identifiers — must be passed to generate_datasheet as overrides
+so they appear on the card and in the Excel export. Do not drop any.
+
+Fields split into three categories:
+
+  A) STRUCTURAL — baked into the VDS code itself, NOT overrides.
+     Use these to pick/resolve the vds_code (via search_valves or
+     resolve_class_from_duty), do NOT include them in `overrides`:
+       valve_type, piping_class, pressure_class, body_material,
+       seat_material, design, bore, end_connections
+
+  B) DUTY — validated against the class P-T envelope before landing:
+       design_pressure, design_temperature
+
+  C) DESCRIPTIVE / IDENTIFIER — free-form, applied directly:
+       size (size_range), service, corrosion_allowance,
+       sour_service, fluid_state, fire_rating,
+       tag_number, line_number, project_name, quantity,
+       operating_pressure, operating_temperature
+
+Pass EVERY B + C field the user mentioned. Example — if the user said
+"25 barg, 150°C, 8" full bore ball valve, CS, 3 mm CA, hydrocarbon
+service, tag BV-101, line L-200, project XYZ, qty 2":
 
   generate_datasheet(
     vds_code="...",
     overrides={
-      "design_pressure": "25 barg",       # user-supplied barg
-      "design_temperature": "150°C",      # user-supplied °C
-      "size": "8\"",                      # if specified
-      "service": "Hydrocarbon",           # if specified
-      # ... plus any other overrides the user mentioned
+      "design_pressure": "25 barg",
+      "design_temperature": "150°C",
+      "size": "8\"",
+      "service": "Hydrocarbon",
+      "corrosion_allowance": "3 mm",
+      "tag_number": "BV-101",
+      "line_number": "L-200",
+      "project_name": "XYZ",
+      "quantity": "2",
     },
   )
+
+(CS, full bore, ball valve are structural — they picked the vds_code;
+they do NOT go in `overrides`.)
+
+Every override is validated:
+  - A-category values in `overrides` → rejected (reason: baked into VDS)
+  - B-category values → P-T envelope check; rejected if unsafe
+  - C-category values → applied as-is
 
 When the user asks to CHANGE a field on an already-generated datasheet
 (e.g. "change temperature to 180°C", "make it 30 barg", "size 10\""):
@@ -296,9 +329,9 @@ When the user asks to CHANGE a field on an already-generated datasheet
   2. If the change stays within the current class's P-T envelope
      (check with resolve_class_from_duty), keep the same vds_code — the
      frontend will replace the existing card in place.
-  3. Always include ALL user-specified duty fields in every override
-     call, not just the one being changed, so the card doesn't lose
-     previously-supplied values.
+  3. Always include ALL previously-supplied user fields (B + C
+     categories above) in every override call, not just the one being
+     changed, so the card doesn't lose earlier values.
 
 HANDLING REJECTED OVERRIDES (CRITICAL):
 generate_datasheet validates every override against engineering rules
