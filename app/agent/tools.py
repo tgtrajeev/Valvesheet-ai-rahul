@@ -845,10 +845,11 @@ def _reformat_design_pressure_envelope(
     rating envelope, not the service duty scalar.
     """
     # Preserve the user's scalar duty pressure (before we overwrite design_pressure).
+    # Underscore-prefix marks it internal — the UI filters those out.
     if "design_pressure" in applied_overrides:
         scalar_barg = _extract_scalar_barg(applied_overrides["design_pressure"].get("to", ""))
         if scalar_barg is not None:
-            data["duty_pressure_barg"] = f"{scalar_barg:g}"
+            data["_duty_pressure_barg"] = f"{scalar_barg:g}"
 
     # Upper temp: prefer whatever design_temperature currently sits on data.
     temp_c = _extract_temp_c(data.get("design_temperature", ""))

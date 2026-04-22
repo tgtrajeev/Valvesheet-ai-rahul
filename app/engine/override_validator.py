@@ -154,9 +154,9 @@ def _check_duty(
     """
     # Scalar duty pressure lookup:
     #   1. from the proposed override (new_pressure arg), if present
-    #   2. from the hidden duty_pressure_barg field (preserved across edits)
+    #   2. from the hidden _duty_pressure_barg field (preserved across edits)
     #   3. from design_pressure directly, if it's a scalar (not an envelope)
-    cur_p_barg = _extract_scalar_barg(data.get("duty_pressure_barg", ""))
+    cur_p_barg = _extract_scalar_barg(data.get("_duty_pressure_barg", ""))
     if cur_p_barg is None:
         cur_p_barg = _extract_scalar_barg(data.get("design_pressure", ""))
     cur_t_c = _extract_temp_c(data.get("design_temperature", ""))
