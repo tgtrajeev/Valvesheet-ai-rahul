@@ -30,9 +30,8 @@ from ..engine.pms_resolver import (
     get_pms_field_sources,
     resolve_piping_class,
     resolve_class_from_duty,
-    format_class_envelope,
 )
-from ..engine.override_validator import validate_overrides, _extract_temp_c, _extract_scalar_barg
+from ..engine.override_validator import validate_overrides
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
@@ -502,11 +501,6 @@ async def _handle_generate(input_data: dict) -> dict:
                         if cascaded:
                             applied_overrides["_cascaded_fields"] = cascaded
 
-                # Reformat design_pressure as class envelope at the user's
-                # design_temperature (datasheet convention).
-                _reformat_design_pressure_envelope(
-                    data, _decoded_for_validate, applied_overrides
-                )
             except Exception:
                 # Decode failure → fall back to the old blind-merge so we don't
                 # regress on legacy codes that can't be decoded.
@@ -672,9 +666,6 @@ async def _handle_generate(input_data: dict) -> dict:
                 if cascaded:
                     applied_overrides["_cascaded_fields"] = cascaded
 
-        # Reformat design_pressure as class envelope at the user's design_temperature.
-        _reformat_design_pressure_envelope(data, decoded, applied_overrides)
-
     # Phase 2: size-dependent VMS/PMS rules
     phase2 = validate_datasheet(
         data=data,
@@ -828,44 +819,6 @@ async def _handle_explain(input_data: dict) -> dict:
         }
 
     return {"error": f"Field '{field_name}' not found.", "available_fields": list(all_fields.keys())[:20]}
-
-
-def _reformat_design_pressure_envelope(
-    data: dict,
-    decoded,
-    applied_overrides: dict,
-) -> None:
-    """After overrides are applied, if the user has set a design_temperature
-    (now or earlier), re-render data["design_pressure"] as the class's P-T
-    envelope with the user's temperature as the upper endpoint.
-
-    The user's scalar duty pressure (if they supplied one) is preserved in a
-    hidden field duty_pressure_barg so later edits can still validate against
-    it. Engineering convention: Design Pressure on a datasheet is the class
-    rating envelope, not the service duty scalar.
-    """
-    # Preserve the user's scalar duty pressure (before we overwrite design_pressure).
-    # Underscore-prefix marks it internal — the UI filters those out.
-    if "design_pressure" in applied_overrides:
-        scalar_barg = _extract_scalar_barg(applied_overrides["design_pressure"].get("to", ""))
-        if scalar_barg is not None:
-            data["_duty_pressure_barg"] = f"{scalar_barg:g}"
-
-    # Upper temp: prefer whatever design_temperature currently sits on data.
-    temp_c = _extract_temp_c(data.get("design_temperature", ""))
-    if temp_c is None:
-        return
-
-    envelope = format_class_envelope(decoded.piping_class, temp_c)
-    if envelope is None:
-        return
-
-    before = data.get("design_pressure", "")
-    if before != envelope:
-        data["design_pressure"] = envelope
-        # Record the cascade in applied_overrides so the agent can call it out.
-        ao = applied_overrides.setdefault("design_pressure", {"from": before, "to": envelope})
-        ao["to"] = envelope  # make sure the "to" reflects the final display string
 
 
 def _normalize_field_name(name: str) -> str:
