@@ -842,6 +842,16 @@ def _normalize_field_name(name: str) -> str:
         "design_press": "design_pressure",
         "dp": "design_pressure",
         "fire_safe": "fire_rating",
+        "ca": "corrosion_allowance",
+        "corrosion": "corrosion_allowance",
+        "nace": "sour_service",
+        "sour": "sour_service",
+        "hydrotest": "hydrotest_shell",
+        "shell_test": "hydrotest_shell",
+        "closure_test": "hydrotest_closure",
+        "gasket": "gaskets",
+        "bolt": "bolts",
+        "nut": "nuts",
     }
     normalized = name.lower().strip().replace(" ", "_")
     return aliases.get(normalized, normalized)

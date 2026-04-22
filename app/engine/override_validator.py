@@ -57,6 +57,14 @@ DUTY_FIELDS: set[str] = {"design_pressure", "design_temperature"}
 # Size triggers a size-vs-valve-type re-validation.
 SIZE_FIELDS: set[str] = {"size_range"}
 
+# PMS-governed fields — validated against the class's PMS entry.
+CA_FIELDS: set[str] = {"corrosion_allowance"}
+SOUR_FIELDS: set[str] = {"sour_service"}
+HYDROTEST_FIELDS: set[str] = {"hydrotest_shell", "hydrotest_closure"}
+BOLTING_FIELDS: set[str] = {"gaskets", "bolts", "nuts"}
+FIRE_FIELDS: set[str] = {"fire_rating"}
+OPERATION_FIELDS: set[str] = {"operation"}
+
 
 @dataclass
 class OverrideDecision:
@@ -207,6 +215,178 @@ def _check_seat_vs_temperature(
     return ("safe", "")
 
 
+def _normalize_ca(s: str) -> str:
+    """Normalize '3 mm' / '3mm' / '3' / '3.0 mm' to a compact form for comparison."""
+    if not s:
+        return ""
+    m = re.search(r"(\d+(?:\.\d+)?)", str(s))
+    if not m:
+        return str(s).strip().lower()
+    # Strip trailing zero decimal so "3.0" == "3"
+    n = float(m.group(1))
+    return f"{n:g}mm"
+
+
+def _is_truthy(s: str) -> bool:
+    return str(s).strip().lower() in {"yes", "true", "y", "1", "nace", "sour"}
+
+
+def _check_corrosion_allowance(
+    decoded: DecodedVDS,
+    proposed: str,
+) -> tuple[str, str]:
+    """User can only set a CA that matches the class's PMS entry — PMS defines
+    one CA per class. Changing the CA means a different piping class."""
+    loader = get_pms_loader()
+    spec = loader.get_spec(decoded.piping_class)
+    if not spec or not spec.header or not spec.header.corrosion_allowance:
+        return ("safe", "")
+    want = _normalize_ca(proposed)
+    have = _normalize_ca(spec.header.corrosion_allowance)
+    if not want or not have:
+        return ("safe", "")
+    if want == have:
+        return ("safe", "")
+    return (
+        "rejected",
+        f"Corrosion allowance '{proposed}' does not match class {decoded.piping_class} "
+        f"({spec.header.corrosion_allowance}). CA is fixed per class — changing it "
+        f"requires a different piping class (e.g. a CA-variant spec). Start a new VDS.",
+    )
+
+
+def _check_sour_service(
+    decoded: DecodedVDS,
+    proposed: str,
+) -> tuple[str, str]:
+    """Setting sour_service=true requires a NACE-variant piping class
+    (codes with 'N' in them: B1N, D1N, F1N, ...)."""
+    if not _is_truthy(proposed):
+        return ("safe", "")  # turning sour off is always fine
+    if decoded.is_nace:
+        return ("safe", "")
+    return (
+        "rejected",
+        f"Sour service requires a NACE piping class (e.g. {decoded.piping_class}N). "
+        f"Class {decoded.piping_class} is not NACE-qualified — generate a new VDS "
+        f"with the N-variant class.",
+    )
+
+
+def _check_hydrotest(
+    decoded: DecodedVDS,
+    field_name: str,
+    proposed: str,
+) -> tuple[str, str]:
+    """Hydrotest must be ≥ the PMS-defined value for the class (per API 598,
+    typically 1.5× cold rated pressure). Editing below the code minimum is
+    unsafe."""
+    loader = get_pms_loader()
+    spec = loader.get_spec(decoded.piping_class)
+    if not spec:
+        return ("safe", "")
+    required = None
+    if spec.index_row and spec.index_row.hydrotest_barg:
+        required = float(spec.index_row.hydrotest_barg)
+    elif spec.header and spec.header.hydrotest_pressure_barg:
+        required = float(spec.header.hydrotest_pressure_barg)
+    if required is None:
+        return ("safe", "")
+
+    proposed_barg = _extract_scalar_barg(proposed)
+    if proposed_barg is None:
+        return ("warning", f"Could not parse hydrotest value '{proposed}' — skipping code check.")
+
+    if proposed_barg + 1e-6 < required:
+        return (
+            "rejected",
+            f"{field_name}: {proposed_barg:g} barg is below the code minimum "
+            f"{required:g} barg for {decoded.piping_class} (API 598: 1.5× rated). "
+            f"Use ≥ {required:g} barg.",
+        )
+    return ("safe", "")
+
+
+def _check_bolting(
+    decoded: DecodedVDS,
+    field_name: str,
+    proposed: str,
+) -> tuple[str, str]:
+    """Gaskets / bolts / nuts must match the PMS spec for the class."""
+    loader = get_pms_loader()
+    spec = loader.get_spec(decoded.piping_class)
+    if not spec or not spec.bolting_gaskets:
+        return ("safe", "")
+    pms_value = None
+    if field_name == "gaskets":
+        pms_value = spec.bolting_gaskets.gasket_spec
+    elif field_name == "bolts":
+        pms_value = spec.bolting_gaskets.stud_bolt_spec
+    elif field_name == "nuts":
+        pms_value = spec.bolting_gaskets.hex_nut_spec
+    if not pms_value:
+        return ("safe", "")
+
+    if str(proposed).strip().lower() == str(pms_value).strip().lower():
+        return ("safe", "")
+    return (
+        "rejected",
+        f"{field_name.title()} '{proposed}' does not match the PMS spec for "
+        f"{decoded.piping_class} ('{pms_value}'). Bolting/gasket selections are "
+        f"governed by the piping class.",
+    )
+
+
+def _check_fire_rating(
+    decoded: DecodedVDS,
+    proposed: str,
+) -> tuple[str, str]:
+    """Soft-seated ball/gate valves require fire test certification (API 607 /
+    BS EN ISO 10497). Removing fire rating on a soft seat is a warning."""
+    seat_code = decoded.seat_type.value if decoded.seat_type else None
+    # Soft seats: T (PTFE), L (low-friction polymer), P (polyamide/nylon variants)
+    soft_seats = {"T", "L", "P"}
+    if seat_code not in soft_seats:
+        return ("safe", "")
+    prop = str(proposed).strip().lower()
+    if prop in {"", "-", "none", "no", "nr", "not required", "n/a"}:
+        return (
+            "warning",
+            f"Seat '{seat_code}' is soft — API 607 / BS EN ISO 10497 fire test "
+            f"certification is required. Removing fire rating may fail client acceptance.",
+        )
+    return ("safe", "")
+
+
+def _check_operation(
+    decoded: DecodedVDS,
+    data: dict,
+    proposed: str,
+    concurrent_size: str | None = None,
+) -> tuple[str, str]:
+    """Per MY-K-20-PI-SP-0002 Clause 9: ball/gate/globe ≥ 6" at class ≥ 300
+    require gear operation. Manual/lever on such valves is a warning.
+
+    If size is being changed in the same overrides batch, use that value
+    instead of the stale data size_range (which is often a full range like
+    '1/2" - 24"' on index-hit sheets)."""
+    prop = str(proposed).strip().lower()
+    if "gear" in prop or "actuator" in prop or "motor" in prop:
+        return ("safe", "")
+    size_str = concurrent_size if concurrent_size else data.get("size_range", "")
+    size_val = parse_size_inches(size_str)
+    rating_int = _class_rating_int(decoded.piping_class)
+    if size_val is None or rating_int is None:
+        return ("safe", "")
+    if size_val >= 6 and rating_int >= 300 and decoded.valve_type.value in ("BL", "GT", "GL"):
+        return (
+            "warning",
+            f"Size {size_val:g}\" at class {rating_int}#: gear operation is required "
+            f"per MY-K-20-PI-SP-0002 Clause 9. '{proposed}' may not meet torque limits.",
+        )
+    return ("safe", "")
+
+
 def _check_size(
     decoded: DecodedVDS,
     new_size: str,
@@ -259,6 +439,7 @@ def validate_overrides(
 
     new_pressure_val = normalized.get("design_pressure", (None, None))[1]
     new_temperature_val = normalized.get("design_temperature", (None, None))[1]
+    new_size_val = normalized.get("size_range", (None, None))[1]
 
     for canonical, (raw_key, value) in normalized.items():
         current = str(data.get(canonical, ""))
@@ -298,6 +479,36 @@ def validate_overrides(
 
         elif canonical in SIZE_FIELDS:
             status, reason = _check_size(decoded, value)
+            decision.status = status
+            decision.reason = reason
+
+        elif canonical in CA_FIELDS:
+            status, reason = _check_corrosion_allowance(decoded, value)
+            decision.status = status
+            decision.reason = reason
+
+        elif canonical in SOUR_FIELDS:
+            status, reason = _check_sour_service(decoded, value)
+            decision.status = status
+            decision.reason = reason
+
+        elif canonical in HYDROTEST_FIELDS:
+            status, reason = _check_hydrotest(decoded, canonical, value)
+            decision.status = status
+            decision.reason = reason
+
+        elif canonical in BOLTING_FIELDS:
+            status, reason = _check_bolting(decoded, canonical, value)
+            decision.status = status
+            decision.reason = reason
+
+        elif canonical in FIRE_FIELDS:
+            status, reason = _check_fire_rating(decoded, value)
+            decision.status = status
+            decision.reason = reason
+
+        elif canonical in OPERATION_FIELDS:
+            status, reason = _check_operation(decoded, data, value, new_size_val)
             decision.status = status
             decision.reason = reason
 
