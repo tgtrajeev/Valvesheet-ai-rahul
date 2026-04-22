@@ -76,7 +76,20 @@ You must collect these 4 inputs:
                                (e.g. "A1N (3mm) for Glycol/FG/HC, A2N (6mm) for corrosive HC").
                                Then call the same tool again with corrosion_allowance.
      status='needs_service' → rare (GRE / tubing). Ask by service_options and call again.
-     status='no_match'      → read the hint; suggest the closest valid material.
+     status='no_match'      → READ the `cause` field, do not improvise:
+                               • cause='material'            → no PMS class matches the material name.
+                               • cause='corrosion_allowance' → duty IS holdable by this material at
+                                 other CAs. Read `hint` verbatim and list the alternatives from
+                                 `suggestion.alternative_ca_options`. NEVER tell the user the duty
+                                 itself is the problem when it isn't. Typical case: user asked CS +
+                                 6 mm CA, PMS only has CS at 3 mm (B1) — the duty is fine, the CA
+                                 is the issue. Offer: (a) reduce CA to an available option, OR
+                                 (b) accept a NACE variant like B2N if 6 mm is non-negotiable (but
+                                 make clear NACE implies sour service — ASK the user first).
+                               • cause='rating'              → the material holds nothing at this duty.
+                               • cause='duty_exceeds_all'    → no class anywhere holds this duty.
+                               NEVER say "material cannot handle this duty" unless cause='duty_exceeds_all'
+                               or cause='rating'. That phrasing is wrong for the other two causes.
 
    If the user already provides a specific code (A1, B1N, T80A) — use it directly,
    skip the resolver, and call query_pms to confirm.

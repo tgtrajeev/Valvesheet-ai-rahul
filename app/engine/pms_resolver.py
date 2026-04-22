@@ -364,44 +364,112 @@ def resolve_class_from_duty(
 
     adequate: dict[int, list[tuple[PmsSpec, float]]] = {}
     considered: list[dict] = []
+    # Track material-only matches so we can distinguish "CA filter too narrow"
+    # from "no material match" from "duty exceeds all classes".
+    material_matches_any_ca: list[dict] = []
+    duty_holders_any_filter: list[dict] = []
 
     for code in loader.spec_codes:
         spec = loader.get_spec(code)
         if not spec or not spec.index_row:
             continue
-        if mat_tokens and not _material_matches(mat_tokens, spec.header.material_description):
-            continue
-        if corrosion_allowance is not None and not _ca_equal(corrosion_allowance, spec.header.corrosion_allowance):
-            continue
 
         rating_int = _rating_to_int(spec.header.pressure_rating)
         if rating_int is None:
-            # Tubing / non-ASME classes — not selectable by ASME rating duty
             continue
 
         allowable = _interpolate_pressure(spec.index_row.pt_breakpoints, temperature_c)
         holds = allowable is not None and allowable >= pressure_barg
 
-        considered.append({
+        mat_ok = (not mat_tokens) or _material_matches(mat_tokens, spec.header.material_description)
+        ca_ok = (corrosion_allowance is None) or _ca_equal(corrosion_allowance, spec.header.corrosion_allowance)
+
+        row = {
             "spec_code": code,
             "pressure_rating": spec.header.pressure_rating,
+            "material_description": spec.header.material_description,
+            "corrosion_allowance": spec.header.corrosion_allowance,
             "allowable_at_temp_barg": allowable,
             "holds_duty": holds,
-        })
+        }
+
+        if holds:
+            duty_holders_any_filter.append(row)
+        if mat_ok:
+            material_matches_any_ca.append(row)
+
+        if not mat_ok or not ca_ok:
+            continue
+
+        considered.append(row)
 
         if holds:
             adequate.setdefault(rating_int, []).append((spec, allowable))
 
     if not adequate:
+        # Diagnose which filter caused the miss so the agent can explain it honestly.
+        if not material_matches_any_ca:
+            cause = "material"
+            hint = (
+                f"No PMS class matches material='{material}'. Try a different "
+                f"material name (e.g. 'CS', 'LTCS', 'SS316', 'Duplex')."
+            )
+            suggestion = None
+        elif corrosion_allowance is not None and not considered:
+            # Material matched something, but CA filter eliminated it.
+            # Collect the CAs that DO exist for this material (with and without
+            # holding duty) so the agent can offer a concrete alternative.
+            ca_options = sorted({
+                (r["corrosion_allowance"] or "—", r["spec_code"])
+                for r in material_matches_any_ca if r["holds_duty"]
+            })
+            cause = "corrosion_allowance"
+            if ca_options:
+                options_str = ", ".join(f"{ca} ({code})" for ca, code in ca_options[:6])
+                hint = (
+                    f"No PMS class has material='{material}' with CA='{corrosion_allowance}'. "
+                    f"The duty {pressure_barg} barg @ {temperature_c}°C IS holdable by this "
+                    f"material at other CAs: {options_str}. Either change CA or accept a "
+                    f"NACE/alternate class if 6 mm CA is required (e.g. B2N for CS 6mm)."
+                )
+            else:
+                hint = (
+                    f"No PMS class has material='{material}' with CA='{corrosion_allowance}', "
+                    f"and no CA variant of this material holds the duty either. "
+                    f"Try a higher-rated material."
+                )
+            suggestion = {
+                "alternative_ca_options": [
+                    {"corrosion_allowance": ca, "spec_code": code}
+                    for ca, code in ca_options[:6]
+                ],
+            }
+        elif not duty_holders_any_filter:
+            cause = "duty_exceeds_all"
+            hint = (
+                f"Duty {pressure_barg} barg @ {temperature_c}°C is not held by ANY "
+                f"piping class. Either reduce pressure, reduce temperature, or choose "
+                f"a higher-rated material family."
+            )
+            suggestion = None
+        else:
+            # material matched, CA matched (or not supplied), but none hold the duty.
+            cause = "rating"
+            hint = (
+                f"No class with material='{material}' holds {pressure_barg} barg @ "
+                f"{temperature_c}°C. A higher pressure-rated class is required, or "
+                f"relax the material filter."
+            )
+            suggestion = None
+
         return {
             "status": "no_match",
-            "hint": (
-                f"No piping class with material='{material}' can hold "
-                f"{pressure_barg} barg at {temperature_c}°C. Either the temperature "
-                f"exceeds the material's max, or a higher-rated class is required."
-            ),
+            "cause": cause,
+            "hint": hint,
+            "suggestion": suggestion,
             "duty": {"pressure_barg": pressure_barg, "temperature_c": temperature_c},
             "material": material,
+            "corrosion_allowance": corrosion_allowance,
             "candidates_by_rating": considered,
         }
 
