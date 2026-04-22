@@ -422,6 +422,61 @@ def resolve_class_from_duty(
     return base
 
 
+def format_class_envelope(spec_code: str, upper_temp_c: float) -> str | None:
+    """Build the P-T envelope string for a piping class at a user-supplied upper temperature.
+
+    Output shape matches the datasheet convention:
+        "{P_min} @ {T_min}°C, {P_upper} @ {upper_temp_c}°C"
+
+    where T_min is the class's coldest breakpoint and the two pressures are
+    the class's allowable at that temperature (lower envelope = coldest
+    breakpoint, upper envelope = linearly interpolated at the user's temp).
+
+    Returns None when the class has no PT curve or the user's temperature is
+    outside the curve's range — the caller should fall back to the existing
+    value rather than fabricate one.
+    """
+    loader = get_pms_loader()
+    spec = loader.get_spec(spec_code)
+    if not spec or not spec.index_row or not spec.index_row.pt_breakpoints:
+        return None
+
+    # Gather the curve; need at least one breakpoint
+    pts: list[tuple[float, float]] = []
+    for b in spec.index_row.pt_breakpoints:
+        t = b.get("temp_c")
+        p = b.get("press_barg")
+        if t is None or p is None:
+            continue
+        pts.append((float(t), float(p)))
+    if not pts:
+        return None
+    pts.sort(key=lambda x: x[0])
+
+    # Lower endpoint = class rated minimum temperature, with the pressure held
+    # flat at the first breakpoint (ASME B16.5 convention: ratings are flat
+    # below the first tabulated temp). min_temp_c is e.g. -29°C for CS, whereas
+    # the PT table typically starts at 38°C.
+    t_min = spec.index_row.min_temp_c if spec.index_row.min_temp_c is not None else pts[0][0]
+    p_min = pts[0][1]
+
+    p_upper = _interpolate_pressure(spec.index_row.pt_breakpoints, upper_temp_c)
+    if p_upper is None:
+        return None
+
+    # Trim insignificant zero decimals: 51.10 → 51.1, 51.00 → 51
+    def _fmt_p(p: float) -> str:
+        return f"{p:g}"
+
+    def _fmt_t(t: float) -> str:
+        return f"{t:g}"
+
+    return (
+        f"{_fmt_p(p_min)} @ {_fmt_t(t_min)}°C, "
+        f"{_fmt_p(p_upper)} @ {_fmt_t(upper_temp_c)}°C"
+    )
+
+
 def get_pms_field_sources(spec_code: str, data: dict[str, str]) -> dict[str, str]:
     """Generate granular PMS-aware field source descriptions.
 

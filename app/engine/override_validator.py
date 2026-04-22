@@ -152,7 +152,13 @@ def _check_duty(
     so that changing only one of {pressure, temperature} still lets us validate
     against the other. Returns ("safe"|"warning"|"rejected", reason).
     """
-    cur_p_barg = _extract_scalar_barg(data.get("design_pressure", ""))
+    # Scalar duty pressure lookup:
+    #   1. from the proposed override (new_pressure arg), if present
+    #   2. from the hidden duty_pressure_barg field (preserved across edits)
+    #   3. from design_pressure directly, if it's a scalar (not an envelope)
+    cur_p_barg = _extract_scalar_barg(data.get("duty_pressure_barg", ""))
+    if cur_p_barg is None:
+        cur_p_barg = _extract_scalar_barg(data.get("design_pressure", ""))
     cur_t_c = _extract_temp_c(data.get("design_temperature", ""))
 
     p_barg = _extract_scalar_barg(new_pressure) if new_pressure is not None else cur_p_barg
