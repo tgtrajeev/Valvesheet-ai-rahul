@@ -84,6 +84,14 @@ End connection (RF/RTJ/FF/NPT/Hub) is fully determined by
 (valve_type, piping_spec) per the PMS sheet. Never ask the user for it.
 The validator and combination builder will fill it automatically.
 
+NOTE — design_pressure vs design_temperature ARE DIFFERENT FIELDS:
+- design_temperature: the single operating temperature (e.g. "300°C"). THIS is what the user
+  means when they say "change temperature to 200". Map it to override key "design_temperature".
+- design_pressure: pressure-temperature rating pairs from PMS (e.g. "102.1 @ -29°C, 53.1 @ 300°C").
+  The temperatures inside this string are PMS engineering constants — do NOT edit them
+  when the user says "change temperature". Do NOT pass design_pressure as an override
+  unless the user explicitly asks to change the pressure values.
+
 ========================
 INPUT VALIDATION RULES (CRITICAL)
 ========================

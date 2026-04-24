@@ -704,6 +704,8 @@ def _apply_format_preserving_override(field_key: str, old_val: str, new_val: str
 
     - design_pressure / hydrotest_shell / hydrotest_seat: "P1 @ T1, P2 @ T2"
       If new_val is a bare number, replace every pressure number but keep temperatures.
+      If new_val already looks like a valid PT string, accept it.
+      Reject malformed attempts (e.g. the agent appended "@ 200°C" to an existing PT string).
     - Fields with a unit suffix like "300°C", "19.6 bar g":
       If new_val is a bare number, adopt the unit from old_val.
     - Everything else: raw replacement.
@@ -715,23 +717,38 @@ def _apply_format_preserving_override(field_key: str, old_val: str, new_val: str
     # ── Pressure-Temperature pair format: "19.6 @ -29°C, 10.2 @ 300°C" ──
     PT_FIELDS = {"design_pressure", "hydrotest_shell", "hydrotest_seat"}
     if field_key in PT_FIELDS and old_val:
-        # Check if old value contains @ pairs
         if "@" in old_val:
-            # If new_val already looks like a formatted PT string, use as-is
+            # Count how many "P @ T" pairs the OLD value has
+            old_pairs = [p.strip() for p in old_val.split(",") if "@" in p]
+            n_old = len(old_pairs)
+
             if "@" in new_stripped:
-                return new_stripped
-            # If new_val is a bare number (possibly with unit), replace pressure parts
+                # Accept only if the new value has the SAME number of pairs and each
+                # pair matches "number @ something".  Reject garbled strings like
+                # "19.6 @ -29°C, 10.2 @ 300°C @ 200°C" (more @ signs than pairs).
+                new_pairs = [p.strip() for p in new_stripped.split(",") if "@" in p]
+                # Each pair must be exactly "number @ temperature" — one @ sign only
+                valid_pair = re.compile(r'^[\d.]+\s*@[^@]+$')
+                if len(new_pairs) == n_old and all(valid_pair.match(p) for p in new_pairs):
+                    return new_stripped
+                # Malformed — fall through to bare-number path or keep old value
+                return old_val
+
+            # new_val is a bare pressure number — replace pressure values, keep temperatures
             bare_num = re.match(r'^[\d.]+\s*(bar[^@]*)?\s*$', new_stripped, re.IGNORECASE)
             if bare_num:
                 num_only = re.match(r'^([\d.]+)', new_stripped)
                 if num_only:
                     pressure_val = num_only.group(1)
-                    # Replace each pressure number before " @"
                     result = re.sub(r'([\d.]+)(\s*@)', lambda m: pressure_val + m.group(2), old_val)
                     return result
 
+            # new_val is something else (e.g. a temperature like "200°C" passed by mistake) —
+            # keep the original P-T string rather than corrupting it.
+            return old_val
+
     # ── Single value with unit: "300°C", "19.6 bar g", "150 ANSI" ──
-    if old_val and not "@" in old_val:
+    if old_val and "@" not in old_val:
         # Detect trailing unit (non-numeric suffix after the leading number)
         unit_match = re.match(r'^([\d.]+)\s*(.+)$', old_val.strip())
         if unit_match:
