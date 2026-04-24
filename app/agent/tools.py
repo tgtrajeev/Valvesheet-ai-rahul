@@ -431,6 +431,10 @@ async def _handle_generate(input_data: dict) -> dict:
                 data[field_key] = new_val
                 applied_overrides[field_key] = {"from": old_val, "to": new_val}
 
+        # If design_temperature was overridden, sync design_pressure from PMS P-T table
+        if "design_temperature" in applied_overrides:
+            _sync_design_pressure_from_temp(data, data.get("piping_class", ""))
+
         # Inject standard footer notes if the index record doesn't carry them yet
         # (the index was extracted before footer_notes were introduced).
         if not data.get("datasheet_notes"):
@@ -569,6 +573,10 @@ async def _handle_generate(input_data: dict) -> dict:
             new_val = _apply_format_preserving_override(field_key, old_val, val)
             data[field_key] = new_val
             applied_overrides[field_key] = {"from": old_val, "to": new_val}
+
+    # If design_temperature was overridden, sync design_pressure from PMS P-T table
+    if "design_temperature" in applied_overrides:
+        _sync_design_pressure_from_temp(data, data.get("piping_class", decoded.piping_class))
 
     # Phase 2: size-dependent VMS/PMS rules
     phase2 = validate_datasheet(
@@ -759,6 +767,68 @@ def _apply_format_preserving_override(field_key: str, old_val: str, new_val: str
                 return f"{new_bare.group(1)} {old_unit}"
 
     return new_stripped
+
+
+def _sync_design_pressure_from_temp(data: dict, piping_class: str) -> None:
+    """When design_temperature changes, update design_pressure to match the PMS P-T table.
+
+    The design_pressure field format is "P_min @ T_min, P_design @ T_design".
+    We keep the min-temperature anchor and replace the max pair with the pressure
+    at the new design temperature, looked up (or interpolated) from the PMS table.
+    """
+    import re
+
+    design_temp_str = str(data.get("design_temperature", "") or "").strip()
+    if not design_temp_str or not piping_class:
+        return
+
+    # Extract numeric temperature value
+    temp_match = re.match(r'^([-\d.]+)', design_temp_str)
+    if not temp_match:
+        return
+    new_temp_c = float(temp_match.group(1))
+
+    # Load P-T table for this piping class
+    try:
+        from ..engine.pms_loader import get_pms_loader
+        pms = get_pms_loader()
+        spec = pms.get_spec(piping_class)
+        if not spec or not spec.pt_ratings:
+            return
+        pt_table = sorted(spec.pt_ratings, key=lambda r: r["temperature_c"])
+    except Exception:
+        return
+
+    # Look up pressure at new_temp_c — exact match first, then linear interpolation
+    pressure_at_temp: float | None = None
+    for row in pt_table:
+        if abs(row["temperature_c"] - new_temp_c) < 0.1:
+            pressure_at_temp = row["max_pressure_barg"]
+            break
+    if pressure_at_temp is None:
+        # Interpolate between adjacent rows
+        for i in range(len(pt_table) - 1):
+            lo, hi = pt_table[i], pt_table[i + 1]
+            if lo["temperature_c"] <= new_temp_c <= hi["temperature_c"]:
+                t_range = hi["temperature_c"] - lo["temperature_c"]
+                frac = (new_temp_c - lo["temperature_c"]) / t_range
+                pressure_at_temp = round(lo["max_pressure_barg"] + frac * (hi["max_pressure_barg"] - lo["max_pressure_barg"]), 1)
+                break
+    if pressure_at_temp is None:
+        return
+
+    # Build new design_pressure string: preserve min-temp anchor, update max pair
+    old_dp = str(data.get("design_pressure", "") or "").strip()
+    if old_dp and "@" in old_dp:
+        pairs = [p.strip() for p in old_dp.split(",") if "@" in p]
+        # Keep the first pair (min-temperature anchor) unchanged
+        if pairs:
+            min_pair = pairs[0]
+            data["design_pressure"] = f"{min_pair}, {pressure_at_temp} @ {int(new_temp_c)}°C"
+            return
+
+    # No existing P-T string — just set the single value
+    data["design_pressure"] = f"{pressure_at_temp} @ {int(new_temp_c)}°C"
 
 
 def _normalize_field_name(name: str) -> str:

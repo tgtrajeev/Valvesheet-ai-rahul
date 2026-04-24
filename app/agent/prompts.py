@@ -88,9 +88,9 @@ NOTE — design_pressure vs design_temperature ARE DIFFERENT FIELDS:
 - design_temperature: the single operating temperature (e.g. "300°C"). THIS is what the user
   means when they say "change temperature to 200". Map it to override key "design_temperature".
 - design_pressure: pressure-temperature rating pairs from PMS (e.g. "102.1 @ -29°C, 53.1 @ 300°C").
-  The temperatures inside this string are PMS engineering constants — do NOT edit them
-  when the user says "change temperature". Do NOT pass design_pressure as an override
-  unless the user explicitly asks to change the pressure values.
+  Do NOT pass design_pressure as an override when the user says "change temperature".
+  The system automatically looks up the correct pressure for the new temperature from the
+  PMS P-T table and updates design_pressure — you do not need to do this manually.
 
 ========================
 INPUT VALIDATION RULES (CRITICAL)
