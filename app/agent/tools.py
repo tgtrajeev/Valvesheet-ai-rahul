@@ -426,9 +426,10 @@ async def _handle_generate(input_data: dict) -> dict:
             if val and val.strip():
                 # Map common override names to VDS index field names
                 field_key = _normalize_field_name(key)
-                old_val = data.get(field_key, "")
-                data[field_key] = val.strip()
-                applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
+                old_val = str(data.get(field_key, "") or "")
+                new_val = _apply_format_preserving_override(field_key, old_val, val)
+                data[field_key] = new_val
+                applied_overrides[field_key] = {"from": old_val, "to": new_val}
 
         # Inject standard footer notes if the index record doesn't carry them yet
         # (the index was extracted before footer_notes were introduced).
@@ -564,9 +565,10 @@ async def _handle_generate(input_data: dict) -> dict:
     for key, val in overrides.items():
         if val and val.strip():
             field_key = _normalize_field_name(key)
-            old_val = data.get(field_key, "")
-            data[field_key] = val.strip()
-            applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
+            old_val = str(data.get(field_key, "") or "")
+            new_val = _apply_format_preserving_override(field_key, old_val, val)
+            data[field_key] = new_val
+            applied_overrides[field_key] = {"from": old_val, "to": new_val}
 
     # Phase 2: size-dependent VMS/PMS rules
     phase2 = validate_datasheet(
@@ -695,6 +697,51 @@ async def _handle_explain(input_data: dict) -> dict:
         }
 
     return {"error": f"Field '{field_name}' not found.", "available_fields": list(all_fields.keys())[:20]}
+
+
+def _apply_format_preserving_override(field_key: str, old_val: str, new_val: str) -> str:
+    """Apply new_val to old_val while preserving the existing field format.
+
+    - design_pressure / hydrotest_shell / hydrotest_seat: "P1 @ T1, P2 @ T2"
+      If new_val is a bare number, replace every pressure number but keep temperatures.
+    - Fields with a unit suffix like "300°C", "19.6 bar g":
+      If new_val is a bare number, adopt the unit from old_val.
+    - Everything else: raw replacement.
+    """
+    import re
+
+    new_stripped = new_val.strip()
+
+    # ── Pressure-Temperature pair format: "19.6 @ -29°C, 10.2 @ 300°C" ──
+    PT_FIELDS = {"design_pressure", "hydrotest_shell", "hydrotest_seat"}
+    if field_key in PT_FIELDS and old_val:
+        # Check if old value contains @ pairs
+        if "@" in old_val:
+            # If new_val already looks like a formatted PT string, use as-is
+            if "@" in new_stripped:
+                return new_stripped
+            # If new_val is a bare number (possibly with unit), replace pressure parts
+            bare_num = re.match(r'^[\d.]+\s*(bar[^@]*)?\s*$', new_stripped, re.IGNORECASE)
+            if bare_num:
+                num_only = re.match(r'^([\d.]+)', new_stripped)
+                if num_only:
+                    pressure_val = num_only.group(1)
+                    # Replace each pressure number before " @"
+                    result = re.sub(r'([\d.]+)(\s*@)', lambda m: pressure_val + m.group(2), old_val)
+                    return result
+
+    # ── Single value with unit: "300°C", "19.6 bar g", "150 ANSI" ──
+    if old_val and not "@" in old_val:
+        # Detect trailing unit (non-numeric suffix after the leading number)
+        unit_match = re.match(r'^([\d.]+)\s*(.+)$', old_val.strip())
+        if unit_match:
+            old_unit = unit_match.group(2).strip()
+            # new_val is a bare number — attach old unit
+            new_bare = re.match(r'^([\d.]+)\s*$', new_stripped)
+            if new_bare and old_unit:
+                return f"{new_bare.group(1)} {old_unit}"
+
+    return new_stripped
 
 
 def _normalize_field_name(name: str) -> str:
