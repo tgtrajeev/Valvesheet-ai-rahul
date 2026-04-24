@@ -488,19 +488,38 @@ def validate_combination(
             "Verify design temperature does not exceed this limit."
         )
 
-    # Antistatic device for soft-seated valves
+    # Antistatic device for soft-seated valves (§6.0 + §7.8)
     if st in ("T", "P") and vt in ("BL", "BS", "BF"):
         warnings.append(
             f"Antistatic device REQUIRED for soft-seated {VALVE_TYPE_NAMES[vt]} "
-            "per MY-K-20-PI-SP-0002 Clause 4."
+            "per MY-K-20-PI-SP-0002 §6.0 / §7.8."
         )
 
-    # Fire test required for non-metallic seats/seals
+    # Fire test required for non-metallic seats/seals (§6.10)
     if st in ("T", "P"):
-        warnings.append(
-            "Fire test certification required (API 607 / BS EN ISO 10497) for valves with "
-            "non-metallic seats/seals per MY-K-20-PI-SP-0002 Clause 15."
-        )
+        if vt in ("BL", "BS"):
+            # Distinguish trunnion vs floating fire test standard
+            is_floating = False
+            if pressure_class and size_inches is not None:
+                thresholds = BALL_MOUNTING_THRESHOLDS.get(pressure_class)
+                if thresholds and thresholds["max_floating"] > 0 and size_inches <= thresholds["max_floating"]:
+                    is_floating = True
+            if is_floating:
+                warnings.append(
+                    "Fire safe required: floating ball valve with non-metallic seat — "
+                    "certify per API 607 / BS EN ISO 10497 per MY-K-20-PI-SP-0002 §6.10."
+                )
+            else:
+                warnings.append(
+                    "Fire safe required: trunnion ball valve with non-metallic seat — "
+                    "certify per API 6FA per MY-K-20-PI-SP-0002 §6.10."
+                )
+        else:
+            warnings.append(
+                f"Fire test certification required (API 607 / BS EN ISO 10497) for "
+                f"{VALVE_TYPE_NAMES.get(vt, vt)} with non-metallic seats/seals "
+                "per MY-K-20-PI-SP-0002 §6.10."
+            )
 
     # Pressure test standard selection (VMS §9.1) — class-level boilerplate, same for every valve of this class
     if pressure_class:
@@ -592,6 +611,119 @@ def validate_combination(
             "per MY-K-20-PI-SP-0002 §7.8."
         )
 
+    # Rule: Gate / Globe OS&Y design (§6.2)
+    if vt in ("GA", "GL"):
+        warnings.append(
+            f"{VALVE_TYPE_NAMES[vt]} SHALL be Outside Screw and Yoke (OS&Y) type "
+            "per MY-K-20-PI-SP-0002 §6.2."
+        )
+
+    # Rule: Swing check bolted bonnet (§6.2)
+    if vt == "CH" and design and design.upper() == "S":
+        warnings.append(
+            "Swing type check valve SHALL have a bolted bonnet "
+            "per MY-K-20-PI-SP-0002 §6.2."
+        )
+
+    # Rule: Gearbox housing material — NOT grey cast iron or aluminium (§6.11.3)
+    if size_inches is not None and pressure_class and vt in GEARBOX_THRESHOLDS:
+        gear_min = GEARBOX_THRESHOLDS[vt].get(pressure_class)
+        if gear_min is not None and size_inches >= gear_min:
+            warnings.append(
+                "Gearbox housing SHALL be cast steel or equivalent. "
+                "Grey cast iron and aluminium alloys are NOT acceptable "
+                "per MY-K-20-PI-SP-0002 §6.11.3."
+            )
+
+    # Rule: Body cavity relief required on cavity valves (§6.20)
+    if vt in ("BL", "BS", "GA", "GL", "DB"):
+        notes.append(
+            "Body cavity pressure relief REQUIRED to relieve thermal expansion of trapped fluid "
+            "per MY-K-20-PI-SP-0002 §6.20. Vendor to confirm method at bid stage."
+        )
+
+    # Rule: No cadmium-plated bolts (§7.6)
+    notes.append(
+        "Bolting: carbon steel or low alloy steel with zinc-nickel plating + fluoropolymer coating. "
+        "Cadmium plated bolts are NOT acceptable per MY-K-20-PI-SP-0002 §7.6."
+    )
+
+    # Rule: Metal-to-metal seat hardness (§7.8)
+    if st == "M" and vt in ("GA", "GL", "CH"):
+        warnings.append(
+            "Metal-to-metal seated CS valve: body seats, discs/wedges SHALL be minimum 250 BHN "
+            "with minimum 50 BHN differential (seat > gate/disc) "
+            "per MY-K-20-PI-SP-0002 §7.8."
+        )
+
+    # Rule: Stellite / hard face minimum thickness (§7.8)
+    if st == "M":
+        notes.append(
+            "Hard facing / Stellite deposition SHALL be minimum 1.6 mm finished thickness. "
+            "Renewable seat rings shall be seal welded (not tack or stitch welded) "
+            "per MY-K-20-PI-SP-0002 §7.8."
+        )
+
+    # Rule: NDT radiography extents by class (§9.2)
+    if pressure_class:
+        if pressure_class >= 600 or sp.endswith("N") or sp.endswith("LN"):
+            warnings.append(
+                f"CL {pressure_class} / NACE spec: 100% radiography required on all valve bodies "
+                "(castings and forgings) per MY-K-20-PI-SP-0002 §9.2."
+            )
+        elif pressure_class == 300 and size_inches is not None:
+            if size_inches > 16:
+                warnings.append(
+                    f"CL 300, size {size_inches}\" (DN > 400): 100% RT required "
+                    "per MY-K-20-PI-SP-0002 §9.2."
+                )
+            else:
+                notes.append(
+                    f"CL 300, size {size_inches}\" (DN ≤ 400): 25% RT minimum "
+                    "per MY-K-20-PI-SP-0002 §9.2."
+                )
+        elif pressure_class == 150 and size_inches is not None:
+            if size_inches > 24:
+                warnings.append(
+                    f"CL 150, size {size_inches}\" (DN > 600): 100% RT required "
+                    "per MY-K-20-PI-SP-0002 §9.2."
+                )
+            else:
+                notes.append(
+                    f"CL 150, size {size_inches}\" (DN ≤ 600): 25% RT minimum "
+                    "per MY-K-20-PI-SP-0002 §9.2."
+                )
+
+    # Rule: Fugitive emissions test — HC service with hazardous composition (§9.4)
+    if is_hc:
+        warnings.append(
+            "Fugitive Emissions Test (FET) per BS EN ISO 15848 REQUIRED for HC service: "
+            "Tightness Class BH, Endurance Class CC1 (control) or CO1 (on-off). "
+            "Type test witnessed by Contractor-approved third-party agency "
+            "per MY-K-20-PI-SP-0002 §9.4. "
+            "Mandatory if service contains H₂S >230 ppm, methane/NMHC ≥20% mass, "
+            "or BTEX ≥1% wt / benzene ≥1% vol."
+        )
+
+    # Rule: Weld repair of forged valves NOT permitted (§6.0)
+    if vt not in ("BF",):
+        notes.append(
+            "Weld repairs of forged valves are NOT permitted "
+            "per MY-K-20-PI-SP-0002 §6.0."
+        )
+
+    # Rule: Trunnion ball valve body vent and drain (§6.1)
+    if vt in ("BL", "BS") and pressure_class and size_inches is not None:
+        thresholds = BALL_MOUNTING_THRESHOLDS.get(pressure_class)
+        if thresholds:
+            is_trunnion = (thresholds["max_floating"] == 0) or (size_inches > thresholds["max_floating"])
+            if is_trunnion:
+                warnings.append(
+                    f"Trunnion ball valve at {size_inches}\", CL {pressure_class}: "
+                    "body vent and drain REQUIRED. Drain/vent valves fitted with NPT threaded plugs "
+                    "per MY-K-20-PI-SP-0002 §6.1."
+                )
+
     # Torque limits (VMS §6.11.2) — boilerplate limits, not a per-valve warning
     if size_inches is not None and vt in ("BL", "BS", "BF", "GA", "GL", "NE"):
         notes.append(
@@ -661,13 +793,35 @@ def validate_datasheet(
                 "per MY-K-20-PI-SP-0002 §6.14."
             )
 
-    # Rule 14: Blowout-proof stem required on ALL valves
+    # Rule 14: Blowout-proof stem required on ALL valves (§6.16)
     stem = data.get("stem_construction", "")
     if vt not in ("CH",) and "blowout" not in stem.lower() and "blow-out" not in stem.lower():
         warnings.append(
             "Blowout-proof stem REQUIRED on all valves per MY-K-20-PI-SP-0002 §6.16. "
             "Stem retention by packing gland alone is not acceptable."
         )
+
+    # Rule: Stem material — forged only, no casting (§6.16)
+    if vt not in ("CH",):
+        if stem and "cast" in stem.lower() and "forged" not in stem.lower():
+            errors.append(
+                "Valve stem SHALL be forged or machined from forged/rolled bar — "
+                "casting is NOT permitted per MY-K-20-PI-SP-0002 §6.16."
+            )
+        else:
+            notes.append(
+                "Stem SHALL be forged or machined from forged/rolled bar (casting not permitted). "
+                "Stem designed to withstand 2× max operating torque "
+                "per MY-K-20-PI-SP-0002 §6.16."
+            )
+
+    # Rule: Gate / Globe OS&Y — verify stem construction field (§6.2)
+    if vt in ("GA", "GL"):
+        if stem and "os&y" not in stem.lower() and "outside screw" not in stem.lower():
+            warnings.append(
+                f"{VALVE_TYPE_NAMES.get(vt, vt)} stem design SHALL be Outside Screw and Yoke (OS&Y) "
+                "per MY-K-20-PI-SP-0002 §6.2."
+            )
 
     # Rule 15: DBB body construction
     if vt == "DB" and size_inches is not None:
