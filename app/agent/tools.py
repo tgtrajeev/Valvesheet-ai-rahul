@@ -26,12 +26,7 @@ from ..engine.validator import (
 )
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
-from ..engine.pms_resolver import (
-    get_pms_field_sources,
-    resolve_piping_class,
-    resolve_class_from_duty,
-)
-from ..engine.override_validator import validate_overrides
+from ..engine.pms_resolver import get_pms_field_sources, resolve_piping_class
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
@@ -178,46 +173,6 @@ TOOL_DEFINITIONS = [
                 },
             },
             "required": [],
-        },
-    },
-    {
-        "name": "resolve_class_from_duty",
-        "description": (
-            "Pick the smallest ASME piping class whose P-T envelope safely holds a "
-            "duty point given in barg + °C. CALL THIS — do NOT guess — whenever the "
-            "user provides operating pressure in barg and temperature in °C instead "
-            "of an ASME class ('150#', '300#', ...). The tool interpolates each "
-            "class's P-T curve at the given temperature and returns the minimum rating "
-            "that holds the duty, then runs the standard CA / service disambiguation.\n"
-            "Never convert barg → ASME class in your head — this tool owns that lookup.\n"
-            "Returns the same shape as resolve_piping_class plus: chosen_pressure_rating, "
-            "allowable_at_temp_barg, duty, candidates_by_rating."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "pressure_barg": {
-                    "type": "number",
-                    "description": "Operating / design pressure in barg (e.g. 25)."
-                },
-                "temperature_c": {
-                    "type": "number",
-                    "description": "Operating / design temperature in °C (e.g. 150)."
-                },
-                "material": {
-                    "type": "string",
-                    "description": "Line material — CS, CS NACE, LTCS, LTCS NACE, SS316L, SS316L NACE, DSS, DSS NACE, SDSS, SDSS NACE, CS GALV, etc. Natural-language synonyms accepted."
-                },
-                "corrosion_allowance": {
-                    "type": "string",
-                    "description": "Corrosion allowance — '3 mm', '6 mm', '1.5 mm', or 'NIL'. Optional; pass when the user specified CA."
-                },
-                "service": {
-                    "type": "string",
-                    "description": "Service type — 'hydrocarbon', 'seawater', etc. Optional; pass on follow-up if status='needs_service'."
-                },
-            },
-            "required": ["pressure_barg", "temperature_c", "material"],
         },
     },
     {
@@ -382,7 +337,6 @@ async def execute_tool(name: str, input_data: dict, project_id: str | None = Non
         "get_piping_class_info": _handle_piping_class_info,
         "generate_datasheet": _handle_generate,
         "resolve_piping_class": _handle_resolve_piping_class,
-        "resolve_class_from_duty": _handle_resolve_class_from_duty,
         "find_piping_class": _handle_find_piping_class,
         "validate_combination": _handle_validate,
         "explain_field": _handle_explain,
@@ -466,50 +420,15 @@ async def _handle_generate(input_data: dict) -> dict:
     if spec:
         data = dict(spec.data)  # copy so we don't mutate the index
 
-        # Validate user overrides BEFORE applying — P-T envelope, seat/temp,
-        # size/valve-type, structural-field lock. Rejected overrides are
-        # surfaced back to the agent so it can relay to the user; only
-        # "safe" (and "warning") overrides actually land on the data dict.
-        applied_overrides: dict = {}
-        rejected_overrides: list = []
-        override_warnings: list = []
-        if overrides:
-            try:
-                from ..engine.vds_decoder import decode_vds as _decode_for_validate
-                _decoded_for_validate = _decode_for_validate(vds_code)
-                ov = validate_overrides(
-                    _decoded_for_validate, data, overrides, _normalize_field_name
-                )
-                rejected_overrides = ov.rejected
-                override_warnings = ov.warnings
-                for field_key, val in ov.safe.items():
-                    old_val = data.get(field_key, "")
-                    data[field_key] = val
-                    applied_overrides[field_key] = {"from": old_val, "to": val}
-
-                # Cascade: if the user's new size landed, re-derive every
-                # size-dependent field (operation, mounting, wedge, body_form,
-                # NDT, fire rating, …). Otherwise the card would carry the
-                # old size's operation alongside the new size.
-                if "size_range" in ov.safe:
-                    new_size_val = parse_size_inches(ov.safe["size_range"])
-                    if new_size_val is not None:
-                        from ..engine.rule_engine import apply_size_cascade
-                        cascaded = apply_size_cascade(
-                            data, _decoded_for_validate, new_size_val
-                        )
-                        if cascaded:
-                            applied_overrides["_cascaded_fields"] = cascaded
-
-            except Exception:
-                # Decode failure → fall back to the old blind-merge so we don't
-                # regress on legacy codes that can't be decoded.
-                for key, val in overrides.items():
-                    if val and str(val).strip():
-                        field_key = _normalize_field_name(key)
-                        old_val = data.get(field_key, "")
-                        data[field_key] = str(val).strip()
-                        applied_overrides[field_key] = {"from": old_val, "to": str(val).strip()}
+        # Apply user overrides — let users customize size, service, tag, etc.
+        applied_overrides = {}
+        for key, val in overrides.items():
+            if val and val.strip():
+                # Map common override names to VDS index field names
+                field_key = _normalize_field_name(key)
+                old_val = data.get(field_key, "")
+                data[field_key] = val.strip()
+                applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
         # Inject standard footer notes if the index record doesn't carry them yet
         # (the index was extracted before footer_notes were introduced).
@@ -588,7 +507,7 @@ async def _handle_generate(input_data: dict) -> dict:
             pass
 
         all_errors = phase_errors
-        all_warnings = list(seat_warnings) + phase_warnings + list(override_warnings)
+        all_warnings = list(seat_warnings) + phase_warnings
         result = {
             "vds_code": vds_code,
             "data": data,
@@ -607,8 +526,6 @@ async def _handle_generate(input_data: dict) -> dict:
             result["draft"] = True
         if applied_overrides:
             result["applied_overrides"] = applied_overrides
-        if rejected_overrides:
-            result["rejected_overrides"] = rejected_overrides
         return result
 
     # ── Step 2: Decode + validate unknown code ──
@@ -639,32 +556,17 @@ async def _handle_generate(input_data: dict) -> dict:
     # ── Step 3: Generate datasheet from rules + PMS data ──
     # Generate even when validation has errors (draft mode) so the Excel
     # download can include the red error section for client review.
-    # Pass size_val so size-dependent fields (operation, mounting, wedge,
-    # NDT, fire_rating) come out correctly on the first pass.
-    from ..engine.rule_engine import generate_datasheet as rule_generate, apply_size_cascade
-    data = rule_generate(decoded, size_inches=size_val)
+    from ..engine.rule_engine import generate_datasheet as rule_generate
+    data = rule_generate(decoded)
 
-    # Validate user overrides BEFORE applying (same flow as the index path).
-    applied_overrides: dict = {}
-    rejected_overrides: list = []
-    override_warnings: list = []
-    if overrides:
-        ov = validate_overrides(decoded, data, overrides, _normalize_field_name)
-        rejected_overrides = ov.rejected
-        override_warnings = ov.warnings
-        for field_key, val in ov.safe.items():
+    # Apply user overrides
+    applied_overrides = {}
+    for key, val in overrides.items():
+        if val and val.strip():
+            field_key = _normalize_field_name(key)
             old_val = data.get(field_key, "")
-            data[field_key] = val
-            applied_overrides[field_key] = {"from": old_val, "to": val}
-
-        # Cascade: if size was just edited (and differs from size_val above),
-        # re-derive size-dependent fields with the new value.
-        if "size_range" in ov.safe:
-            new_size_val = parse_size_inches(ov.safe["size_range"])
-            if new_size_val is not None and new_size_val != size_val:
-                cascaded = apply_size_cascade(data, decoded, new_size_val)
-                if cascaded:
-                    applied_overrides["_cascaded_fields"] = cascaded
+            data[field_key] = val.strip()
+            applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
     # Phase 2: size-dependent VMS/PMS rules
     phase2 = validate_datasheet(
@@ -687,12 +589,7 @@ async def _handle_generate(input_data: dict) -> dict:
     # Seat vs design temp — warning, not fatal (see rationale in the index branch above)
     seat_warnings = check_seat_design_temperature(data.get("design_pressure", ""), seat_code)
     all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or [])
-    all_warnings = (
-        list(seat_warnings)
-        + list(val_dump.get("warnings", []))
-        + list(phase2.warnings or [])
-        + list(override_warnings)
-    )
+    all_warnings = list(seat_warnings) + list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
     all_notes = list(val_dump.get("notes", [])) + list(phase2.notes or [])
     result = {
         "vds_code": vds_code,
@@ -711,8 +608,6 @@ async def _handle_generate(input_data: dict) -> dict:
         result["draft"] = True  # Flag so the AI can warn the user
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
-    if rejected_overrides:
-        result["rejected_overrides"] = rejected_overrides
     return result
 
 
@@ -720,25 +615,6 @@ async def _handle_resolve_piping_class(input_data: dict) -> dict:
     """Deterministic 3-tier resolver: pressure+material -> CA -> service."""
     return resolve_piping_class(
         pressure_rating=input_data.get("pressure_rating"),
-        material=input_data.get("material"),
-        corrosion_allowance=input_data.get("corrosion_allowance"),
-        service=input_data.get("service"),
-    )
-
-
-async def _handle_resolve_class_from_duty(input_data: dict) -> dict:
-    """Pick the smallest ASME class whose P-T envelope holds (barg, °C)."""
-    try:
-        pressure_barg = float(input_data.get("pressure_barg"))
-        temperature_c = float(input_data.get("temperature_c"))
-    except (TypeError, ValueError):
-        return {
-            "status": "needs_input",
-            "hint": "pressure_barg and temperature_c are required numbers (e.g. 25, 150).",
-        }
-    return resolve_class_from_duty(
-        pressure_barg=pressure_barg,
-        temperature_c=temperature_c,
         material=input_data.get("material"),
         corrosion_allowance=input_data.get("corrosion_allowance"),
         service=input_data.get("service"),
@@ -842,16 +718,6 @@ def _normalize_field_name(name: str) -> str:
         "design_press": "design_pressure",
         "dp": "design_pressure",
         "fire_safe": "fire_rating",
-        "ca": "corrosion_allowance",
-        "corrosion": "corrosion_allowance",
-        "nace": "sour_service",
-        "sour": "sour_service",
-        "hydrotest": "hydrotest_shell",
-        "shell_test": "hydrotest_shell",
-        "closure_test": "hydrotest_closure",
-        "gasket": "gaskets",
-        "bolt": "bolts",
-        "nut": "nuts",
     }
     normalized = name.lower().strip().replace(" ", "_")
     return aliases.get(normalized, normalized)

@@ -304,7 +304,7 @@ def validate_combination(
     # Rule 31: RTJ required for CL 900+
     if pressure_class and pressure_class >= 900 and ec and ec not in ("J", "JT"):
         errors.append(
-            f"Class {pressure_class} requires RTJ end connection per MY-K-20-PI-SP-0002 Clause 11. "
+            f"Class {pressure_class} requires RTJ end connection per MY-K-20-PI-SP-0002 §6.22.1. "
             f"Current end connection '{ec}' is not permitted for classes 900-2500."
         )
         suggestions.append(Suggestion(
@@ -318,7 +318,7 @@ def validate_combination(
     if ec == "T" and is_hc:
         errors.append(
             f"Threaded (NPT) end connections are not permitted in hydrocarbon/hazardous service "
-            f"(spec {sp}) per MY-K-20-PI-SP-0002 Clause 15."
+            f"(spec {sp}) per MY-K-20-PI-SP-0002 §6.22.2."
         )
         suggestions.append(Suggestion(
             type="fix",
@@ -330,7 +330,7 @@ def validate_combination(
     # Rule 12: Butterfly restricted to clean non-HC service
     if vt == "BF" and is_hc:
         errors.append(
-            f"Butterfly valves are restricted to clean non-hydrocarbon service per MY-K-20-PI-SP-0002 Clause 6. "
+            f"Butterfly valves are restricted to clean non-hydrocarbon service per MY-K-20-PI-SP-0002 §6.3. "
             f"Spec '{sp}' is for hydrocarbon service."
         )
         suggestions.append(Suggestion(
@@ -343,7 +343,7 @@ def validate_combination(
     # Rule 13: Wafer butterfly rejected in flammable service
     if vt == "BF" and (bore or design or "").upper() == "W" and is_hc:
         warnings.append(
-            "Wafer-type butterfly valves are rejected in flammable/combustible service per MY-K-20-PI-SP-0002. "
+            "Wafer-type butterfly valves are rejected in flammable/combustible service per MY-K-20-PI-SP-0002 §6.0. "
             "Must use solid lug type with threaded lugs."
         )
 
@@ -356,20 +356,20 @@ def validate_combination(
             if size_inches is not None:
                 warnings.append(
                     f"{VALVE_TYPE_NAMES[vt]} is restricted to clean non-hydrocarbon service "
-                    f"per MY-K-20-PI-SP-0002 Clause 6. Exception: HC service only for class >= 900 and size <= 1.5\". "
+                    f"per MY-K-20-PI-SP-0002 §6.2. Exception: HC service only for class >= 900 and size <= 1.5\". "
                     f"Current: class {pressure_class}, size {size_inches}\"."
                 )
             else:
                 warnings.append(
                     f"{VALVE_TYPE_NAMES[vt]} is restricted to clean non-hydrocarbon service "
-                    f"per MY-K-20-PI-SP-0002 Clause 6. Exception: HC service for class >= 900 and size <= 1.5\". "
+                    f"per MY-K-20-PI-SP-0002 §6.2. Exception: HC service for class >= 900 and size <= 1.5\". "
                     f"Verify size meets exception criteria."
                 )
 
     # Rule 17: Body must be forged for DN <= 40 (NPS 1.5")
     if size_inches is not None and size_inches <= 1.5:
         warnings.append(
-            f"Size {size_inches}\" (DN <= 40): body MUST be forged per MY-K-20-PI-SP-0002 Clause 4. "
+            f"Size {size_inches}\" (DN <= 40): body MUST be forged per MY-K-20-PI-SP-0002 §6.0. "
             "Cast body is not permitted for this size."
         )
 
@@ -394,17 +394,19 @@ def validate_combination(
             if max_float == 0:
                 warnings.append(
                     f"Class {pressure_class}: ALL ball valves must be trunnion mounted "
-                    f"per MY-K-20-PI-SP-0002 Clause 5."
+                    f"per MY-K-20-PI-SP-0002 §6.23."
                 )
             elif size_inches <= max_float:
                 warnings.append(
                     f"Class {pressure_class}, size {size_inches}\": floating ball mounting applies "
-                    f"(floating <= {max_float}\", trunnion >= {thresholds['min_trunnion']}\")."
+                    f"(floating <= {max_float}\", trunnion >= {thresholds['min_trunnion']}\") "
+                    f"per MY-K-20-PI-SP-0002 §6.23."
                 )
             else:
                 warnings.append(
                     f"Class {pressure_class}, size {size_inches}\": trunnion mounting REQUIRED "
-                    f"(floating <= {max_float}\", trunnion >= {thresholds['min_trunnion']}\"). "
+                    f"(floating <= {max_float}\", trunnion >= {thresholds['min_trunnion']}\") "
+                    "per MY-K-20-PI-SP-0002 §6.23. "
                     "Requires: DBB capability, spring-loaded seats, body vent/drain, sealant injection."
                 )
 
@@ -415,7 +417,7 @@ def validate_combination(
         if gear_min is not None and size_inches >= gear_min:
             warnings.append(
                 f"{VALVE_TYPE_NAMES[vt]} at {size_inches}\", class {pressure_class}: "
-                f"gear operation REQUIRED (threshold: >= {gear_min}\") per MY-K-20-PI-SP-0002 Clause 9."
+                f"gear operation REQUIRED (threshold: >= {gear_min}\") per MY-K-20-PI-SP-0002 §6.11.3."
             )
 
     # Rule: ISO 17292 limit — only up to 24", CL 600 and below (VMS §6.1)
@@ -639,7 +641,7 @@ def validate_datasheet(
         if expected.lower() not in actual_wedge.lower():
             warnings.append(
                 f"Gate valve wedge: size {size_inches}\" should use {expected} wedge "
-                f"per MY-K-20-PI-SP-0002 Clause 6 (Solid <= 1.5\", Flexible > 1.5\")."
+                f"per MY-K-20-PI-SP-0002 §6.2 (Solid <= 1.5\", Flexible > 1.5\")."
             )
 
     # Rule 10: Body seat — renewable vs integral
@@ -647,7 +649,7 @@ def validate_datasheet(
         body_seat = data.get("seat_construction", "")
         if "renewable" not in body_seat.lower() and "integral" not in body_seat.lower():
             warnings.append(
-                f"Body seat type (renewable/integral) should be specified per MY-K-20-PI-SP-0002 Table 2."
+                f"Body seat type (renewable/integral) should be specified per MY-K-20-PI-SP-0002 §6.2 Table 2."
             )
 
     # Rule 11: Backseat required for GA, GL, NE
@@ -656,14 +658,14 @@ def validate_datasheet(
         if "back seat" not in stem.lower() and "backseat" not in stem.lower():
             warnings.append(
                 f"Backseat REQUIRED for {VALVE_TYPE_NAMES.get(vt, vt)} "
-                "per MY-K-20-PI-SP-0002 Clause 6."
+                "per MY-K-20-PI-SP-0002 §6.14."
             )
 
     # Rule 14: Blowout-proof stem required on ALL valves
     stem = data.get("stem_construction", "")
     if vt not in ("CH",) and "blowout" not in stem.lower() and "blow-out" not in stem.lower():
         warnings.append(
-            "Blowout-proof stem REQUIRED on all valves per MY-K-20-PI-SP-0002 Clause 4. "
+            "Blowout-proof stem REQUIRED on all valves per MY-K-20-PI-SP-0002 §6.16. "
             "Stem retention by packing gland alone is not acceptable."
         )
 
@@ -672,11 +674,11 @@ def validate_datasheet(
         body = data.get("body_construction", "")
         if size_inches <= 2 and "one-piece" not in body.lower() and "one piece" not in body.lower():
             warnings.append(
-                f"DBB body for {size_inches}\" should be one-piece forged per MY-K-20-PI-SP-0002 Clause 8."
+                f"DBB body for {size_inches}\" should be one-piece forged per MY-K-20-PI-SP-0002 §6.4."
             )
         elif size_inches > 2 and "three-piece" not in body.lower() and "three piece" not in body.lower():
             warnings.append(
-                f"DBB body for {size_inches}\" should be three-piece bolted per MY-K-20-PI-SP-0002 Clause 8."
+                f"DBB body for {size_inches}\" should be three-piece bolted per MY-K-20-PI-SP-0002 §6.4."
             )
 
     # Rule 29: Locking device required (all except check)
@@ -684,7 +686,7 @@ def validate_datasheet(
         locks = data.get("locks", "")
         if not locks:
             warnings.append(
-                "Locking device (padlock facility) REQUIRED per MY-K-20-PI-SP-0002 Clause 9."
+                "Locking device (padlock facility) REQUIRED per MY-K-20-PI-SP-0002 §6.17."
             )
 
     # Rule 30: Position indicator for quarter-turn and gear-operated
@@ -693,20 +695,20 @@ def validate_datasheet(
         if "position indicator" not in operation.lower():
             warnings.append(
                 f"Position indicator REQUIRED for quarter-turn {VALVE_TYPE_NAMES.get(vt, vt)} "
-                "per MY-K-20-PI-SP-0002 Clause 9."
+                "per MY-K-20-PI-SP-0002 §6.13."
             )
 
     # Rule 38: Lifting lug — conditional on weight (unknown at validation time), boilerplate reference
     notes.append(
         "Lifting lug required if valve weight >= 25 kg (design load 2x lift weight) "
-        "per MY-K-20-PI-SP-0002 Clause 14."
+        "per MY-K-20-PI-SP-0002 §6.25."
     )
 
     # Rule 40: Auxiliary connections in HC must be flanged
     if is_hc:
         warnings.append(
             "Auxiliary body connections in HC service must be flanged welded construction "
-            "(no socket weld or seal-welded threads) per MY-K-20-PI-SP-0002 Clause 12."
+            "(no socket weld or seal-welded threads) per MY-K-20-PI-SP-0002 §6.19."
         )
 
     # Rule: Casting quality standard (VMS §4.3 MSS SP-55)
