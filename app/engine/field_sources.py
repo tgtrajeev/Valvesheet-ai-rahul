@@ -4,25 +4,29 @@ Based on the VDS code structure and FPSO Albacora PMS rules, every field
 in the output datasheet has a source that documents where the value came from.
 
 Source types (matching the output datasheet format):
-- "Selected based on VDS No"              — Derived from VDS number parsing
-- "Automated based on PMS class"          — From PMS piping class data
-- "As per valve standard"                 — From valve design standards (API 6D, etc.)
-- "As per PMS Base material and Valve Standard" — Combined PMS + standards
-- "As per Project Requirement"            — Project-specific requirement
-- "need to input under data base"         — Requires manual input / DB entry
-- "Calculated"                            — Computed from other values
+- "VDS No"               — Derived from VDS number parsing
+- "PMS (40801-SPE-80000-PP-SP-0001)"  — From Piping Material Specification data
+- "VMS (40801-SPE-80000-PP-SP-0002)"  — From Valve Material Specification rules/PDF
+- "PMS + VMS"            — Combined PMS data + VMS/valve-standard rules
+- "Project Requirement"  — Project-specific requirement
+- "Calculated"           — Computed from other values
 """
+
+# ── Document identifiers ─────────────────────────────────────────────────────
+_PMS = "PMS (40801-SPE-80000-PP-SP-0001)"
+_VMS = "VMS (40801-SPE-80000-PP-SP-0002)"
+_PMS_VMS = "PMS + VMS (40801-SPE-80000-PP-SP-0001 / 0002)"
 
 # ── Source description strings ──────────────────────────────────────────────
 
-SRC_VDS = "Selected based on VDS No"
-SRC_PMS = "Automated based on PMS class"
-SRC_VALVE_STD = "As per valve standard"
-SRC_PMS_AND_STD = "As per PMS Base material and Valve Standard"
-SRC_PROJECT = "As per Project Requirement"
+SRC_VDS        = "VDS No"
+SRC_PMS        = _PMS
+SRC_VALVE_STD  = _VMS
+SRC_PMS_AND_STD = _PMS_VMS
+SRC_PROJECT    = "Project Requirement"
 SRC_CALCULATED = "Calculated"
-SRC_VDS_INDEX = "automated based on PMS class and valve standard"
-SRC_INPUT = "need to input under data base"
+SRC_VDS_INDEX  = _PMS_VMS
+SRC_INPUT      = "Manual Input Required"
 
 # ── Per-field source mapping ────────────────────────────────────────────────
 # Key = field name as it appears in the flat VDS index / datasheet data

@@ -1,4 +1,4 @@
-"""VDS combination validation against FPSO Albacora PMS rules + MY-K-20-PI-SP-0002.
+f"""VDS combination validation against FPSO Albacora PMS rules + VMS 40801-SPE-80000-PP-SP-0002.
 
 Two-phase validation:
   Phase 1 (validate_combination): Pre-generation checks — valve type, seat, spec, end conn
@@ -7,6 +7,10 @@ Two-phase validation:
 
 import re
 from ..models.schemas import ValidationResult, Suggestion
+
+# ── Document reference constants ─────────────────────────────────────────────
+VMS_DOC = "40801-SPE-80000-PP-SP-0002"   # Valve Material Specification
+PMS_DOC = "40801-SPE-80000-PP-SP-0001"   # Piping Material Specification
 
 # Valid seat codes per valve type (Section 4, CLAUDE.md / vdsParser.ts)
 VALID_SEATS_BY_TYPE: dict[str, list[str]] = {
@@ -114,7 +118,7 @@ def check_seat_design_temperature(design_pressure: str, seat: str | None) -> lis
 PRESSURE_CLASS_NUM = {"A": 150, "B": 300, "D": 600, "E": 900, "F": 1500, "G": 2500}
 
 # ============================================================================
-# MY-K-20-PI-SP-0002 ENGINEERING RULES
+# VMS ENGINEERING RULES (40801-SPE-80000-PP-SP-0002)
 # ============================================================================
 
 # Rule A1: Floating vs Trunnion size thresholds (inches)
@@ -228,7 +232,7 @@ def validate_combination(
     service: str | None = None,
     pressure_class: int | None = None,
 ) -> ValidationResult:
-    """Validate a VDS combination against FPSO Albacora PMS rules + spec MY-K-20-PI-SP-0002.
+    f"""Validate a VDS combination against FPSO Albacora PMS rules + spec 40801-SPE-80000-PP-SP-0002.
 
     Returns ValidationResult with errors, warnings, and fix suggestions.
     """
@@ -296,7 +300,7 @@ def validate_combination(
             errors.append(f"Invalid design '{d}' for Needle Valve. Valid: I (Inline), A (Angle)")
 
     # ============================================================================
-    # MY-K-20-PI-SP-0002 SPEC RULES
+    # VMS SPEC RULES (40801-SPE-80000-PP-SP-0002)
     # ============================================================================
 
     is_hc = _is_hc_service(sp)
@@ -304,7 +308,7 @@ def validate_combination(
     # Rule 31: RTJ required for CL 900+
     if pressure_class and pressure_class >= 900 and ec and ec not in ("J", "JT"):
         errors.append(
-            f"Class {pressure_class} requires RTJ end connection per MY-K-20-PI-SP-0002 §6.22.1. "
+            f"Class {pressure_class} requires RTJ end connection per {VMS_DOC} §6.22.1. "
             f"Current end connection '{ec}' is not permitted for classes 900-2500."
         )
         suggestions.append(Suggestion(
@@ -318,7 +322,7 @@ def validate_combination(
     if ec == "T" and is_hc:
         errors.append(
             f"Threaded (NPT) end connections are not permitted in hydrocarbon/hazardous service "
-            f"(spec {sp}) per MY-K-20-PI-SP-0002 §6.22.2."
+            f"(spec {sp}) per {VMS_DOC} §6.22.2."
         )
         suggestions.append(Suggestion(
             type="fix",
@@ -330,7 +334,7 @@ def validate_combination(
     # Rule 12: Butterfly restricted to clean non-HC service
     if vt == "BF" and is_hc:
         errors.append(
-            f"Butterfly valves are restricted to clean non-hydrocarbon service per MY-K-20-PI-SP-0002 §6.3. "
+            f"Butterfly valves are restricted to clean non-hydrocarbon service per {VMS_DOC} §6.3. "
             f"Spec '{sp}' is for hydrocarbon service."
         )
         suggestions.append(Suggestion(
@@ -343,7 +347,7 @@ def validate_combination(
     # Rule 13: Wafer butterfly rejected in flammable service
     if vt == "BF" and (bore or design or "").upper() == "W" and is_hc:
         warnings.append(
-            "Wafer-type butterfly valves are rejected in flammable/combustible service per MY-K-20-PI-SP-0002 §6.0. "
+            f"Wafer-type butterfly valves are rejected in flammable/combustible service per {VMS_DOC} §6.0. "
             "Must use solid lug type with threaded lugs."
         )
 
@@ -356,20 +360,20 @@ def validate_combination(
             if size_inches is not None:
                 warnings.append(
                     f"{VALVE_TYPE_NAMES[vt]} is restricted to clean non-hydrocarbon service "
-                    f"per MY-K-20-PI-SP-0002 §6.2. Exception: HC service only for class >= 900 and size <= 1.5\". "
+                    f"per {VMS_DOC} §6.2. Exception: HC service only for class >= 900 and size <= 1.5\". "
                     f"Current: class {pressure_class}, size {size_inches}\"."
                 )
             else:
                 warnings.append(
                     f"{VALVE_TYPE_NAMES[vt]} is restricted to clean non-hydrocarbon service "
-                    f"per MY-K-20-PI-SP-0002 §6.2. Exception: HC service for class >= 900 and size <= 1.5\". "
+                    f"per {VMS_DOC} §6.2. Exception: HC service for class >= 900 and size <= 1.5\". "
                     f"Verify size meets exception criteria."
                 )
 
     # Rule 17: Body must be forged for DN <= 40 (NPS 1.5")
     if size_inches is not None and size_inches <= 1.5:
         warnings.append(
-            f"Size {size_inches}\" (DN <= 40): body MUST be forged per MY-K-20-PI-SP-0002 §6.0. "
+            f"Size {size_inches}\" (DN <= 40): body MUST be forged per {VMS_DOC} §6.0. "
             "Cast body is not permitted for this size."
         )
 
@@ -394,19 +398,19 @@ def validate_combination(
             if max_float == 0:
                 warnings.append(
                     f"Class {pressure_class}: ALL ball valves must be trunnion mounted "
-                    f"per MY-K-20-PI-SP-0002 §6.23."
+                    f"per {VMS_DOC} §6.23."
                 )
             elif size_inches <= max_float:
                 warnings.append(
                     f"Class {pressure_class}, size {size_inches}\": floating ball mounting applies "
                     f"(floating <= {max_float}\", trunnion >= {thresholds['min_trunnion']}\") "
-                    f"per MY-K-20-PI-SP-0002 §6.23."
+                    f"per {VMS_DOC} §6.23."
                 )
             else:
                 warnings.append(
                     f"Class {pressure_class}, size {size_inches}\": trunnion mounting REQUIRED "
                     f"(floating <= {max_float}\", trunnion >= {thresholds['min_trunnion']}\") "
-                    "per MY-K-20-PI-SP-0002 §6.23. "
+                    f"per {VMS_DOC} §6.23. "
                     "Requires: DBB capability, spring-loaded seats, body vent/drain, sealant injection."
                 )
 
@@ -417,7 +421,7 @@ def validate_combination(
         if gear_min is not None and size_inches >= gear_min:
             warnings.append(
                 f"{VALVE_TYPE_NAMES[vt]} at {size_inches}\", class {pressure_class}: "
-                f"gear operation REQUIRED (threshold: >= {gear_min}\") per MY-K-20-PI-SP-0002 §6.11.3."
+                f"gear operation REQUIRED (threshold: >= {gear_min}\") per {VMS_DOC} §6.11.3."
             )
 
     # Rule: ISO 17292 limit — only up to 24", CL 600 and below (VMS §6.1)
@@ -425,14 +429,14 @@ def validate_combination(
         if (size_inches > 24 or pressure_class > 600):
             warnings.append(
                 f"ISO 17292 NOT applicable for size {size_inches}\", class {pressure_class} "
-                f"(limit: 24\" / CL 600). API SPEC 6D / ISO 14313 applies per MY-K-20-PI-SP-0002 §6.1."
+                f"(limit: 24\" / CL 600). API SPEC 6D / ISO 14313 applies per {VMS_DOC} §6.1."
             )
 
     # Rule: Check valve piston type for small bore (VMS §6.2)
     if vt == "CH" and size_inches is not None and size_inches <= 1.5:
         if design and design.upper() not in ("P",):
             errors.append(
-                f"Check valve at {size_inches}\" MUST be Piston Type per MY-K-20-PI-SP-0002 §6.2. "
+                f"Check valve at {size_inches}\" MUST be Piston Type per {VMS_DOC} §6.2. "
                 f"Small bore check valves (1/2\"-1-1/2\") shall be Piston Type, horizontal installation only."
             )
             suggestions.append(Suggestion(
@@ -446,7 +450,7 @@ def validate_combination(
     if size_inches is not None and size_inches >= 26:
         warnings.append(
             f"Size {size_inches}\" (\u226526\"): flanges per ASME B16.47 Series A, NOT ASME B16.5 "
-            "per MY-K-20-PI-SP-0002 \u00a76.22.1."
+            f"per {VMS_DOC} \u00a76.22.1."
         )
 
     # Rule: End flange class/face table (VMS §6.22.1)
@@ -454,11 +458,11 @@ def validate_combination(
         if pressure_class <= 600 and ec == "J":
             warnings.append(
                 f"Class {pressure_class} (≤600): standard face is RF (Raised Face). "
-                "RTJ specified — verify this is intentional per MY-K-20-PI-SP-0002 §6.22.1."
+                f"RTJ specified — verify this is intentional per {VMS_DOC} §6.22.1."
             )
         if pressure_class >= 900 and ec == "R":
             errors.append(
-                f"Class {pressure_class} (≥900): RTJ face REQUIRED per MY-K-20-PI-SP-0002 §6.22.1. "
+                f"Class {pressure_class} (≥900): RTJ face REQUIRED per {VMS_DOC} §6.22.1. "
                 "RF (Raised Face) is not acceptable for classes 900-2500."
             )
             suggestions.append(Suggestion(
@@ -472,7 +476,7 @@ def validate_combination(
     if pressure_class and pressure_class >= 1500 and size_inches is not None and size_inches >= 3:
         warnings.append(
             f"Class {pressure_class}, size {size_inches}\": Compact flanges / Hub clamp connector "
-            "acceptable per MY-K-20-PI-SP-0002 §6.22.1."
+            f"acceptable per {VMS_DOC} §6.22.1."
         )
 
     # NACE / sour service — informational
@@ -492,7 +496,7 @@ def validate_combination(
     if st in ("T", "P") and vt in ("BL", "BS", "BF"):
         warnings.append(
             f"Antistatic device REQUIRED for soft-seated {VALVE_TYPE_NAMES[vt]} "
-            "per MY-K-20-PI-SP-0002 §6.0 / §7.8."
+            f"per {VMS_DOC} §6.0 / §7.8."
         )
 
     # Fire test required for non-metallic seats/seals (§6.10)
@@ -507,37 +511,37 @@ def validate_combination(
             if is_floating:
                 warnings.append(
                     "Fire safe required: floating ball valve with non-metallic seat — "
-                    "certify per API 607 / BS EN ISO 10497 per MY-K-20-PI-SP-0002 §6.10."
+                    f"certify per API 607 / BS EN ISO 10497 per {VMS_DOC} §6.10."
                 )
             else:
                 warnings.append(
                     "Fire safe required: trunnion ball valve with non-metallic seat — "
-                    "certify per API 6FA per MY-K-20-PI-SP-0002 §6.10."
+                    f"certify per API 6FA per {VMS_DOC} §6.10."
                 )
         else:
             warnings.append(
                 f"Fire test certification required (API 607 / BS EN ISO 10497) for "
                 f"{VALVE_TYPE_NAMES.get(vt, vt)} with non-metallic seats/seals "
-                "per MY-K-20-PI-SP-0002 §6.10."
+                f"per {VMS_DOC} §6.10."
             )
 
     # Pressure test standard selection (VMS §9.1) — class-level boilerplate, same for every valve of this class
     if pressure_class:
         if pressure_class <= 150:
             notes.append(
-                f"CL {pressure_class}: design per ASME B16.34, test per API STD 598 per MY-K-20-PI-SP-0002 §9.1."
+                f"CL {pressure_class}: design per ASME B16.34, test per API STD 598 per {VMS_DOC} §9.1."
             )
         else:
             notes.append(
                 f"CL {pressure_class}: design and test per API 6D for ball valves "
-                "and applicable codes per valve type per MY-K-20-PI-SP-0002 §9.1."
+                f"and applicable codes per valve type per {VMS_DOC} §9.1."
             )
 
     # Rule: Metal seated ball valve leak rate (VMS §9.1)
     if vt in ("BL", "BS") and st == "M":
         warnings.append(
             "Metal seated ball valve: leakage rate shall NOT exceed Rate 'B' per API 6D / ISO 5208 "
-            "per MY-K-20-PI-SP-0002 §9.1."
+            f"per {VMS_DOC} §9.1."
         )
 
     # Rule: Forged valve additional NDT (VMS §7.5)
@@ -550,12 +554,12 @@ def validate_combination(
         if is_lt_spec and is_nace_spec:
             warnings.append(
                 f"LTCS forged valve {size_inches}\", CL {pressure_class}: "
-                "MPE required per ASTM A-275, acceptance per ASME B16.34 Annexe C (MY-K-20-PI-SP-0002 §7.5)."
+                f"MPE required per ASTM A-275, acceptance per ASME B16.34 Annexe C ({VMS_DOC} §7.5)."
             )
         elif mat_num in (10, 20, 25):
             warnings.append(
                 f"SS/alloy forged valve {size_inches}\", CL {pressure_class}: "
-                "LPE required per ASTM E-165, acceptance per ASME B16.34 Annexe D (MY-K-20-PI-SP-0002 §7.5)."
+                f"LPE required per ASTM E-165, acceptance per ASME B16.34 Annexe D ({VMS_DOC} §7.5)."
             )
 
     # Rule: Chloride/temperature limit for 300-series SS (VMS §7.2)
@@ -564,7 +568,7 @@ def validate_combination(
     if mat_num == 10:
         warnings.append(
             "300-series SS (316/316L): SHALL NOT be used where chloride >5 ppm AND "
-            "temperature >60\u00b0C (stress corrosion cracking region) per MY-K-20-PI-SP-0002 §7.2. "
+            f"temperature >60\u00b0C (stress corrosion cracking region) per {VMS_DOC} §7.2. "
             "Verify service conditions. Gaskets exempted for T \u2264120\u00b0C."
         )
 
@@ -573,14 +577,14 @@ def validate_combination(
         warnings.append(
             "Austenitic SS 316L: carbon content \u22640.03% max (including overlay). "
             "Must be capable of passing intergranular corrosion test per ASTM A262 Practice E. "
-            "CL 1500/2500 castings require LP and RT examination per MY-K-20-PI-SP-0002 §7.2."
+            f"CL 1500/2500 castings require LP and RT examination per {VMS_DOC} §7.2."
         )
 
     # Rule: Needle valve OS&Y design requirement (VMS §6.5)
     if vt == "NE":
         warnings.append(
             "Needle valve SHALL be Outside Screw and Yoke (OS&Y) type for 1/2\" to 2\" "
-            "per MY-K-20-PI-SP-0002 §6.5."
+            f"per {VMS_DOC} §6.5."
         )
 
     # Rule: Seat pocket CRA overlay in corrosive service (VMS §6.15)
@@ -591,7 +595,7 @@ def validate_combination(
                               "A25", "B25", "D25", "E25", "F25", "G25")):
             warnings.append(
                 "CS valve in corrosive service: body seat pockets SHALL be overlayed with "
-                "corrosion resistant material per MY-K-20-PI-SP-0002 §6.15."
+                f"corrosion resistant material per {VMS_DOC} §6.15."
             )
 
     # Rule: Elastomer explosive decompression resistance (VMS §7.9)
@@ -600,7 +604,7 @@ def validate_combination(
             "Elastomers in HC gas/liquid service with H\u2082, CH\u2084, or CO\u2082 "
             "SHALL have proven resistance to explosive decompression. "
             "Max O-ring section 7 mm. No precautions needed for gaseous <30 barg "
-            "per MY-K-20-PI-SP-0002 §7.9."
+            f"per {VMS_DOC} §7.9."
         )
 
     # Rule: FFKM for methanol service (VMS §7.8)
@@ -608,21 +612,21 @@ def validate_combination(
     if sp in ("A1N", "B1N", "D1N", "E1N", "F1N", "G1N"):
         warnings.append(
             "Glycol/flare gas service: FFKM recommended for Methanol service seals "
-            "per MY-K-20-PI-SP-0002 §7.8."
+            f"per {VMS_DOC} §7.8."
         )
 
     # Rule: Gate / Globe OS&Y design (§6.2)
     if vt in ("GA", "GL"):
         warnings.append(
             f"{VALVE_TYPE_NAMES[vt]} SHALL be Outside Screw and Yoke (OS&Y) type "
-            "per MY-K-20-PI-SP-0002 §6.2."
+            f"per {VMS_DOC} §6.2."
         )
 
     # Rule: Swing check bolted bonnet (§6.2)
     if vt == "CH" and design and design.upper() == "S":
         warnings.append(
             "Swing type check valve SHALL have a bolted bonnet "
-            "per MY-K-20-PI-SP-0002 §6.2."
+            f"per {VMS_DOC} §6.2."
         )
 
     # Rule: Gearbox housing material — NOT grey cast iron or aluminium (§6.11.3)
@@ -632,20 +636,20 @@ def validate_combination(
             warnings.append(
                 "Gearbox housing SHALL be cast steel or equivalent. "
                 "Grey cast iron and aluminium alloys are NOT acceptable "
-                "per MY-K-20-PI-SP-0002 §6.11.3."
+                f"per {VMS_DOC} §6.11.3."
             )
 
     # Rule: Body cavity relief required on cavity valves (§6.20)
     if vt in ("BL", "BS", "GA", "GL", "DB"):
         notes.append(
             "Body cavity pressure relief REQUIRED to relieve thermal expansion of trapped fluid "
-            "per MY-K-20-PI-SP-0002 §6.20. Vendor to confirm method at bid stage."
+            f"per {VMS_DOC} §6.20. Vendor to confirm method at bid stage."
         )
 
     # Rule: No cadmium-plated bolts (§7.6)
     notes.append(
         "Bolting: carbon steel or low alloy steel with zinc-nickel plating + fluoropolymer coating. "
-        "Cadmium plated bolts are NOT acceptable per MY-K-20-PI-SP-0002 §7.6."
+        f"Cadmium plated bolts are NOT acceptable per {VMS_DOC} §7.6."
     )
 
     # Rule: Metal-to-metal seat hardness (§7.8)
@@ -653,7 +657,7 @@ def validate_combination(
         warnings.append(
             "Metal-to-metal seated CS valve: body seats, discs/wedges SHALL be minimum 250 BHN "
             "with minimum 50 BHN differential (seat > gate/disc) "
-            "per MY-K-20-PI-SP-0002 §7.8."
+            f"per {VMS_DOC} §7.8."
         )
 
     # Rule: Stellite / hard face minimum thickness (§7.8)
@@ -661,7 +665,7 @@ def validate_combination(
         notes.append(
             "Hard facing / Stellite deposition SHALL be minimum 1.6 mm finished thickness. "
             "Renewable seat rings shall be seal welded (not tack or stitch welded) "
-            "per MY-K-20-PI-SP-0002 §7.8."
+            f"per {VMS_DOC} §7.8."
         )
 
     # Rule: NDT radiography extents by class (§9.2)
@@ -669,29 +673,29 @@ def validate_combination(
         if pressure_class >= 600 or sp.endswith("N") or sp.endswith("LN"):
             warnings.append(
                 f"CL {pressure_class} / NACE spec: 100% radiography required on all valve bodies "
-                "(castings and forgings) per MY-K-20-PI-SP-0002 §9.2."
+                f"(castings and forgings) per {VMS_DOC} §9.2."
             )
         elif pressure_class == 300 and size_inches is not None:
             if size_inches > 16:
                 warnings.append(
                     f"CL 300, size {size_inches}\" (DN > 400): 100% RT required "
-                    "per MY-K-20-PI-SP-0002 §9.2."
+                    f"per {VMS_DOC} §9.2."
                 )
             else:
                 notes.append(
                     f"CL 300, size {size_inches}\" (DN ≤ 400): 25% RT minimum "
-                    "per MY-K-20-PI-SP-0002 §9.2."
+                    f"per {VMS_DOC} §9.2."
                 )
         elif pressure_class == 150 and size_inches is not None:
             if size_inches > 24:
                 warnings.append(
                     f"CL 150, size {size_inches}\" (DN > 600): 100% RT required "
-                    "per MY-K-20-PI-SP-0002 §9.2."
+                    f"per {VMS_DOC} §9.2."
                 )
             else:
                 notes.append(
                     f"CL 150, size {size_inches}\" (DN ≤ 600): 25% RT minimum "
-                    "per MY-K-20-PI-SP-0002 §9.2."
+                    f"per {VMS_DOC} §9.2."
                 )
 
     # Rule: Fugitive emissions test — HC service with hazardous composition (§9.4)
@@ -700,7 +704,7 @@ def validate_combination(
             "Fugitive Emissions Test (FET) per BS EN ISO 15848 REQUIRED for HC service: "
             "Tightness Class BH, Endurance Class CC1 (control) or CO1 (on-off). "
             "Type test witnessed by Contractor-approved third-party agency "
-            "per MY-K-20-PI-SP-0002 §9.4. "
+            f"per {VMS_DOC} §9.4. "
             "Mandatory if service contains H₂S >230 ppm, methane/NMHC ≥20% mass, "
             "or BTEX ≥1% wt / benzene ≥1% vol."
         )
@@ -709,7 +713,7 @@ def validate_combination(
     if vt not in ("BF",):
         notes.append(
             "Weld repairs of forged valves are NOT permitted "
-            "per MY-K-20-PI-SP-0002 §6.0."
+            f"per {VMS_DOC} §6.0."
         )
 
     # Rule: Trunnion ball valve body vent and drain (§6.1)
@@ -721,13 +725,13 @@ def validate_combination(
                 warnings.append(
                     f"Trunnion ball valve at {size_inches}\", CL {pressure_class}: "
                     "body vent and drain REQUIRED. Drain/vent valves fitted with NPT threaded plugs "
-                    "per MY-K-20-PI-SP-0002 §6.1."
+                    f"per {VMS_DOC} §6.1."
                 )
 
     # Torque limits (VMS §6.11.2) — boilerplate limits, not a per-valve warning
     if size_inches is not None and vt in ("BL", "BS", "BF", "GA", "GL", "NE"):
         notes.append(
-            "Operation limits per MY-K-20-PI-SP-0002 §6.11.2: max 150 Nm handwheel, "
+            f"Operation limits per {VMS_DOC} §6.11.2: max 150 Nm handwheel, "
             "270 Nm lever, handwheel max 750 mm, lever max 500 mm/side, "
             "break force max 45 kg, mid-stroke max 35 kg."
         )
@@ -754,7 +758,7 @@ def validate_datasheet(
     spec: str,
     size_inches: float | None = None,
 ) -> ValidationResult:
-    """Validate a generated datasheet against MY-K-20-PI-SP-0002 size-dependent rules.
+    f"""Validate a generated datasheet against {VMS_DOC} size-dependent rules.
 
     Called AFTER rule_engine.generate_datasheet() to add Phase 2 warnings.
     """
@@ -773,7 +777,7 @@ def validate_datasheet(
         if expected.lower() not in actual_wedge.lower():
             warnings.append(
                 f"Gate valve wedge: size {size_inches}\" should use {expected} wedge "
-                f"per MY-K-20-PI-SP-0002 §6.2 (Solid <= 1.5\", Flexible > 1.5\")."
+                f"per {VMS_DOC} §6.2 (Solid <= 1.5\", Flexible > 1.5\")."
             )
 
     # Rule 10: Body seat — renewable vs integral
@@ -781,7 +785,7 @@ def validate_datasheet(
         body_seat = data.get("seat_construction", "")
         if "renewable" not in body_seat.lower() and "integral" not in body_seat.lower():
             warnings.append(
-                f"Body seat type (renewable/integral) should be specified per MY-K-20-PI-SP-0002 §6.2 Table 2."
+                f"Body seat type (renewable/integral) should be specified per {VMS_DOC} §6.2 Table 2."
             )
 
     # Rule 11: Backseat required for GA, GL, NE
@@ -790,14 +794,14 @@ def validate_datasheet(
         if "back seat" not in stem.lower() and "backseat" not in stem.lower():
             warnings.append(
                 f"Backseat REQUIRED for {VALVE_TYPE_NAMES.get(vt, vt)} "
-                "per MY-K-20-PI-SP-0002 §6.14."
+                f"per {VMS_DOC} §6.14."
             )
 
     # Rule 14: Blowout-proof stem required on ALL valves (§6.16)
     stem = data.get("stem_construction", "")
     if vt not in ("CH",) and "blowout" not in stem.lower() and "blow-out" not in stem.lower():
         warnings.append(
-            "Blowout-proof stem REQUIRED on all valves per MY-K-20-PI-SP-0002 §6.16. "
+            f"Blowout-proof stem REQUIRED on all valves per {VMS_DOC} §6.16. "
             "Stem retention by packing gland alone is not acceptable."
         )
 
@@ -806,13 +810,13 @@ def validate_datasheet(
         if stem and "cast" in stem.lower() and "forged" not in stem.lower():
             errors.append(
                 "Valve stem SHALL be forged or machined from forged/rolled bar — "
-                "casting is NOT permitted per MY-K-20-PI-SP-0002 §6.16."
+                f"casting is NOT permitted per {VMS_DOC} §6.16."
             )
         else:
             notes.append(
                 "Stem SHALL be forged or machined from forged/rolled bar (casting not permitted). "
                 "Stem designed to withstand 2× max operating torque "
-                "per MY-K-20-PI-SP-0002 §6.16."
+                f"per {VMS_DOC} §6.16."
             )
 
     # Rule: Gate / Globe OS&Y — verify stem construction field (§6.2)
@@ -820,7 +824,7 @@ def validate_datasheet(
         if stem and "os&y" not in stem.lower() and "outside screw" not in stem.lower():
             warnings.append(
                 f"{VALVE_TYPE_NAMES.get(vt, vt)} stem design SHALL be Outside Screw and Yoke (OS&Y) "
-                "per MY-K-20-PI-SP-0002 §6.2."
+                f"per {VMS_DOC} §6.2."
             )
 
     # Rule 15: DBB body construction
@@ -828,11 +832,11 @@ def validate_datasheet(
         body = data.get("body_construction", "")
         if size_inches <= 2 and "one-piece" not in body.lower() and "one piece" not in body.lower():
             warnings.append(
-                f"DBB body for {size_inches}\" should be one-piece forged per MY-K-20-PI-SP-0002 §6.4."
+                f"DBB body for {size_inches}\" should be one-piece forged per {VMS_DOC} §6.4."
             )
         elif size_inches > 2 and "three-piece" not in body.lower() and "three piece" not in body.lower():
             warnings.append(
-                f"DBB body for {size_inches}\" should be three-piece bolted per MY-K-20-PI-SP-0002 §6.4."
+                f"DBB body for {size_inches}\" should be three-piece bolted per {VMS_DOC} §6.4."
             )
 
     # Rule 29: Locking device required (all except check)
@@ -840,7 +844,7 @@ def validate_datasheet(
         locks = data.get("locks", "")
         if not locks:
             warnings.append(
-                "Locking device (padlock facility) REQUIRED per MY-K-20-PI-SP-0002 §6.17."
+                f"Locking device (padlock facility) REQUIRED per {VMS_DOC} §6.17."
             )
 
     # Rule 30: Position indicator for quarter-turn and gear-operated
@@ -849,20 +853,20 @@ def validate_datasheet(
         if "position indicator" not in operation.lower():
             warnings.append(
                 f"Position indicator REQUIRED for quarter-turn {VALVE_TYPE_NAMES.get(vt, vt)} "
-                "per MY-K-20-PI-SP-0002 §6.13."
+                f"per {VMS_DOC} §6.13."
             )
 
     # Rule 38: Lifting lug — conditional on weight (unknown at validation time), boilerplate reference
     notes.append(
         "Lifting lug required if valve weight >= 25 kg (design load 2x lift weight) "
-        "per MY-K-20-PI-SP-0002 §6.25."
+        f"per {VMS_DOC} §6.25."
     )
 
     # Rule 40: Auxiliary connections in HC must be flanged
     if is_hc:
         warnings.append(
             "Auxiliary body connections in HC service must be flanged welded construction "
-            "(no socket weld or seal-welded threads) per MY-K-20-PI-SP-0002 §6.19."
+            f"(no socket weld or seal-welded threads) per {VMS_DOC} §6.19."
         )
 
     # Rule: Casting quality standard (VMS §4.3 MSS SP-55)
@@ -871,7 +875,7 @@ def validate_datasheet(
         warnings.append(
             "Cast valve body: casting quality per MSS SP-55 (Quality Standard for Steel Castings "
             "for Valves, Flanges, Fittings & Other Piping Components). "
-            "100% RT per ASME B16.34 Annexure B irrespective of rating per MY-K-20-PI-SP-0002 §9.2."
+            f"100% RT per ASME B16.34 Annexure B irrespective of rating per {VMS_DOC} §9.2."
         )
 
     # Flange surface finish (VMS §4.3 ASME B46.1 / MSS SP-6) — boilerplate for all flanged valves
@@ -880,26 +884,26 @@ def validate_datasheet(
         notes.append(
             "Flange jointing faces: machine finished per ASME B16.5 Para 6.4.5, "
             "surface finish per ASME B46.1 / MSS SP-6. No radial tool marks permitted. "
-            "RTJ groove hardness per corresponding piping class per MY-K-20-PI-SP-0002 §6.22.1."
+            f"RTJ groove hardness per corresponding piping class per {VMS_DOC} §6.22.1."
         )
 
     # Material certification (VMS §8.0, BS EN 10204) — applies to every valve
     notes.append(
         "Material certification: Pressure retaining parts per BS EN 10204 Type 3.2, "
-        "other parts per BS EN 10204 Type 3.1 per MY-K-20-PI-SP-0002 §8.0."
+        f"other parts per BS EN 10204 Type 3.1 per {VMS_DOC} §8.0."
     )
 
     # Pressure testing standards (VMS §9.1) — applies to every valve
     notes.append(
         "Pressure testing per API STD 598 / BS EN ISO 5208 / BS 6755 as applicable. "
-        "Test sequence: body hydro, seat hydro, LP pneumatic seat per MY-K-20-PI-SP-0002 §9.1."
+        f"Test sequence: body hydro, seat hydro, LP pneumatic seat per {VMS_DOC} §9.1."
     )
 
     # Rule: Welding procedure (VMS §6.0, BS EN 288)
     if "butt weld" in end_conn.lower() or "weld" in body_form.lower():
         warnings.append(
             "Welding per ASME B31.3 / ASME SEC.IX. WPS per BS EN 288-2, PQR per BS EN 287-1 "
-            "per MY-K-20-PI-SP-0002 §6.0."
+            f"per {VMS_DOC} §6.0."
         )
 
     # Rule: Needle valve OS&Y check (VMS §6.5)
@@ -908,7 +912,7 @@ def validate_datasheet(
         if "os&y" not in stem.lower() and "outside screw" not in stem.lower():
             warnings.append(
                 "Needle valve SHALL be Outside Screw and Yoke (OS&Y) type for 1/2\"-2\" "
-                "per MY-K-20-PI-SP-0002 §6.5."
+                f"per {VMS_DOC} §6.5."
             )
 
     # Rule: Check valve orientation — piston type horizontal only (VMS §6.2)
@@ -917,7 +921,7 @@ def validate_datasheet(
         if "horizontal" not in operation.lower():
             errors.append(
                 f"Piston type check valve at {size_inches}\" SHALL be horizontal installation only "
-                "per MY-K-20-PI-SP-0002 §6.2."
+                f"per {VMS_DOC} §6.2."
             )
 
     # Rule: Compact flange / hub compatibility (VMS §6.22.5)
@@ -925,7 +929,7 @@ def validate_datasheet(
         warnings.append(
             "Hub ends shall be compatible with Grayloc\u00ae, Techlok\u00ae, or G-Lok\u00ae clamps. "
             "Dimensions may differ between manufacturers — confirm with Contractor "
-            "per MY-K-20-PI-SP-0002 §6.22.5."
+            f"per {VMS_DOC} §6.22.5."
         )
 
     return ValidationResult(

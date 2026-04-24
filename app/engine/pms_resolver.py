@@ -321,26 +321,27 @@ def get_pms_field_sources(spec_code: str, data: dict[str, str]) -> dict[str, str
         base_source = FIELD_SOURCE_MAP.get(key, SRC_VALVE_STD)
 
         # Override with granular PMS source where applicable
+        _PMS_REF = "40801-SPE-80000-PP-SP-0001"
         if pms_spec:
             if key in ("hydrotest_shell", "hydrotest_closure"):
                 if pms_spec.index_row and pms_spec.index_row.hydrotest_barg:
-                    base_source = f"PMS {spec_code} -- INDEX sheet col AG (Hydrotest)"
+                    base_source = f"PMS {spec_code} — {_PMS_REF} (Hydrotest P-T table)"
             elif key == "design_pressure":
                 if pms_spec.index_row and pms_spec.index_row.design_pressure_barg:
-                    base_source = f"PMS {spec_code} -- INDEX sheet P-T ratings"
+                    base_source = f"PMS {spec_code} — {_PMS_REF} (P-T ratings)"
             elif key == "gaskets":
                 if pms_spec.bolting_gaskets and pms_spec.bolting_gaskets.gasket_spec:
-                    base_source = f"PMS {spec_code} -- bolting_gaskets table"
+                    base_source = f"PMS {spec_code} — {_PMS_REF} (bolting & gasket table)"
             elif key == "bolts":
                 if pms_spec.bolting_gaskets and pms_spec.bolting_gaskets.stud_bolt_spec:
-                    base_source = f"PMS {spec_code} -- bolting_gaskets table"
+                    base_source = f"PMS {spec_code} — {_PMS_REF} (bolting & gasket table)"
             elif key == "nuts":
                 if pms_spec.bolting_gaskets and pms_spec.bolting_gaskets.hex_nut_spec:
-                    base_source = f"PMS {spec_code} -- bolting_gaskets table"
+                    base_source = f"PMS {spec_code} — {_PMS_REF} (bolting & gasket table)"
             elif key == "body_material":
-                base_source = f"PMS {spec_code} -- material category & valve standard"
+                base_source = f"PMS {spec_code} — {_PMS_REF} + VMS 40801-SPE-80000-PP-SP-0002"
             elif key in ("size_range", "service", "pressure_class", "sour_service"):
-                base_source = f"Automated based on PMS class {spec_code}"
+                base_source = f"PMS {spec_code} — {_PMS_REF}"
 
         sources[key] = base_source
 
