@@ -29,88 +29,110 @@ _BALL_DESIGNS = {"R", "F", "M"}
 _NE_DESIGNS = {"I", "A"}
 
 
-def decode_vds(vds: str) -> DecodedVDS:
+def _display_vds_for_sheet(original_input: str, canonical_vds: str) -> str:
+    """Datasheet label: keep ``VDS-`` prefix when the user included it."""
+    head = (original_input or "").strip().upper()
+    c = canonical_vds.upper().strip()
+    if head.startswith("VDS-"):
+        return f"VDS-{c}"
+    return c
+
+
+def decode_vds(vds: str, project_id: str | None = None) -> DecodedVDS:
     """Parse a VDS string into a DecodedVDS model.
 
     Supports:
     - New format: BLRTA1R  → BL + R(bore) + T(seat) + A1 + R(end)
     - Legacy 3-char: BSFA1R → BSF + A1 + R(end)
     - Legacy 2-char: BSA1R  → BS  + A1 + R(end)
+
+    The set of recognized valve-type prefixes (and per-prefix design lists)
+    comes from `vds_config.py`. A project can supply its own prefix mapping
+    (e.g. "BV" → ball valve) by adding `app/data/projects/<id>/vds_config.json`.
     """
+    original_input = vds
+    from .vds_config import get_vds_config
+    cfg = get_vds_config(project_id)
+    prefix_map     = cfg["valve_type_prefixes"]
+    seat_chars     = set(cfg["seat_chars"])
+    legacy_3char   = cfg["legacy_3char_prefixes"]
+    legacy_2char   = cfg["legacy_2char_prefixes"]
+
     raw = vds.upper().strip()
+    if raw.startswith("VDS-"):
+        raw = raw[4:].strip()
     if len(raw) < 5:
         raise ValueError(f"VDS code too short: '{raw}'")
 
     valve_type_str = ""
     design = ""
     seat_char = ""
-    rest = ""  # everything after valve_type + design + seat
+    rest = ""
 
     prefix2 = raw[:2]
     prefix3 = raw[:3]
 
-    if prefix2 in _NEW_PREFIXES:
+    if prefix2 in prefix_map:
         # ── New format ──
-        valve_type_str = prefix2
+        spec = prefix_map[prefix2]
+        valve_type_str = spec["engine_type"]   # canonical type used by the engine
+        valid_designs = set(spec.get("designs", []))
+        default_design = spec.get("default_design", "")
         pos = 2
 
         # Position 2: design / bore character
-        if prefix2 in ("BL", "BS"):
-            if raw[pos] in _BALL_DESIGNS:
-                design = raw[pos]; pos += 1
-            else:
-                design = "R"  # default reduced bore
-        elif prefix2 == "NE":
-            if raw[pos] in _NE_DESIGNS:
-                design = raw[pos]; pos += 1
-            else:
-                design = "I"  # default inline
-        else:
-            # GA, GL, CH, DB, BF — design char is always present in new format
+        if pos < len(raw) and raw[pos] in valid_designs:
             design = raw[pos]; pos += 1
+        else:
+            design = default_design
 
         # Position 3: seat character (T/P/M)
-        if pos < len(raw) and raw[pos] in ("T", "P", "M"):
+        if pos < len(raw) and raw[pos] in seat_chars:
             # Disambiguate: T followed by digit is a piping class (T50A), not a seat
             if raw[pos] == "T" and pos + 1 < len(raw) and raw[pos + 1].isdigit():
-                seat_char = ""  # no explicit seat
+                seat_char = ""
             else:
                 seat_char = raw[pos]; pos += 1
 
         rest = raw[pos:]
 
-    elif prefix3 in _LEGACY_3CHAR:
-        # ── Legacy 3-char ──
-        valve_type_str, design = _LEGACY_3CHAR[prefix3]
+    elif prefix3 in legacy_3char:
+        valve_type_str, design = legacy_3char[prefix3]
         rest = raw[3:]
 
-    elif prefix2 in _LEGACY_2CHAR:
-        # ── Legacy 2-char ──
-        valve_type_str, design = _LEGACY_2CHAR[prefix2]
+    elif prefix2 in legacy_2char:
+        valve_type_str, design = legacy_2char[prefix2]
         rest = raw[2:]
 
     else:
         raise ValueError(f"Unrecognized VDS prefix: '{raw[:3]}'")
 
     # ── Parse piping_class + end_connection from `rest` ──
-    # End connections: JT (2-char), then single-char R/J/F/W/S/H/T
+    # End connections come from the project config — 2-char (e.g. JT) tried first.
+    end_chars        = set(cfg["end_chars"])
+    double_char_ends = list(cfg.get("double_char_ends", []))
     piping_class = ""
     end_conn_str = ""
 
-    if rest.endswith("JT"):
-        end_conn_str = "JT"
-        piping_class = rest[:-2]
-    elif len(rest) >= 1:
-        last = rest[-1]
-        if last in ("R", "J", "F", "W", "S", "H", "T"):
-            end_conn_str = last
-            piping_class = rest[:-1]
+    matched_double = False
+    for de in double_char_ends:
+        if rest.endswith(de):
+            end_conn_str = de
+            piping_class = rest[: -len(de)]
+            matched_double = True
+            break
+    if not matched_double:
+        if len(rest) >= 1:
+            last = rest[-1]
+            if last in end_chars:
+                end_conn_str = last
+                piping_class = rest[:-1]
+            else:
+                # No end connection found — treat entire rest as piping class, default RF
+                piping_class = rest
+                end_conn_str = "R"
         else:
-            # No end connection found — treat entire rest as piping class, default RF
-            piping_class = rest
-            end_conn_str = "R"
-    else:
-        raise ValueError(f"Cannot parse piping class from VDS: '{raw}'")
+            raise ValueError(f"Cannot parse piping class from VDS: '{raw}'")
 
     if not piping_class:
         raise ValueError(f"Empty piping class in VDS: '{raw}'")
@@ -125,6 +147,7 @@ def decode_vds(vds: str) -> DecodedVDS:
 
     return DecodedVDS(
         raw_vds=raw,
+        display_vds=_display_vds_for_sheet(original_input, raw),
         valve_type=valve_type,
         design=design,
         seat_type=seat_type,

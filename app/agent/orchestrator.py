@@ -383,12 +383,13 @@ async def run_agent(
                         ]
                     })
             elif tool_block.name == "generate_datasheet":
-                if result.get("error") and result.get("validation"):
-                    yield AgentEvent(type="validation", data=result["validation"])
-                elif not result.get("error"):
-                    # Emit validation event first (so frontend can attach errors/warnings)
-                    if result.get("validation"):
-                        yield AgentEvent(type="validation", data=result["validation"])
+                val = result.get("validation") or {}
+                errs = [e for e in (val.get("errors") or []) if str(e).strip()]
+                if val:
+                    yield AgentEvent(type="validation", data=val)
+                # Do not emit a datasheet card when the tool reported errors — only warnings
+                # may accompany a real datasheet payload.
+                if not (result.get("error") or errs):
                     yield AgentEvent(type="datasheet", data=result)
 
             tool_results_content.append({

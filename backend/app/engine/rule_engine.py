@@ -15,6 +15,7 @@ never seen before, as long as the combination is valid.
 import re
 from ..models.vds import DecodedVDS, ValveType, SeatType, EndConnection
 from .pms_loader import get_pms_loader
+from .datasheet_prune import prune_datasheet_by_valve_type
 
 # ============================================================================
 # MATERIAL CATEGORY RESOLUTION
@@ -33,6 +34,19 @@ def _get_material_category(piping_class: str) -> str:
     pc = piping_class.upper().strip()
     is_nace = "N" in pc
     is_lt = "L" in pc
+
+    # Project PMS data is the source of truth for material family. The old
+    # numeric fallback below is only a compatibility path for missing PMS rows.
+    try:
+        spec = get_pms_loader().get_spec(pc)
+        material_description = (
+            spec.header.material_description if spec and spec.header else None
+        )
+    except Exception:
+        material_description = None
+    cat_from_pms = _material_category_from_description(material_description, is_nace)
+    if cat_from_pms:
+        return cat_from_pms
 
     # Tubing classes
     if pc.startswith("T"):
@@ -64,6 +78,36 @@ def _get_material_category(piping_class: str) -> str:
         42: "CPVC",
     }
     return category_map.get(num, "CS")
+
+
+def _material_category_from_description(description: str | None, is_nace: bool) -> str | None:
+    """Resolve material family from the project PMS header text."""
+    if not description:
+        return None
+    text = description.lower()
+
+    if "cpvc" in text:
+        return "CPVC"
+    if "gre" in text or "glass" in text or "rtrp" in text:
+        return "GRE_BONSTRAND" if "bonstrand" in text else "GRE"
+    if "copper" in text or "bronze" in text or "c12200" in text or "b42" in text:
+        return "COPPER"
+    if "cu-ni" in text or "cuni" in text or "cu ni" in text or "copper nickel" in text or "90/10" in text:
+        return "CUNI"
+    if "super duplex" in text or "sdss" in text or "s32750" in text:
+        return "SDSS_NACE" if is_nace else "SDSS"
+    if "duplex" in text or "dss" in text or "s31803" in text or "s32205" in text:
+        return "DSS"
+    if "316" in text or "stainless" in text or "ss" in text:
+        return "SS316L_NACE" if is_nace else "SS316L"
+    if "galv" in text:
+        return "GALV_SS_BODY" if "ss" in text or "stainless" in text else "GALV"
+    if "ltcs" in text or "low temperature carbon" in text:
+        return "LTCS_NACE" if is_nace else "CS"
+    if "carbon" in text or text.strip() in {"cs", "c.s."}:
+        return "CS_NACE" if is_nace else "CS"
+
+    return None
 
 
 # ============================================================================
@@ -486,7 +530,7 @@ CONSTRUCTION = {
     },
     "BF": {
         "body_construction": "Wafer Type, Solid Fully Lugged, Threaded Lug",
-        "stem_construction": "Rotating, Blowout proof stem",
+        "shaft_construction": "One-piece through shaft, blowout-proof retention, anti-static continuity",
         "seat_construction": "Double-offset seat",
         "operation": 'Lever Operated for 4" and below ; Gear box for 6" and above, Fully enclosed, dust proof, with Position Indicator',
     },
@@ -575,20 +619,35 @@ PROJECT_CONSTANTS = {
 # ============================================================================
 
 def _resolve_end_connection(end_conn: EndConnection, piping_class: str, cat: str,
-                            size_inches: float | None = None) -> str:
+                            size_inches: float | None = None,
+                            pms_flange_face: str | None = None,
+                            pms_flange_type: str | None = None,
+                            pms_flange_std: str | None = None) -> str:
     """Derive the full end connection description from the end connection code.
 
     Per MY-K-20-PI-SP-0002 §6.22:
       - Flanges ≤24" per ASME B16.5
       - Flanges 26"+ per ASME B16.47 Series A
+
+    When the PMS sheet provides explicit flange data (face, type, standard) it
+    wins over rule-derived values.
     """
     ec = end_conn.value
     letter = piping_class[0] if piping_class else "A"
 
-    # Select flange standard based on size (§6.22.1)
-    flange_std = "ASME B16.5"
-    if size_inches is not None and size_inches >= 26:
-        flange_std = "ASME B16.47 Series A"
+    if pms_flange_std:
+        flange_std = pms_flange_std
+    else:
+        flange_std = "ASME B16.5"
+        if size_inches is not None and size_inches >= 26:
+            flange_std = "ASME B16.47 Series A"
+
+    if pms_flange_type and ec in ("R", "J", "F"):
+        face_descriptor = pms_flange_face or {"R": "RF", "J": "RTJ", "F": "FF"}.get(ec, ec)
+        return f"Flanged ({face_descriptor}) - {pms_flange_type}"
+
+    if pms_flange_face and ec in ("R", "J", "F"):
+        return f"Flanged {flange_std} ({pms_flange_face})"
 
     ec_map = {
         "R": f"Flanged {flange_std} RF (Raised Face)",
@@ -603,7 +662,6 @@ def _resolve_end_connection(end_conn: EndConnection, piping_class: str, cat: str
 
     base = ec_map.get(ec, f"Flanged {flange_std} {ec}")
 
-    # Cu-Ni / GRE / CPVC use different flange standards
     if cat in ("CUNI",):
         base = base.replace(flange_std, "EEMUA 234")
     elif cat in ("GRE", "GRE_BONSTRAND"):
@@ -611,7 +669,6 @@ def _resolve_end_connection(end_conn: EndConnection, piping_class: str, cat: str
     elif cat in ("CPVC",):
         base = base.replace(flange_std, "CPVC Flange")
 
-    # Compact flange note for CL 1500+ and size ≥3" (§6.22.1)
     pc_num_local = _PRESSURE_CLASS_NUM.get(letter, 150)
     if pc_num_local >= 1500 and size_inches is not None and size_inches >= 3:
         base += " (Compact Flanges / Hub Clamp Connector also acceptable per §6.22.1)"
@@ -623,8 +680,15 @@ def _resolve_end_connection(end_conn: EndConnection, piping_class: str, cat: str
 # CORROSION ALLOWANCE
 # ============================================================================
 
-def _resolve_corrosion_allowance(cat: str) -> str:
-    """Derive corrosion allowance based on material category."""
+def _resolve_corrosion_allowance(cat: str, pms_value: str | None = None) -> str:
+    """Resolve corrosion allowance — PMS value (project-specific) wins over category default."""
+    if pms_value:
+        s = str(pms_value).strip()
+        if s.upper() in ("NIL", "NONE", "N/A", "-"):
+            return "0 mm"
+        if s and not any(c.isalpha() for c in s):
+            return f"{s} mm"
+        return s
     if cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE"):
         return "0 mm (CRA material)"
     if cat in ("CUNI", "COPPER"):
@@ -640,11 +704,275 @@ def _resolve_corrosion_allowance(cat: str) -> str:
 # PMS DATA RESOLUTION (authoritative source for bolting, gaskets, hydrotest)
 # ============================================================================
 
-def _resolve_from_pms(piping_class: str, cat: str, is_rtj: bool) -> dict:
-    """Try to resolve bolts, nuts, gaskets, hydrotest, design pressure from PMS data.
+# --- Size range from synced PMS (valve_assignments / nps_sizes / pipe_schedule) ---
 
-    PMS data is authoritative — if available, it overrides the rule-based fallbacks.
-    """
+_NPS_INCH_LABEL_BY_VALUE: dict[float, str] = {
+    0.125: "1/8", 0.25: "1/4", 0.375: "3/8", 0.5: "1/2", 0.625: "5/8",
+    0.75: "3/4", 0.875: "7/8", 1.0: "1", 1.125: "1-1/8", 1.25: "1-1/4",
+    1.375: "1-3/8", 1.5: "1-1/2", 1.625: "1-5/8", 1.75: "1-3/4", 1.875: "1-7/8",
+    2.0: "2", 2.125: "2-1/8", 2.25: "2-1/4", 2.375: "2-3/8", 2.5: "2-1/2",
+    2.625: "2-5/8", 2.75: "2-3/4", 2.875: "2-7/8", 3.0: "3",
+}
+
+
+def _normalize_pms_vds_code(code: str | None) -> str:
+    if not code or not isinstance(code, str):
+        return ""
+    s = code.upper().strip()
+    if s.startswith("VDS-"):
+        s = s[4:].strip()
+    return s
+
+
+def _nps_inch_display(n: float) -> str:
+    x = float(n)
+    key = round(x, 4)
+    label = _NPS_INCH_LABEL_BY_VALUE.get(key)
+    if label is not None:
+        return label
+    if abs(key - round(key)) < 1e-6 and key >= 2:
+        return str(int(round(key)))
+    t = round(key, 3)
+    if abs(t - int(t)) < 1e-6:
+        return str(int(t))
+    s = f"{t:.3f}".rstrip("0").rstrip(".")
+    return s
+
+
+def _size_range_display(lo: float, hi: float) -> str:
+    return f'{_nps_inch_display(lo)}" - {_nps_inch_display(hi)}"'
+
+
+def _iter_assignment_vds_codes(row: dict) -> list[str]:
+    out: list[str] = []
+    codes = row.get("vds_codes")
+    if isinstance(codes, list):
+        for c in codes:
+            if isinstance(c, str) and c.strip():
+                for part in c.split(","):
+                    norm = _normalize_pms_vds_code(part)
+                    if norm:
+                        out.append(norm)
+    one = row.get("vds_code")
+    if isinstance(one, str) and one.strip():
+        for part in one.split(","):
+            norm = _normalize_pms_vds_code(part)
+            if norm:
+                out.append(norm)
+    return list(dict.fromkeys(out))
+
+
+def _pms_row_nps_bounds(row: dict) -> tuple[float, float] | None:
+    try:
+        lo = row.get("nps_min")
+        hi = row.get("nps_max")
+        if lo is None or hi is None:
+            return None
+        return float(lo), float(hi)
+    except (TypeError, ValueError):
+        return None
+
+
+def _row_to_size_range(row: dict) -> str | None:
+    b = _pms_row_nps_bounds(row)
+    if not b:
+        return None
+    lo, hi = b
+    return _size_range_display(lo, hi)
+
+
+def _pick_assignment_row_by_size(rows: list[dict], size_inches: float | None) -> dict | None:
+    if size_inches is None:
+        return None
+    try:
+        sz = float(size_inches)
+    except (TypeError, ValueError):
+        return None
+    for r in rows:
+        b = _pms_row_nps_bounds(r)
+        if b and b[0] <= sz <= b[1]:
+            return r
+    return None
+
+
+def _pms_valve_assignment_tags(valve_type_code: str, design: str) -> list[str]:
+    vt = (valve_type_code or "").upper()
+    d = (design or "").upper()
+    if vt in ("BL", "BS"):
+        return ["BALL"]
+    if vt == "BF":
+        return ["BUTTERFLY"]
+    if vt == "GA":
+        return ["GATE"]
+    if vt == "GL":
+        return ["GLOBE"]
+    if vt == "CH":
+        if d == "P":
+            return ["CHECK_PISTON"]
+        return ["CHECK_SWING"]
+    if vt == "DB":
+        return ["DBB_PROCESS", "DBB_INST"]
+    if vt == "NE":
+        return ["NEEDLE", "NE", "INSTRUMENT_NEEDLE"]
+    return []
+
+
+def _select_dbb_assignment_row(rows: list[dict], size_inches: float | None) -> dict | None:
+    if not rows:
+        return None
+    if len(rows) == 1:
+        return rows[0]
+    picked = _pick_assignment_row_by_size(rows, size_inches)
+    if picked:
+        return picked
+    for r in rows:
+        if r.get("valve_type") == "DBB_PROCESS":
+            return r
+    return rows[0]
+
+
+def _size_range_from_valve_assignments(
+    assignments: list[dict],
+    raw_vds: str | None,
+    valve_type_code: str,
+    design: str,
+    size_inches: float | None,
+) -> str | None:
+    if not assignments:
+        return None
+    norm = _normalize_pms_vds_code(raw_vds)
+    vmatch: list[dict] = []
+    for row in assignments:
+        if not isinstance(row, dict):
+            continue
+        if norm and norm in _iter_assignment_vds_codes(row):
+            vmatch.append(row)
+    if len(vmatch) > 1:
+        row = _pick_assignment_row_by_size(vmatch, size_inches) or vmatch[0]
+        return _row_to_size_range(row)
+    if len(vmatch) == 1:
+        return _row_to_size_range(vmatch[0])
+
+    tags = _pms_valve_assignment_tags(valve_type_code, design)
+    if not tags:
+        return None
+    family = [r for r in assignments if isinstance(r, dict) and r.get("valve_type") in tags]
+    if not family:
+        return None
+    if valve_type_code.upper() == "DB":
+        row = _select_dbb_assignment_row(family, size_inches)
+    elif len(family) > 1:
+        row = _pick_assignment_row_by_size(family, size_inches) or family[0]
+    else:
+        row = family[0]
+    return _row_to_size_range(row) if row else None
+
+
+def _size_range_from_pipe_schedule(rows: list[dict]) -> str | None:
+    if not rows:
+        return None
+    sizes: list[float] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        n = r.get("nps_inch")
+        if n is None:
+            continue
+        try:
+            sizes.append(float(n))
+        except (TypeError, ValueError):
+            continue
+    if not sizes:
+        return None
+    return _size_range_display(min(sizes), max(sizes))
+
+
+def _dbb_is_instrument_isolation(
+    decoded: DecodedVDS,
+    valve_assignments: list | None = None,
+) -> bool:
+    """Instrumentation / tubing DBB — omit separate elastomer *seal_material* row."""
+    if (decoded.design or "").upper() == "P":
+        return True
+    pc = (decoded.piping_class or "").upper().strip()
+    if re.match(r"^T\d", pc):
+        return True
+    vnorm = _normalize_pms_vds_code(decoded.raw_vds)
+    if not vnorm:
+        return False
+    for row in valve_assignments or []:
+        if not isinstance(row, dict):
+            continue
+        if row.get("valve_type") != "DBB_INST":
+            continue
+        if vnorm in _iter_assignment_vds_codes(row):
+            return True
+    return False
+
+
+def _select_flange_for_size(flanges: list, size_inches: float | None):
+    """Pick the flange entry whose NPS range covers ``size_inches``."""
+    if not flanges:
+        return None
+    if size_inches is None or len(flanges) == 1:
+        return flanges[0]
+    for fl in flanges:
+        lo = fl.nps_min if fl.nps_min is not None else 0.0
+        hi = fl.nps_max if fl.nps_max is not None else 9999.0
+        if lo <= float(size_inches) <= hi:
+            return fl
+    return flanges[0]
+
+
+def _hydrotest_pressures_barg_from_spec(spec) -> tuple[float, float] | None:
+    """Return (shell_test_barg, closure_test_barg) from PMS (same logic as app)."""
+    dp: float | None = None
+    if spec.index_row and spec.index_row.design_pressure_barg is not None:
+        try:
+            dp = float(spec.index_row.design_pressure_barg)
+        except (TypeError, ValueError):
+            dp = None
+    if dp is None and spec.header.design_pressure_barg is not None:
+        try:
+            dp = float(spec.header.design_pressure_barg)
+        except (TypeError, ValueError):
+            dp = None
+
+    shell: float | None = None
+    if spec.index_row and spec.index_row.hydrotest_barg is not None:
+        try:
+            shell = float(spec.index_row.hydrotest_barg)
+        except (TypeError, ValueError):
+            shell = None
+    if shell is None and spec.header.hydrotest_pressure_barg is not None:
+        try:
+            shell = float(spec.header.hydrotest_pressure_barg)
+        except (TypeError, ValueError):
+            shell = None
+    if shell is None and dp is not None:
+        shell = round(dp * 1.5, 2)
+
+    if shell is None:
+        return None
+
+    if dp is not None:
+        closure = round(dp * 1.1, 2)
+    else:
+        closure = round((shell / 1.5) * 1.1, 2)
+
+    return round(shell, 2), closure
+
+
+def _resolve_from_pms(
+    piping_class: str,
+    cat: str,
+    is_rtj: bool,
+    size_inches: float | None = None,
+    raw_vds: str | None = None,
+    valve_type: str = "",
+    design: str = "",
+) -> dict:
+    """Resolve datasheet fields from PMS data (authoritative when present)."""
     pms_fields = {}
     try:
         pms = get_pms_loader()
@@ -655,7 +983,6 @@ def _resolve_from_pms(piping_class: str, cat: str, is_rtj: bool) -> dict:
     if not spec:
         return pms_fields
 
-    # Bolting & gaskets from PMS
     if spec.bolting_gaskets:
         if spec.bolting_gaskets.stud_bolt_spec:
             pms_fields["bolts"] = spec.bolting_gaskets.stud_bolt_spec
@@ -664,36 +991,86 @@ def _resolve_from_pms(piping_class: str, cat: str, is_rtj: bool) -> dict:
         if spec.bolting_gaskets.gasket_spec:
             pms_fields["gaskets"] = spec.bolting_gaskets.gasket_spec
 
-    # Design pressure from PMS INDEX
     if spec.index_row:
         if spec.index_row.design_pressure_barg:
             dp = spec.index_row.design_pressure_barg
             min_temp = spec.index_row.min_temp_c
             bps = spec.index_row.pt_breakpoints or []
             if bps and min_temp is not None:
-                first_bp = bps[0]
                 last_bp = bps[-1] if len(bps) > 1 else bps[0]
                 pms_fields["design_pressure"] = (
-                    f"{first_bp['press_barg']} @ {int(min_temp)}\u00b0C, "
+                    f"{dp} @ {int(min_temp)}\u00b0C, "
                     f"{last_bp['press_barg']} @ {last_bp['temp_c']}\u00b0C"
                 )
 
-        # Hydrotest from PMS INDEX
-        if spec.index_row.hydrotest_barg:
-            shell = round(spec.index_row.hydrotest_barg, 2)
-            closure = round((shell / 1.5) * 1.1, 2)
-            pms_fields["hydrotest_shell"] = f"{shell} barg"
-            pms_fields["hydrotest_closure"] = f"{closure} barg"
+        if spec.index_row.min_temp_c is not None:
+            pms_fields["min_design_temp"] = f"{int(spec.index_row.min_temp_c)}°C"
 
-    # Service from PMS header
+    if "design_pressure" not in pms_fields and spec.header.design_pressure_barg:
+        pms_fields["design_pressure"] = f"{spec.header.design_pressure_barg} barg"
+
+    _ht = _hydrotest_pressures_barg_from_spec(spec)
+    if _ht:
+        _shell, _closure = _ht
+        pms_fields["hydrotest_shell"] = f"{_shell} barg"
+        pms_fields["hydrotest_closure"] = f"{_closure} barg"
+
     if spec.header.service:
         pms_fields["service"] = spec.header.service
 
-    # Size range from NPS sizes
-    if spec.nps_sizes:
-        sizes = sorted(set(s.get("nps_inch", 0) for s in spec.nps_sizes if s.get("nps_inch")))
+    if spec.header.corrosion_allowance:
+        pms_fields["corrosion_allowance"] = spec.header.corrosion_allowance
+
+    if spec.header.design_code:
+        pms_fields["design_code"] = spec.header.design_code
+
+    if spec.header.valve_rating_label:
+        pms_fields["pressure_class_label"] = spec.header.valve_rating_label
+
+    if spec.header.nace_flag:
+        pms_fields["nace_flag"] = True
+    if spec.header.lt_flag:
+        pms_fields["lt_flag"] = True
+
+    if spec.header.material_description:
+        pms_fields["material_class"] = spec.header.material_description
+
+    if spec.flanges:
+        fl = _select_flange_for_size(spec.flanges, size_inches)
+        if fl:
+            if fl.flange_face:
+                pms_fields["flange_face"] = fl.flange_face
+            if fl.flange_moc:
+                pms_fields["flange_moc"] = fl.flange_moc
+            if fl.flange_type:
+                pms_fields["flange_type"] = fl.flange_type
+                m = re.search(r"ASME\s*B\s*16\.\d+(?:\s*Series\s*[A-Z])?", fl.flange_type)
+                if m:
+                    pms_fields["flange_std"] = m.group(0)
+
+    # Size range — valve row for this VDS / type, else class NPS table, else pipe
+    sr_assign = _size_range_from_valve_assignments(
+        spec.valve_assignments, raw_vds, valve_type, design, size_inches,
+    )
+    if sr_assign:
+        pms_fields["size_range"] = sr_assign
+    elif spec.nps_sizes:
+        sz_list: list[float] = []
+        for s in spec.nps_sizes:
+            n = s.get("nps_inch")
+            if n is None:
+                continue
+            try:
+                sz_list.append(float(n))
+            except (TypeError, ValueError):
+                continue
+        sizes = sorted(set(sz_list))
         if sizes:
-            pms_fields["size_range"] = f'{sizes[0]}" - {sizes[-1]}"'
+            pms_fields["size_range"] = _size_range_display(sizes[0], sizes[-1])
+    elif spec.pipe_schedule:
+        sr_pipe = _size_range_from_pipe_schedule(spec.pipe_schedule)
+        if sr_pipe:
+            pms_fields["size_range"] = sr_pipe
 
     return pms_fields
 
@@ -920,7 +1297,13 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     is_lt = decoded.is_low_temp
     is_rtj = ec == EndConnection.RTJ or ec == EndConnection.RTJ_NPT
 
-    # Material category drives most material selections
+    try:
+        get_pms_loader().refresh_spec_from_backend(pc)
+    except Exception:
+        pass
+
+    # Material category drives most material selections. Resolve it after the
+    # PMS refresh so project header data can override legacy code-number maps.
     cat = _get_material_category(pc)
 
     # Pressure class letter and number
@@ -928,13 +1311,39 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     pc_num = _PRESSURE_CLASS_NUM.get(pc_letter, 150)
 
     # ── Resolve PMS data first (authoritative) ──
-    pms = _resolve_from_pms(pc, cat, is_rtj)
+    pms = _resolve_from_pms(
+        pc,
+        cat,
+        is_rtj,
+        size_inches=size_inches,
+        raw_vds=decoded.raw_vds,
+        valve_type=vt,
+        design=design,
+    )
+
+    if pms.get("nace_flag"):
+        is_nace = True
+    if pms.get("lt_flag"):
+        is_lt = True
+
+    _spec_for_class = None
+    try:
+        _spec_for_class = get_pms_loader().get_spec(pc)
+    except Exception:
+        _spec_for_class = None
+    _valve_assignments = (
+        list(_spec_for_class.valve_assignments)
+        if _spec_for_class and _spec_for_class.valve_assignments
+        else []
+    )
+    _dbb_inst = _dbb_is_instrument_isolation(decoded, _valve_assignments) if vt == "DB" else False
+    _pms_mat = _spec_for_class.materials if _spec_for_class and _spec_for_class.materials else None
 
     # ── Build the datasheet ──
     data: dict[str, str] = {}
 
     # Header / identification
-    data["vds_no"] = decoded.raw_vds
+    data["vds_no"] = decoded.display_vds
     data["valve_type"] = VALVE_TYPE_DESCRIPTION.get((vt, design), f"{vt} Valve, design {design}")
     data["piping_class"] = pc
 
@@ -957,13 +1366,12 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
             data["valve_standard"] = VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, ""))
     else:
         data["valve_standard"] = VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, ""))
-    data["pressure_class"] = PRESSURE_CLASS.get(pc_letter, "")
+    data["pressure_class"] = pms.get("pressure_class_label") or PRESSURE_CLASS.get(pc_letter, "")
 
     # Design pressure — PMS first, then fallback
     data["design_pressure"] = pms.get("design_pressure", DESIGN_PRESSURE_FALLBACK.get(pc, ""))
 
-    # Corrosion allowance
-    data["corrosion_allowance"] = _resolve_corrosion_allowance(cat)
+    data["corrosion_allowance"] = _resolve_corrosion_allowance(cat, pms.get("corrosion_allowance"))
 
     # NACE / sour service / low temp
     if is_nace:
@@ -975,15 +1383,27 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
 
     if is_lt:
         data["low_temperature"] = "Yes - Impact tested"
-        data["min_design_temp"] = "-46\u00b0C" if cat in ("DSS", "SDSS", "SDSS_NACE") else "-45\u00b0C"
+        _default_lt_temp = "-46\u00b0C" if cat in ("DSS", "SDSS", "SDSS_NACE") else "-45\u00b0C"
+        data["min_design_temp"] = pms.get("min_design_temp") or _default_lt_temp
     else:
         data["low_temperature"] = "No"
-        data["min_design_temp"] = "-29\u00b0C" if cat.startswith("CS") else "-100\u00b0C" if cat.startswith("SS") else "-46\u00b0C"
+        _default_temp = "-29\u00b0C" if cat.startswith("CS") else "-100\u00b0C" if cat.startswith("SS") else "-46\u00b0C"
+        data["min_design_temp"] = pms.get("min_design_temp") or _default_temp
 
-    data["design_code"] = "ASME B31.3"
+    data["design_code"] = pms.get("design_code") or "ASME B31.3"
 
-    # End connections
-    data["end_connections"] = _resolve_end_connection(ec, pc, cat, size_inches)
+    if pms.get("material_class"):
+        data["material_class"] = pms["material_class"]
+
+    data["end_connections"] = _resolve_end_connection(
+        ec, pc, cat, size_inches,
+        pms_flange_face=pms.get("flange_face"),
+        pms_flange_type=pms.get("flange_type"),
+        pms_flange_std=pms.get("flange_std"),
+    )
+
+    if pms.get("flange_moc"):
+        data["flange_material"] = pms["flange_moc"]
 
     # Face to face
     data["face_to_face"] = FACE_TO_FACE.get((vt, design), FACE_TO_FACE.get(vt, ""))
@@ -1012,7 +1432,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     if vt == "GA":
         data["wedge_construction"] = _resolve_wedge_type(size_inches)
 
-    if vt == "DB" and size_inches is not None:
+    if vt == "DB" and size_inches is not None and not _dbb_inst:
         if size_inches <= 2:
             data["body_construction"] = "One-piece forged body, integral construction"
             data["dbb_end_connection"] = 'Flange x 1/2" NPT'
@@ -1026,6 +1446,17 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["seat_construction"] = "Spring assisted Metal to metal, Renewable Seat Ring"
         data["operation"] = "Horizontal installation only (piston type check valve)"
         data["check_valve_note"] = "Small bore check valves (1/2\"-1-1/2\") SHALL be Piston Type, horizontal only per MY-K-20-PI-SP-0002 §6.2"
+
+    if vt == "DB" and _dbb_inst:
+        data["body_construction"] = (
+            "Integral forged instrument double-block-and-bleed pattern per API 6D / "
+            "project tubing-class PMS; vent and bleed connections per manufacturer."
+        )
+        data["seat_construction"] = (
+            "Primary seating per seat material column; stem and packing seals per "
+            "manufacturer's instrument block design (no separate body elastomer seal on this sheet)."
+        )
+        data.pop("dbb_end_connection", None)
 
     # End flange class/face table per VMS §6.22.1
     if ec in (EndConnection.RF, EndConnection.RTJ, EndConnection.FF):
@@ -1044,24 +1475,32 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     else:
         data["body_form"] = 'Forged (1-1/2" and below), Cast or Forged (2" and above)'
 
-    # ── Materials (from material category) ──
-    body_mat = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
+    # ── Materials — PMS ``materials`` block first, then category rules (same as app) ──
+    body_mat = (_pms_mat.body_material if _pms_mat else None) or BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
     if size_inches is not None and size_inches <= 1.5:
         parts = body_mat.split("/")
         forged_parts = [p.strip() for p in parts if "forged" in p.lower()]
         if forged_parts:
             body_mat = forged_parts[0]
     data["body_material"] = body_mat
-    data["stem_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
-    data["gland_material"] = GLAND_MATERIAL.get(cat, GLAND_MATERIAL["CS"])
-    data["gland_packing"] = GLAND_PACKING.get(cat, _GLAND_PACKING_STD)
-    data["lever_handwheel"] = "Solid ASTM A47 HDG/ ASTM A220 HDG/ SS316"
-    data["spring_material"] = "Inconel 750"
+    data["stem_material"] = (_pms_mat.stem_material if _pms_mat else None) or STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+    data["gland_material"] = (_pms_mat.gland_material if _pms_mat else None) or GLAND_MATERIAL.get(cat, GLAND_MATERIAL["CS"])
+    data["gland_packing"] = (_pms_mat.gland_packing if _pms_mat else None) or GLAND_PACKING.get(cat, _GLAND_PACKING_STD)
+    data["lever_handwheel"] = (_pms_mat.lever_handwheel if _pms_mat else None) or "Solid ASTM A47 HDG/ ASTM A220 HDG/ SS316"
+    _pms_spring = _pms_mat.spring_material if _pms_mat else None
+    if vt in ("BF", "NE", "DB"):
+        if _pms_spring:
+            data["spring_material"] = _pms_spring
+    elif vt in ("BL", "BS", "CH"):
+        data["spring_material"] = _pms_spring or "Inconel 750"
+    elif _pms_spring:
+        data["spring_material"] = _pms_spring
 
     if vt in ("BL", "BS", "DB"):
-        data["ball_material"] = BALL_MATERIAL.get(cat, BALL_MATERIAL["CS"])
-        data["seat_material"] = SEAT_MATERIAL.get(seat, "Metal seated, hard faced, Renewable")
-        data["seal_material"] = SEAL_MATERIAL_BALL.get(seat, "Viton AED")
+        data["ball_material"] = (_pms_mat.ball_material if _pms_mat else None) or BALL_MATERIAL.get(cat, BALL_MATERIAL["CS"])
+        data["seat_material"] = (_pms_mat.seat_material if _pms_mat else None) or SEAT_MATERIAL.get(seat, "Metal seated, hard faced, Renewable")
+        if not (vt == "DB" and _dbb_inst):
+            data["seal_material"] = SEAL_MATERIAL_BALL.get(seat, "Viton AED")
         if vt != "DB":
             data["seat_construction"] = SEAT_CONSTRUCTION_BY_SEAT.get(seat, "")
         if seat == "M" and vt in ("BL", "BS"):
@@ -1081,15 +1520,27 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         if design == "S":
             data["hinge_pin_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
     elif vt == "BF":
-        data["shaft_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
-        data["seat_material"] = SEAT_MATERIAL.get(seat, "Reinforced PTFE (max 200\u00b0C)")
+        data["shaft_material"] = (_pms_mat.stem_material if _pms_mat else None) or STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+        data["seat_material"] = (_pms_mat.seat_material if _pms_mat else None) or SEAT_MATERIAL.get(seat, "Reinforced PTFE (max 200\u00b0C)")
     elif vt == "NE":
         data["needle_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
         data["minimum_bore"] = "10 mm (instrument connections)"
 
+    if vt == "BF":
+        data.pop("stem_material", None)
+
     # Backseat for GA, GL, NE
     if vt in ("GA", "GL", "NE"):
         data["backseat"] = "Back seated, renewable"
+
+    if vt in ("GA", "GL", "NE"):
+        _stem_trim = (
+            (_pms_mat.stem_material if _pms_mat else None)
+            or STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+        )
+        data["back_seat_material"] = f"{_stem_trim}, Stellite Hard Faced"
+    elif vt == "DB":
+        data.pop("back_seat_material", None)
 
     # Seat pocket CRA overlay in corrosive service (VMS §6.15)
     if vt in ("GA", "GL", "CH") and is_nace and cat.startswith("CS"):
@@ -1109,11 +1560,11 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
 
     # FFKM for methanol service (VMS §7.8)
     service_str = data.get("service", "").lower()
-    if "methanol" in service_str or "glycol" in service_str:
+    if ("methanol" in service_str or "glycol" in service_str) and data.get("seal_material"):
         data["seal_material_note"] = "FFKM recommended for Methanol/Glycol service per MY-K-20-PI-SP-0002 §7.8"
 
     # Preferred resilient seating materials (VMS §7.8)
-    if seat in ("T", "P"):
+    if seat in ("T", "P") and not (vt == "DB" and _dbb_inst):
         data["resilient_seat_note"] = (
             "Preferred resilient seating: Nitrile, Viton, or RPTFE for -18\u00b0C to 93\u00b0C. "
             "Below -18\u00b0C: use softer materials (Kel-F, unreinforced PTFE). "
@@ -1155,8 +1606,12 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["fire_rating"] = FIRE_RATING.get(vt, "N/A")
 
     if seat in ("T", "P"):
-        data["fire_test"] = "Required \u2014 BS EN ISO 10497 / API 607, third-party witnessed"
-        data["antistatic_device"] = "Required for soft-seated valve"
+        if vt in ("BL", "BS"):
+            data["fire_test"] = "Required \u2014 BS EN ISO 10497 / API 607, third-party witnessed"
+            data["antistatic_device"] = "Required for soft-seated ball valve (API 6D)"
+        elif vt == "DB" and not _dbb_inst:
+            data["fire_test"] = "Required \u2014 BS EN ISO 10497 / API 607, third-party witnessed"
+            data["antistatic_device"] = "Required for soft-seated primary obturator per manufacturer / API 6D"
 
     # ── Inspection & testing (MY-K-20-PI-SP-0002) ──
     data["ndt_extent"] = _resolve_ndt_extent(pc_num, size_inches, cat)
@@ -1219,5 +1674,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     # Standard datasheet footer notes (numbered list rendered in XLSX Notes section
     # and returned in API response). NACE variant adds note 6 (NACE MR0175 compliance).
     data["datasheet_notes"] = footer_notes_as_text(vt, is_nace)
+
+    prune_datasheet_by_valve_type(vt, design, seat, data, dbb_instrument=_dbb_inst)
 
     return data

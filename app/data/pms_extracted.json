@@ -30175,10 +30175,10 @@
         "nps_min": 0.5,
         "nps_max": 32.0,
         "vds_codes": [
-          "BSRB25R",
-          "BSFB25R"
+          "BLRB25R",
+          "BLFB25R"
         ],
-        "raw_cell_value": "BSRB25R, BSFB25R",
+        "raw_cell_value": "BLRB25R, BLFB25R",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -30627,10 +30627,10 @@
         "nps_min": 0.5,
         "nps_max": 24.0,
         "vds_codes": [
-          "BSRD25R",
-          "BSFD25R"
+          "BLRD25R",
+          "BLFD25R"
         ],
-        "raw_cell_value": "BSRD25R, BSFD25R",
+        "raw_cell_value": "BLRD25R, BLFD25R",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -31082,10 +31082,10 @@
         "nps_min": 2.0,
         "nps_max": 24.0,
         "vds_codes": [
-          "BSRE25J",
-          "BSFE25J"
+          "BLRE25J",
+          "BLFE25J"
         ],
-        "raw_cell_value": "BSRE25J, BSFE25J",
+        "raw_cell_value": "BLRE25J, BLFE25J",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -31540,10 +31540,10 @@
         "nps_min": 2.0,
         "nps_max": 24.0,
         "vds_codes": [
-          "BSRF25J",
-          "BSFF25J"
+          "BLRF25J",
+          "BLFF25J"
         ],
-        "raw_cell_value": "BSRF25J, BSFF25J",
+        "raw_cell_value": "BLRF25J, BLFF25J",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -32977,10 +32977,10 @@
         "nps_min": 0.5,
         "nps_max": 32.0,
         "vds_codes": [
-          "BSRB25NR",
-          "BSFB25NR"
+          "BLRB25NR",
+          "BLFB25NR"
         ],
-        "raw_cell_value": "BSRB25NR, BSFB25NR",
+        "raw_cell_value": "BLRB25NR, BLFB25NR",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -33417,10 +33417,10 @@
         "nps_min": 0.5,
         "nps_max": 24.0,
         "vds_codes": [
-          "BSRD25NR",
-          "BSFD25NR"
+          "BLRD25NR",
+          "BLFD25NR"
         ],
-        "raw_cell_value": "BSRD25NR, BSFD25NR",
+        "raw_cell_value": "BLRD25NR, BLFD25NR",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -33860,10 +33860,10 @@
         "nps_min": 2.0,
         "nps_max": 24.0,
         "vds_codes": [
-          "BSRE25NJ",
-          "BSFE25NJ"
+          "BLRE25NJ",
+          "BLFE25NJ"
         ],
-        "raw_cell_value": "BSRE25NJ, BSFE25NJ",
+        "raw_cell_value": "BLRE25NJ, BLFE25NJ",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -34318,10 +34318,10 @@
         "nps_min": 2.0,
         "nps_max": 24.0,
         "vds_codes": [
-          "BSRF25NJ",
-          "BSFF25NJ"
+          "BLRF25NJ",
+          "BLFF25NJ"
         ],
-        "raw_cell_value": "BSRF25NJ, BSFF25NJ",
+        "raw_cell_value": "BLRF25NJ, BLFF25NJ",
         "notes": null,
         "valve_standard": "API SPEC 6D / ISO 14313"
       },
@@ -38644,5 +38644,1223 @@
       "pt_breakpoints": [],
       "design_pressure_barg": null
     }
+  },
+  "PROJ1": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "General Hydrocarbon Service",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 51.1,
+      "hydrotest_pressure_barg": 78.5
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 51.1
+      },
+      {
+        "temp_c": 50,
+        "pressure_barg": 51.1
+      },
+      {
+        "temp_c": 100,
+        "pressure_barg": 51.1
+      },
+      {
+        "temp_c": 200,
+        "pressure_barg": 46.6
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 41.4
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B7",
+      "hex_nut_spec": "ASTM A194 2H",
+      "gasket_spec": "Spiral Wound SS316 + Graphite, ASME B16.20"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 0.5,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 1.0,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 4.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 8.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 12.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTPROJ1R",
+          "BLRTPROJ1R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMPROJ1R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMPROJ1R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMPROJ1R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMPROJ1R",
+          "CHDMPROJ1R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "DEMO77553": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "Sour Gas -- Demo Project 77553",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 47.3,
+      "hydrotest_pressure_barg": 70.95
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 50,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 100,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 200,
+        "pressure_barg": 43.1
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 39.4
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B7M / Demo Project",
+      "hex_nut_spec": "ASTM A194 2HM / Demo Project",
+      "gasket_spec": "Spiral Wound SS316L + Graphite, Demo Spec 77553"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 0.5,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 1.0,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 4.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTDEMO77553R",
+          "BLRTDEMO77553R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMDEMO77553R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMDEMO77553R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMDEMO77553R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMDEMO77553R",
+          "CHDMDEMO77553R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "DEMO77618": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "Sour Gas -- Demo Project 77618",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 47.3,
+      "hydrotest_pressure_barg": 70.95
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 50,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 100,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 200,
+        "pressure_barg": 43.1
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 39.4
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B7M / Demo Project",
+      "hex_nut_spec": "ASTM A194 2HM / Demo Project",
+      "gasket_spec": "Spiral Wound SS316L + Graphite, Demo Spec 77618"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 0.5,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 1.0,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 4.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTDEMO77618R",
+          "BLRTDEMO77618R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMDEMO77618R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMDEMO77618R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMDEMO77618R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMDEMO77618R",
+          "CHDMDEMO77618R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "TEST600": {
+    "header": {
+      "pressure_rating": "600#",
+      "material_description": "SS316L Stainless Steel",
+      "corrosion_allowance": "NIL",
+      "design_code": "ASME B31.3",
+      "service": "Corrosive Chemical Service",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 88.5,
+      "hydrotest_pressure_barg": 132.75
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 88.5
+      },
+      {
+        "temp_c": 50,
+        "pressure_barg": 88.5
+      },
+      {
+        "temp_c": 100,
+        "pressure_barg": 88.5
+      },
+      {
+        "temp_c": 200,
+        "pressure_barg": 81.2
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 73.6
+      },
+      {
+        "temp_c": 400,
+        "pressure_barg": 65.1
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A182 F316L",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B8M Class 2 (SS316)",
+      "hex_nut_spec": "ASTM A194 8M (SS316)",
+      "gasket_spec": "Spiral Wound SS316L + PTFE, ASME B16.20, 4.5mm"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 0.5,
+        "schedule": "SCH 80S"
+      },
+      {
+        "nps": 1.0,
+        "schedule": "SCH 80S"
+      },
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40S"
+      },
+      {
+        "nps": 4.0,
+        "schedule": "SCH 10S"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "SCH 10S"
+      },
+      {
+        "nps": 8.0,
+        "schedule": "SCH 10S"
+      },
+      {
+        "nps": 12.0,
+        "schedule": "SCH 10S"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFPTEST600R",
+          "BLRPTEST600R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMTEST600R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMTEST600R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMTEST600R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMTEST600R",
+          "CHDMTEST600R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "BUTTERFLY",
+        "valve_standard": "API STD 609",
+        "nps_min": 3.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BFWTTEST600R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "DEMO40383": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "Sour Gas -- Demo Project 40383",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 47.3,
+      "hydrotest_pressure_barg": 70.95
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 50,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 100,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 200,
+        "pressure_barg": 43.1
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 39.4
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B7M / Demo Project",
+      "hex_nut_spec": "ASTM A194 2HM / Demo Project",
+      "gasket_spec": "Spiral Wound SS316L + Graphite, Demo Spec 40383"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 0.5,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 1.0,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 4.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTDEMO40383R",
+          "BLRTDEMO40383R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMDEMO40383R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMDEMO40383R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMDEMO40383R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMDEMO40383R",
+          "CHDMDEMO40383R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "CHG40447": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "SERVICE-V1-40447",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 41.11,
+      "hydrotest_pressure_barg": 61.665
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 41.11
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 33.11
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "BOLT-V1-40447",
+      "hex_nut_spec": "ASTM A194 2HM / Change Test",
+      "gasket_spec": "GASKET-V1-40447"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTCHG40447R",
+          "BLRTCHG40447R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMCHG40447R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMCHG40447R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMCHG40447R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMCHG40447R",
+          "CHDMCHG40447R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "CHG40599": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "SERVICE-V1-40599",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 41.11,
+      "hydrotest_pressure_barg": 61.665
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 41.11
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 33.11
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "BOLT-V1-40599",
+      "hex_nut_spec": "ASTM A194 2HM / Change Test",
+      "gasket_spec": "GASKET-V1-40599"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTCHG40599R",
+          "BLRTCHG40599R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMCHG40599R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMCHG40599R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMCHG40599R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMCHG40599R",
+          "CHDMCHG40599R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "CHG40695": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "SERVICE-V1-40695",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 41.11,
+      "hydrotest_pressure_barg": 61.665
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 41.11
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 33.11
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "BOLT-V1-40695",
+      "hex_nut_spec": "ASTM A194 2HM / Change Test",
+      "gasket_spec": "GASKET-V1-40695"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTCHG40695R",
+          "BLRTCHG40695R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMCHG40695R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMCHG40695R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMCHG40695R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMCHG40695R",
+          "CHDMCHG40695R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "DEMO40779": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "Sour Gas -- Demo Project 40779",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 47.3,
+      "hydrotest_pressure_barg": 70.95
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 50,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 100,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 200,
+        "pressure_barg": 43.1
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 39.4
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B7M / Demo Project",
+      "hex_nut_spec": "ASTM A194 2HM / Demo Project",
+      "gasket_spec": "Spiral Wound SS316L + Graphite, Demo Spec 40779"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 0.5,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 1.0,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 4.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTDEMO40779R",
+          "BLRTDEMO40779R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMDEMO40779R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMDEMO40779R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMDEMO40779R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMDEMO40779R",
+          "CHDMDEMO40779R"
+        ],
+        "notes": null
+      }
+    ]
+  },
+  "DEMO41889": {
+    "header": {
+      "pressure_rating": "300#",
+      "material_description": "Carbon Steel A106 Gr B",
+      "corrosion_allowance": "3 mm",
+      "design_code": "ASME B31.3",
+      "service": "Sour Gas -- Demo Project 41889",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 47.3,
+      "hydrotest_pressure_barg": 70.95
+    },
+    "pt_ratings": [
+      {
+        "temp_c": -29,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 50,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 100,
+        "pressure_barg": 47.3
+      },
+      {
+        "temp_c": 200,
+        "pressure_barg": 43.1
+      },
+      {
+        "temp_c": 300,
+        "pressure_barg": 39.4
+      }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A105",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B7M / Demo Project",
+      "hex_nut_spec": "ASTM A194 2HM / Demo Project",
+      "gasket_spec": "Spiral Wound SS316L + Graphite, Demo Spec 41889"
+    },
+    "pipe_schedule": [
+      {
+        "nps": 0.5,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 1.0,
+        "schedule": "SCH 80"
+      },
+      {
+        "nps": 2.0,
+        "schedule": "SCH 40"
+      },
+      {
+        "nps": 4.0,
+        "schedule": "STD"
+      },
+      {
+        "nps": 6.0,
+        "schedule": "STD"
+      }
+    ],
+    "valve_assignments": [
+      {
+        "valve_type": "BALL",
+        "valve_standard": "API SPEC 6D / ISO 14313",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "BLFTDEMO41889R",
+          "BLRTDEMO41889R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GATE",
+        "valve_standard": "API STD 600 / API STD 602",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GAYMDEMO41889R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "GLOBE",
+        "valve_standard": "BS 1873",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "GLYMDEMO41889R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_PISTON",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMDEMO41889R"
+        ],
+        "notes": null
+      },
+      {
+        "valve_type": "CHECK_SWING",
+        "valve_standard": "API STD 594 / BS 1868",
+        "nps_min": 2.0,
+        "nps_max": 24.0,
+        "vds_codes": [
+          "CHSMDEMO41889R",
+          "CHDMDEMO41889R"
+        ],
+        "notes": null
+      }
+    ]
   }
 }

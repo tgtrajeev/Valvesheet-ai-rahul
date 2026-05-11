@@ -3747,14 +3747,14 @@
       "nps_max": 32.0
     },
     {
-      "vds_code": "BSRB25R",
+      "vds_code": "BLRB25R",
       "piping_class": "B25",
       "valve_type": "BALL",
       "nps_min": 0.5,
       "nps_max": 32.0
     },
     {
-      "vds_code": "BSFB25R",
+      "vds_code": "BLFB25R",
       "piping_class": "B25",
       "valve_type": "BALL",
       "nps_min": 0.5,
@@ -3803,14 +3803,14 @@
       "nps_max": 32.0
     },
     {
-      "vds_code": "BSRD25R",
+      "vds_code": "BLRD25R",
       "piping_class": "D25",
       "valve_type": "BALL",
       "nps_min": 0.5,
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSFD25R",
+      "vds_code": "BLFD25R",
       "piping_class": "D25",
       "valve_type": "BALL",
       "nps_min": 0.5,
@@ -3859,14 +3859,14 @@
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSRE25J",
+      "vds_code": "BLRE25J",
       "piping_class": "E25",
       "valve_type": "BALL",
       "nps_min": 2.0,
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSFE25J",
+      "vds_code": "BLFE25J",
       "piping_class": "E25",
       "valve_type": "BALL",
       "nps_min": 2.0,
@@ -3922,14 +3922,14 @@
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSRF25J",
+      "vds_code": "BLRF25J",
       "piping_class": "F25",
       "valve_type": "BALL",
       "nps_min": 2.0,
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSFF25J",
+      "vds_code": "BLFF25J",
       "piping_class": "F25",
       "valve_type": "BALL",
       "nps_min": 2.0,
@@ -4118,14 +4118,14 @@
       "nps_max": 32.0
     },
     {
-      "vds_code": "BSRB25NR",
+      "vds_code": "BLRB25NR",
       "piping_class": "B25N",
       "valve_type": "BALL",
       "nps_min": 0.5,
       "nps_max": 32.0
     },
     {
-      "vds_code": "BSFB25NR",
+      "vds_code": "BLFB25NR",
       "piping_class": "B25N",
       "valve_type": "BALL",
       "nps_min": 0.5,
@@ -4167,14 +4167,14 @@
       "nps_max": 32.0
     },
     {
-      "vds_code": "BSRD25NR",
+      "vds_code": "BLRD25NR",
       "piping_class": "D25N",
       "valve_type": "BALL",
       "nps_min": 0.5,
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSFD25NR",
+      "vds_code": "BLFD25NR",
       "piping_class": "D25N",
       "valve_type": "BALL",
       "nps_min": 0.5,
@@ -4216,14 +4216,14 @@
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSRE25NJ",
+      "vds_code": "BLRE25NJ",
       "piping_class": "E25N",
       "valve_type": "BALL",
       "nps_min": 2.0,
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSFE25NJ",
+      "vds_code": "BLFE25NJ",
       "piping_class": "E25N",
       "valve_type": "BALL",
       "nps_min": 2.0,
@@ -4279,14 +4279,14 @@
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSRF25NJ",
+      "vds_code": "BLRF25NJ",
       "piping_class": "F25N",
       "valve_type": "BALL",
       "nps_min": 2.0,
       "nps_max": 24.0
     },
     {
-      "vds_code": "BSFF25NJ",
+      "vds_code": "BLFF25NJ",
       "piping_class": "F25N",
       "valve_type": "BALL",
       "nps_min": 2.0,

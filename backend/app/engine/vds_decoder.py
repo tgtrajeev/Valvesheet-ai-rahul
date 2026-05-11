@@ -29,6 +29,15 @@ _BALL_DESIGNS = {"R", "F", "M"}
 _NE_DESIGNS = {"I", "A"}
 
 
+def _display_vds_for_sheet(original_input: str, canonical_vds: str) -> str:
+    """Datasheet label: keep ``VDS-`` prefix when the user included it."""
+    head = (original_input or "").strip().upper()
+    c = canonical_vds.upper().strip()
+    if head.startswith("VDS-"):
+        return f"VDS-{c}"
+    return c
+
+
 def decode_vds(vds: str) -> DecodedVDS:
     """Parse a VDS string into a DecodedVDS model.
 
@@ -37,7 +46,10 @@ def decode_vds(vds: str) -> DecodedVDS:
     - Legacy 3-char: BSFA1R → BSF + A1 + R(end)
     - Legacy 2-char: BSA1R  → BS  + A1 + R(end)
     """
+    original_input = vds
     raw = vds.upper().strip()
+    if raw.startswith("VDS-"):
+        raw = raw[4:].strip()
     if len(raw) < 5:
         raise ValueError(f"VDS code too short: '{raw}'")
 
@@ -51,7 +63,8 @@ def decode_vds(vds: str) -> DecodedVDS:
 
     if prefix2 in _NEW_PREFIXES:
         # ── New format ──
-        valve_type_str = prefix2
+        # Match app policy: two-letter "BS" prefix is legacy ball naming; canonical engine type is BL.
+        valve_type_str = "BL" if prefix2 == "BS" else prefix2
         pos = 2
 
         # Position 2: design / bore character
@@ -125,6 +138,7 @@ def decode_vds(vds: str) -> DecodedVDS:
 
     return DecodedVDS(
         raw_vds=raw,
+        display_vds=_display_vds_for_sheet(original_input, raw),
         valve_type=valve_type,
         design=design,
         seat_type=seat_type,

@@ -8,6 +8,30 @@ Two-phase validation:
 import re
 from ..models.schemas import ValidationResult, Suggestion
 
+_BS_TWO_LETTER_BALL_RE = re.compile(r"^BS[RFM][TPM]")
+
+
+def _normalize_vds_code_head(vds_code: str) -> str:
+    c = vds_code.strip().upper()
+    if c.startswith("VDS-"):
+        c = c[4:].strip()
+    return c
+
+
+def raw_vds_bs_ball_prefix_retired_error(vds_code: str | None) -> str | None:
+    """Retired two-letter BS ball encoding — must use BL + same suffix (aligned with main app)."""
+    if not vds_code or not isinstance(vds_code, str):
+        return None
+    c = _normalize_vds_code_head(vds_code)
+    if _BS_TWO_LETTER_BALL_RE.match(c):
+        return (
+            "The two-letter ball-valve prefix 'BS' is not permitted on VDS codes. "
+            "Use 'BL' with the same bore, seat, piping class and end suffix "
+            f"(example: {c} -> BL{c[2:]})."
+        )
+    return None
+
+
 # Valid seat codes per valve type (Section 4, CLAUDE.md / vdsParser.ts)
 VALID_SEATS_BY_TYPE: dict[str, list[str]] = {
     "GA": ["M"],
@@ -227,6 +251,7 @@ def validate_combination(
     size_inches: float | None = None,
     service: str | None = None,
     pressure_class: int | None = None,
+    vds_code: str | None = None,
 ) -> ValidationResult:
     """Validate a VDS combination against FPSO Albacora PMS rules + spec MY-K-20-PI-SP-0002.
 
@@ -241,6 +266,16 @@ def validate_combination(
     st = seat.upper().strip()
     sp = spec.upper().strip()
     ec = (end_conn or "").upper().strip() if end_conn else None
+
+    _bs_raw = raw_vds_bs_ball_prefix_retired_error(vds_code)
+    if _bs_raw:
+        errors.append(_bs_raw)
+        suggestions.append(Suggestion(
+            type="fix",
+            title="Use BL ball prefix",
+            description="Replace the leading BS with BL; keep the rest of the code identical.",
+            action={"vds_prefix": "BL"},
+        ))
 
     # Resolve pressure class from spec if not provided
     if pressure_class is None:

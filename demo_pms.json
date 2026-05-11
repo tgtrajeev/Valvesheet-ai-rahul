@@ -1,0 +1,47 @@
+{
+  "TEST600": {
+    "header": {
+      "pressure_rating": "600#",
+      "material_description": "SS316L Stainless Steel",
+      "corrosion_allowance": "NIL",
+      "design_code": "ASME B31.3",
+      "service": "Corrosive Chemical Service",
+      "nace_flag": false,
+      "lt_flag": false,
+      "design_pressure_barg": 88.5,
+      "hydrotest_pressure_barg": 132.75
+    },
+    "pt_ratings": [
+      { "temp_c": -29, "pressure_barg": 88.5 },
+      { "temp_c":  50, "pressure_barg": 88.5 },
+      { "temp_c": 100, "pressure_barg": 88.5 },
+      { "temp_c": 200, "pressure_barg": 81.2 },
+      { "temp_c": 300, "pressure_barg": 73.6 },
+      { "temp_c": 400, "pressure_barg": 65.1 }
+    ],
+    "flanges": [
+      {
+        "size_range": "ALL",
+        "nps_min": 0.5,
+        "nps_max": 24.0,
+        "flange_moc": "ASTM A182 F316L",
+        "flange_face": "RF",
+        "flange_type": "WN/SO"
+      }
+    ],
+    "bolting_gaskets": {
+      "stud_bolt_spec": "ASTM A193 B8M Class 2 (SS316)",
+      "hex_nut_spec": "ASTM A194 8M (SS316)",
+      "gasket_spec": "Spiral Wound SS316L + PTFE, ASME B16.20, 4.5mm"
+    },
+    "pipe_schedule": [
+      { "nps": 0.5,  "schedule": "SCH 80S" },
+      { "nps": 1.0,  "schedule": "SCH 80S" },
+      { "nps": 2.0,  "schedule": "SCH 40S" },
+      { "nps": 4.0,  "schedule": "SCH 10S" },
+      { "nps": 6.0,  "schedule": "SCH 10S" },
+      { "nps": 8.0,  "schedule": "SCH 10S" },
+      { "nps": 12.0, "schedule": "SCH 10S" }
+    ]
+  }
+}

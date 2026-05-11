@@ -16,4 +16,5 @@ async def validate(request: ValidateRequest):
         spec=request.spec,
         end_conn=request.end_conn,
         bore=request.bore,
+        vds_code=request.vds_code,
     )

@@ -11,6 +11,7 @@ a complete datasheet from PMS data + engineering rules — no hardcoded lookup n
 """
 
 import json
+import re
 import httpx
 import yaml
 
@@ -23,10 +24,12 @@ from ..engine.validator import (
     VALID_SPEC_CODES,
     check_seat_design_temperature,
     seat_from_vds_code,
+    raw_vds_bs_ball_prefix_retired_error,
 )
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources, resolve_piping_class
+from ..engine.card_filter import filter_card_data, filter_card_metadata
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
@@ -112,6 +115,7 @@ TOOL_DEFINITIONS = [
             "For unknown codes, the Rule Engine dynamically derives ALL fields "
             "from PMS data + engineering rules — ANY valid combination works. "
             "Use after find_valves has identified the right VDS code. "
+            "Ball valves MUST use the BL prefix (not BS); if the user gives BS…, tell them to use BL with the same suffix. "
             "Pass user-specified field overrides to customize the datasheet — "
             "e.g. if the user requests size 8\", pass overrides with size. "
             "Only truly invalid combinations should be rejected."
@@ -121,7 +125,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "vds_code": {
                     "type": "string",
-                    "description": "VDS code to generate datasheet for (e.g. BSFA1R, GAYMA1R)"
+                    "description": "VDS code to generate datasheet for (e.g. BLFPF25J, GAYMA1R). Ball = BL prefix only."
                 },
                 "overrides": {
                     "type": "object",
@@ -220,6 +224,10 @@ TOOL_DEFINITIONS = [
                 "spec": {"type": "string", "description": "Piping spec code: A1, B1N, E1, T50A"},
                 "end_conn": {"type": "string", "description": "End connection (optional, auto-derived from spec)"},
                 "bore": {"type": "string", "description": "Bore for Ball valves: R (Reduced), F (Full)"},
+                "vds_code": {
+                    "type": "string",
+                    "description": "Full VDS string when known (e.g. BSFPF25J) — required to enforce retired BS prefix policy.",
+                },
             },
             "required": ["valve_type", "seat", "spec"],
         },
@@ -370,11 +378,41 @@ async def _handle_find_valves(input_data: dict) -> dict:
     )
 
     if not results:
-        return {
-            "count": 0,
-            "results": [],
-            "hint": "No matching valves found. Try broader search criteria or check piping class availability.",
-        }
+        # If a specific piping class was requested, check whether it exists in
+        # the PMS loader (newly synced class with no pre-built index entries).
+        # If found, auto-build its VDS index entries now and re-run the search
+        # so the agent receives real results — no special-case handling needed.
+        piping_class = (input_data.get("piping_class") or "").upper().strip()
+        if piping_class:
+            try:
+                from ..engine.pms_index_builder import build_and_register
+                added = build_and_register(piping_class)
+                if added > 0:
+                    # Re-run the original search — entries now exist
+                    results = kb.search(
+                        valve_type=input_data.get("valve_type"),
+                        piping_class=input_data.get("piping_class"),
+                        material=input_data.get("material"),
+                        service=input_data.get("service"),
+                        pressure_class=input_data.get("pressure_class"),
+                        size=input_data.get("size"),
+                        nace=input_data.get("nace"),
+                        low_temp=input_data.get("low_temp"),
+                        query=input_data.get("query"),
+                        limit=25,
+                    )
+                    if results:
+                        # Fall through to normal return below
+                        pass
+            except Exception:
+                pass
+
+        if not results:
+            return {
+                "count": 0,
+                "results": [],
+                "hint": "No matching valves found. Try broader search criteria or check piping class availability.",
+            }
 
     return {
         "count": len(results),
@@ -402,6 +440,40 @@ async def _handle_piping_class_info(input_data: dict) -> dict:
     return kb.get_piping_class_info(input_data["piping_class"])
 
 
+def _finalize_generate_datasheet_response(result: dict) -> dict:
+    """When validation lists errors, strip datasheet payloads so nothing implies an endorsed sheet.
+
+    Phase-2 (and similar) failures would otherwise return a full rule_engine dict next to errors,
+    which looks like hard-coded data and confuses the UI/agent."""
+    if not isinstance(result, dict):
+        return result
+    val = result.get("validation")
+    if not isinstance(val, dict):
+        return result
+    errs = [e for e in (val.get("errors") or []) if str(e).strip()]
+    if not errs:
+        return result
+    out = dict(result)
+    out["data"] = {}
+    out["field_sources"] = {}
+    for k in (
+        "field_sources_links",
+        "field_sources_quotes",
+        "field_source_values",
+        "field_justifications",
+    ):
+        out[k] = {}
+    out["completion_pct"] = 0.0
+    out["draft"] = True
+    out["blocked"] = True
+    if not out.get("error"):
+        out["error"] = (
+            "This VDS failed validation; datasheet field values were not returned. "
+            "Fix the issues in `validation.errors` and call generate_datasheet again."
+        )
+    return out
+
+
 async def _handle_generate(input_data: dict) -> dict:
     """Generate datasheet — VDS index first, then validate + ML API fallback.
 
@@ -415,16 +487,72 @@ async def _handle_generate(input_data: dict) -> dict:
     overrides = input_data.get("overrides") or {}
     kb = get_knowledge_base()
 
-    # ── Step 1: Try VDS index (100% accurate, instant) ──
+    # ── Step 1: VDS recognised in the master index?  ──
+    # We DO NOT use the cached appendix data as the value source.  The index
+    # confirms "this VDS exists and is endorsed for this PMS"; the values are
+    # always re-derived from rules + standards tables + project PMS data so
+    # they survive a project change. Cached spec data is kept only as a
+    # cross-verification reference (text only, never displayed as the value).
     spec = kb.get(vds_code)
     if spec:
-        data = dict(spec.data)  # copy so we don't mutate the index
+        from ..engine.vds_decoder import decode_vds as _decode_for_engine
+        from ..engine.rule_engine import generate_datasheet as _rule_generate
+
+        _size_str = (
+            overrides.get("size")
+            or overrides.get("size_range")
+            or overrides.get("nominal_size")
+        )
+        _size_val = parse_size_inches(_size_str) if _size_str else None
+
+        def _pop_engine_aux(d: dict) -> tuple[dict, dict, dict, dict]:
+            links = d.pop("_provenance_links", {}) if isinstance(d, dict) else {}
+            quotes = d.pop("_provenance_quotes", {}) if isinstance(d, dict) else {}
+            vals = d.pop("_source_values", {}) if isinstance(d, dict) else {}
+            just = d.pop("_justifications", {}) if isinstance(d, dict) else {}
+            return links, quotes, vals, just
+
+        data = None
+        sources_links: dict = {}
+        sources_quotes: dict = {}
+        source_vals: dict = {}
+        justifications_local: dict = {}
+        _decoded_for_engine = None
+
+        try:
+            _decoded_for_engine = _decode_for_engine(vds_code)
+            out = _rule_generate(
+                _decoded_for_engine, size_inches=_size_val, return_provenance=True
+            )
+            if isinstance(out, tuple):
+                data, _engine_prov = out
+            else:
+                data = out
+            sources_links, sources_quotes, source_vals, justifications_local = _pop_engine_aux(data)
+        except Exception:
+            try:
+                _decoded_for_engine = _decode_for_engine(vds_code)
+                data = _rule_generate(
+                    _decoded_for_engine, size_inches=_size_val, return_provenance=False
+                )
+                sources_links, sources_quotes, source_vals, justifications_local = _pop_engine_aux(data)
+            except Exception:
+                return {
+                    "error": (
+                        "Datasheet could not be regenerated from engineering rules and current PMS data. "
+                        "Stale snapshots from the VDS index are not used as a fallback."
+                    ),
+                    "hint": (
+                        "Confirm the VDS code is valid, piping-class PMS rows are loaded, and try again. "
+                        "If this persists, check server logs for the underlying exception."
+                    ),
+                    "vds_code": vds_code,
+                }
 
         # Apply user overrides — let users customize size, service, tag, etc.
         applied_overrides = {}
         for key, val in overrides.items():
             if val and val.strip():
-                # Map common override names to VDS index field names
                 field_key = _normalize_field_name(key)
                 old_val = str(data.get(field_key, "") or "")
                 new_val = _apply_format_preserving_override(field_key, old_val, val)
@@ -435,26 +563,44 @@ async def _handle_generate(input_data: dict) -> dict:
         if "design_temperature" in applied_overrides:
             _sync_design_pressure_from_temp(data, data.get("piping_class", ""))
 
-        # Inject standard footer notes if the index record doesn't carry them yet
-        # (the index was extracted before footer_notes were introduced).
+        # rule_engine emits datasheet_notes; only inject as a fallback if missing
         if not data.get("datasheet_notes"):
             try:
                 from ..engine.rule_engine import footer_notes_as_text
-                from ..engine.vds_decoder import decode_vds as _decode_for_notes
-                _decoded_for_notes = _decode_for_notes(vds_code)
                 data["datasheet_notes"] = footer_notes_as_text(
-                    _decoded_for_notes.valve_type.value,
-                    _decoded_for_notes.is_nace,
+                    _decoded_for_engine.valve_type.value,
+                    _decoded_for_engine.is_nace,
                 )
             except Exception:
                 pass
 
-        total = len(data)
-        filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
-        completion = round((filled / total * 100) if total else 0, 1)
-        # Use PMS-aware field sources with granular provenance
+        # Use PMS-aware field sources with granular provenance.
+        # NOTE: sources_links was already populated by rule_engine above —
+        # don't reset it here; just augment.
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
+        # Overlay rule-based citations from API standards + clickable links
+        try:
+            from ..engine import rule_citations as _rc
+            from ..engine.rule_engine import _get_material_category as _get_cat
+            _cat_for_cite = _get_cat(_decoded_for_engine.piping_class)
+            for _k in list(sources.keys()):
+                _cite = _rc.get_citation(_k, _decoded_for_engine, material_category=_cat_for_cite)
+                _formatted = _rc.format_citation(_cite, brief=True)
+                if _formatted and "Engineering rule" not in _formatted:
+                    sources[_k] = _formatted
+                _link = _rc.citation_link(_cite)
+                if _link and _k not in sources_links:
+                    sources_links[_k] = _link
+                _quote = _rc.citation_quote(_cite)
+                if _quote and _k not in sources_quotes:
+                    sources_quotes[_k] = _quote
+        except Exception:
+            pass
+        # NOTE: appendix datasheet (PMS_PDF appendix) is INTENTIONALLY not
+        # referenced in the citation — it's the project's pre-filled answer
+        # sheet and would suggest values are looked up. Engine derives every
+        # value from API/ASME/BS rules; citations show only those sources.
 
         # Seat vs design temperature — warning, not fatal. PMS has already
         # endorsed the VDS code for this class; the P-T upper endpoint is a
@@ -487,6 +633,7 @@ async def _handle_generate(input_data: dict) -> dict:
                 end_conn=decoded.end_connection.value,
                 bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
                 size_inches=size_val,
+                vds_code=vds_code,
             )
             p2 = validate_datasheet(
                 data=data,
@@ -498,12 +645,16 @@ async def _handle_generate(input_data: dict) -> dict:
             )
             phase_warnings = list(p1.warnings or []) + list(p2.warnings or [])
             phase_notes = list(p1.notes or []) + list(p2.notes or [])
-            # Index-hit codes are known-good per master reference — demote any
-            # Phase 1 errors to warnings (would indicate stale index, not a real
-            # invalid combination). Phase 2 errors are true conflicts (e.g.
-            # piston check valve must be horizontal) and stay as errors.
+            # Index-hit codes are known-good per master reference — demote most
+            # Phase 1 errors to warnings (stale index). Exceptions stay fatal:
+            # retired raw ``BS`` ball prefix (client policy) must not ship as a sheet.
             if p1.errors:
-                phase_warnings.extend(p1.errors)
+                bs_fatal = raw_vds_bs_ball_prefix_retired_error(vds_code)
+                for err in p1.errors:
+                    if bs_fatal is not None and err == bs_fatal:
+                        phase_errors.append(err)
+                    else:
+                        phase_warnings.append(err)
             if p2.errors:
                 phase_errors.extend(p2.errors)
         except Exception:
@@ -513,10 +664,23 @@ async def _handle_generate(input_data: dict) -> dict:
 
         all_errors = phase_errors
         all_warnings = list(seat_warnings) + phase_warnings
+        data = filter_card_data(data)
+        sources = filter_card_metadata(sources, data)
+        sources_links = filter_card_metadata(sources_links, data)
+        sources_quotes = filter_card_metadata(sources_quotes, data)
+        source_vals = filter_card_metadata(source_vals, data)
+        justifications_local = filter_card_metadata(justifications_local, data)
+        total = len(data)
+        filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
+        completion = round((filled / total * 100) if total else 0, 1)
         result = {
             "vds_code": vds_code,
             "data": data,
             "field_sources": sources,
+            "field_sources_links": sources_links,
+            "field_sources_quotes": sources_quotes,
+            "field_source_values": source_vals,
+            "field_justifications": justifications_local,
             "source": "vds_index",
             "completion_pct": completion,
             "validation": {
@@ -531,7 +695,25 @@ async def _handle_generate(input_data: dict) -> dict:
             result["draft"] = True
         if applied_overrides:
             result["applied_overrides"] = applied_overrides
-        return result
+        return _finalize_generate_datasheet_response(result)
+
+    # ── Step 1b: Auto-build index for newly synced PMS classes ──
+    # If not found in index, try to build index entries for this piping class on the fly.
+    # After build_and_register runs, the VDS code may now be in the index — retry.
+    try:
+        from ..engine.vds_decoder import decode_vds as _quick_decode
+        _q = _quick_decode(vds_code)
+        from ..engine.pms_index_builder import build_and_register
+        _added = build_and_register(_q.piping_class)
+        if _added > 0:
+            spec = kb.get(vds_code)
+            if spec:
+                # Re-enter generation now that the VDS is registered. The
+                # index only proves validity; values must still be generated
+                # from current PMS + rules.
+                return await _handle_generate(input_data)
+    except Exception:
+        pass
 
     # ── Step 2: Decode + validate unknown code ──
     from ..engine.vds_decoder import decode_vds
@@ -556,13 +738,41 @@ async def _handle_generate(input_data: dict) -> dict:
         end_conn=decoded.end_connection.value,
         bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
         size_inches=size_val,
+        vds_code=vds_code,
     )
 
+    # Phase 1 errors mean the (valve_type, seat, spec, end_conn) combination is
+    # incompatible per PMS / VMS rules — no datasheet can legitimately exist for
+    # this code. Returning rule-generated values alongside a red card confuses
+    # clients (looks like hard-coded data). Block generation and return only the
+    # validation result so the UI shows just the error card.
+    if validation.errors:
+        val_dump = validation.model_dump()
+        return _finalize_generate_datasheet_response({
+            "vds_code": vds_code,
+            "validation": {
+                "is_valid": False,
+                "errors": list(val_dump.get("errors", [])),
+                "warnings": list(val_dump.get("warnings", [])),
+                "notes": list(val_dump.get("notes", [])),
+            },
+            "blocked": True,
+            "error": (
+                f"VDS code '{vds_code}' is not a valid combination per the PMS. "
+                f"Datasheet not generated. Resolve the validation errors and retry."
+            ),
+        })
+
     # ── Step 3: Generate datasheet from rules + PMS data ──
-    # Generate even when validation has errors (draft mode) so the Excel
-    # download can include the red error section for client review.
     from ..engine.rule_engine import generate_datasheet as rule_generate
-    data = rule_generate(decoded)
+    data, pdf_provenance = rule_generate(decoded, return_provenance=True)
+    # rule_engine stashes per-field clickable URLs on data["_provenance_links"]
+    # and per-field source-derived values on data["_source_values"]; extract
+    # both and remove from data so they don't pollute the datasheet payload.
+    pdf_provenance_links = data.pop("_provenance_links", {}) if isinstance(data, dict) else {}
+    pdf_provenance_quotes = data.pop("_provenance_quotes", {}) if isinstance(data, dict) else {}
+    field_source_values = data.pop("_source_values", {}) if isinstance(data, dict) else {}
+    field_justifications = data.pop("_justifications", {}) if isinstance(data, dict) else {}
 
     # Apply user overrides
     applied_overrides = {}
@@ -588,12 +798,14 @@ async def _handle_generate(input_data: dict) -> dict:
         size_inches=size_val,
     )
 
-    total = len(data)
-    filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
-    completion = round((filled / total * 100) if total else 0, 1)
-
     piping_class = data.get("piping_class", decoded.piping_class)
     sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
+
+    # Overlay PDF-extracted provenance — if a field's value came from a project's
+    # extracted PMS PDF, prefer the precise page citation over the generic source.
+    for k, src in pdf_provenance.items():
+        if src and src != "Engineering rule (rule_engine.py)":
+            sources[k] = src
 
     val_dump = validation.model_dump()
     # Seat vs design temp — warning, not fatal (see rationale in the index branch above)
@@ -601,10 +813,23 @@ async def _handle_generate(input_data: dict) -> dict:
     all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or [])
     all_warnings = list(seat_warnings) + list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
     all_notes = list(val_dump.get("notes", [])) + list(phase2.notes or [])
+    data = filter_card_data(data)
+    sources = filter_card_metadata(sources, data)
+    pdf_provenance_links = filter_card_metadata(pdf_provenance_links, data)
+    pdf_provenance_quotes = filter_card_metadata(pdf_provenance_quotes, data)
+    field_source_values = filter_card_metadata(field_source_values, data)
+    field_justifications = filter_card_metadata(field_justifications, data)
+    total = len(data)
+    filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
+    completion = round((filled / total * 100) if total else 0, 1)
     result = {
         "vds_code": vds_code,
         "data": data,
         "field_sources": sources,
+        "field_sources_links": pdf_provenance_links,
+        "field_sources_quotes": pdf_provenance_quotes,
+        "field_source_values": field_source_values,
+        "field_justifications": field_justifications,
         "source": "rule_engine",
         "completion_pct": completion,
         "validation": {
@@ -618,7 +843,7 @@ async def _handle_generate(input_data: dict) -> dict:
         result["draft"] = True  # Flag so the AI can warn the user
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
-    return result
+    return _finalize_generate_datasheet_response(result)
 
 
 async def _handle_resolve_piping_class(input_data: dict) -> dict:
@@ -663,6 +888,7 @@ async def _handle_validate(input_data: dict) -> dict:
         spec=input_data["spec"],
         end_conn=input_data.get("end_conn"),
         bore=input_data.get("bore"),
+        vds_code=input_data.get("vds_code"),
     )
     return result.model_dump()
 
@@ -1081,6 +1307,7 @@ async def _handle_compare(input_data: dict) -> dict:
 
     comparison = {}
     missing = []
+    regeneration_failed: list[str] = []
 
     # Fields to compare
     compare_fields = [
@@ -1090,12 +1317,19 @@ async def _handle_compare(input_data: dict) -> dict:
         "fire_rating", "hydrotest_shell", "hydrotest_closure",
     ]
 
+    from ..engine.rule_engine import generate_datasheet as _compare_generate
+    from ..engine.vds_decoder import decode_vds as _compare_decode
+
     for code in codes:
         spec = kb.get(code)
-        if spec:
-            comparison[code] = {f: spec.data.get(f, "-") for f in compare_fields}
-        else:
+        if not spec:
             missing.append(code)
+            continue
+        try:
+            _live = _compare_generate(_compare_decode(code))
+            comparison[code] = {f: _live.get(f, "-") for f in compare_fields}
+        except Exception:
+            regeneration_failed.append(code)
 
     # Find differences
     differences = []
@@ -1111,4 +1345,5 @@ async def _handle_compare(input_data: dict) -> dict:
         "comparison": comparison,
         "differing_fields": differences,
         "missing_codes": missing,
+        "regeneration_failed": regeneration_failed,
     }

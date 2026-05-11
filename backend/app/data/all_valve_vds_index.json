@@ -10245,8 +10245,8 @@
     "valve_type": "Ball Valve, Reduced Bore",
     "source_file": "RULE_ENGINE_REGENERATED"
   },
-  "BSFB25NR": {
-    "vds_no": "BSFB25NR",
+  "BLFB25NR": {
+    "vds_no": "BLFB25NR",
     "design_pressure": "51.7 @ -46°C, 42.7 @ 200°C",
     "hydrotest_shell": "77.55 barg",
     "hydrotest_closure": "56.87 barg",
@@ -10286,8 +10286,8 @@
     "seal_material": "PTFE",
     "source_file": "RULE_ENGINE_REGENERATED"
   },
-  "BSFD25NR": {
-    "vds_no": "BSFD25NR",
+  "BLFD25NR": {
+    "vds_no": "BLFD25NR",
     "design_pressure": "103.4 @ -46°C, 85.3 @ 200°C",
     "hydrotest_shell": "155.1 barg",
     "hydrotest_closure": "113.74 barg",
@@ -10327,8 +10327,8 @@
     "seal_material": "PTFE",
     "source_file": "RULE_ENGINE_REGENERATED"
   },
-  "BSRB25NR": {
-    "vds_no": "BSRB25NR",
+  "BLRB25NR": {
+    "vds_no": "BLRB25NR",
     "design_pressure": "51.7 @ -46°C, 42.7 @ 200°C",
     "hydrotest_shell": "77.55 barg",
     "hydrotest_closure": "56.87 barg",
@@ -10368,8 +10368,8 @@
     "seal_material": "PTFE",
     "source_file": "RULE_ENGINE_REGENERATED"
   },
-  "BSRD25NR": {
-    "vds_no": "BSRD25NR",
+  "BLRD25NR": {
+    "vds_no": "BLRD25NR",
     "design_pressure": "103.4 @ -46°C, 85.3 @ 200°C",
     "hydrotest_shell": "155.1 barg",
     "hydrotest_closure": "113.74 barg",

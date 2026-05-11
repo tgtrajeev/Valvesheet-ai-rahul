@@ -403,6 +403,7 @@ def _check_size(
         end_conn=decoded.end_connection.value,
         bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
         size_inches=size_val,
+        vds_code=decoded.display_vds or decoded.raw_vds,
     )
     if result.errors:
         return ("rejected", result.errors[0])

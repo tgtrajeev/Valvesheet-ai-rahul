@@ -16,10 +16,19 @@ import yaml
 
 from ..config import settings
 from ..engine.knowledge import get_knowledge_base, PRESSURE_CLASS_MAP, MATERIAL_DESCRIPTIONS
-from ..engine.validator import validate_combination, validate_datasheet, parse_size_inches, VALID_SPEC_CODES, check_seat_design_temperature, seat_from_vds_code
+from ..engine.validator import (
+    validate_combination,
+    validate_datasheet,
+    parse_size_inches,
+    VALID_SPEC_CODES,
+    check_seat_design_temperature,
+    seat_from_vds_code,
+    raw_vds_bs_ball_prefix_retired_error,
+)
 from ..engine.combination_builder import generate_combinations
 from ..engine.field_sources import get_field_sources
 from ..engine.pms_resolver import get_pms_field_sources, resolve_piping_class, validate_overrides
+from ..engine.card_filter import filter_card_data, filter_card_metadata
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
@@ -223,6 +232,10 @@ TOOL_DEFINITIONS = [
                 "bore": {"type": "string", "description": "Bore for Ball valves: R (Reduced), F (Full)"},
                 "size": {"type": "string", "description": "Valve size in inches: 1/2, 2, 8, 10. Needed for mounting, gearbox, body form checks."},
                 "service": {"type": "string", "description": "Service type if known: hydrocarbon, seawater, clean, etc."},
+                "vds_code": {
+                    "type": "string",
+                    "description": "Full VDS string when known — enforces retired BS ball prefix policy.",
+                },
             },
             "required": ["valve_type", "seat", "spec"],
         },
@@ -405,6 +418,37 @@ async def _handle_piping_class_info(input_data: dict) -> dict:
     return kb.get_piping_class_info(input_data["piping_class"])
 
 
+def _finalize_generate_datasheet_response(result: dict) -> dict:
+    """Strip datasheet payloads when validation errors exist (same contract as main app)."""
+    if not isinstance(result, dict):
+        return result
+    val = result.get("validation")
+    if not isinstance(val, dict):
+        return result
+    errs = [e for e in (val.get("errors") or []) if str(e).strip()]
+    if not errs:
+        return result
+    out = dict(result)
+    out["data"] = {}
+    out["field_sources"] = {}
+    for k in (
+        "field_sources_links",
+        "field_sources_quotes",
+        "field_source_values",
+        "field_justifications",
+    ):
+        out[k] = {}
+    out["completion_pct"] = 0.0
+    out["draft"] = True
+    out["blocked"] = True
+    if not out.get("error"):
+        out["error"] = (
+            "This VDS failed validation; datasheet field values were not returned. "
+            "Fix the issues in `validation.errors` and call generate_datasheet again."
+        )
+    return out
+
+
 async def _handle_generate(input_data: dict) -> dict:
     """Generate datasheet — VDS index first, then validate + ML API fallback.
 
@@ -418,57 +462,65 @@ async def _handle_generate(input_data: dict) -> dict:
     overrides = input_data.get("overrides") or {}
     kb = get_knowledge_base()
 
-    # ── Step 1: Try VDS index (100% accurate, instant) ──
+    # ── Step 1: VDS in master index? (index = validity only; values = rules + PMS) ──
     spec = kb.get(vds_code)
     if spec:
-        data = dict(spec.data)  # copy so we don't mutate the index
+        from ..engine.vds_decoder import decode_vds as _decode_for_engine
+        from ..engine.rule_engine import generate_datasheet as _rule_generate
+
+        _size_str = (
+            overrides.get("size")
+            or overrides.get("size_range")
+            or overrides.get("nominal_size")
+        )
+        _size_val = parse_size_inches(_size_str) if _size_str else None
+        try:
+            _decoded_for_engine = _decode_for_engine(vds_code)
+            data = _rule_generate(_decoded_for_engine, size_inches=_size_val)
+        except Exception:
+            return {
+                "error": (
+                    "Datasheet could not be regenerated from engineering rules and current PMS data. "
+                    "Stale snapshots from the VDS index are not used as a fallback."
+                ),
+                "hint": (
+                    "Confirm the VDS code is valid, piping-class PMS rows are loaded, and try again."
+                ),
+                "vds_code": vds_code,
+            }
 
         # Apply user overrides — let users customize size, service, tag, etc.
         applied_overrides = {}
         for key, val in overrides.items():
             if val and val.strip():
-                # Map common override names to VDS index field names
                 field_key = _normalize_field_name(key)
                 old_val = data.get(field_key, "")
                 data[field_key] = val.strip()
                 applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
-        # Inject standard footer notes if the index record doesn't carry them yet
-        # (the index was extracted before footer_notes were introduced).
         if not data.get("datasheet_notes"):
             try:
                 from ..engine.rule_engine import footer_notes_as_text
-                from ..engine.vds_decoder import decode_vds as _decode_for_notes
-                _decoded_for_notes = _decode_for_notes(vds_code)
+
                 data["datasheet_notes"] = footer_notes_as_text(
-                    _decoded_for_notes.valve_type.value,
-                    _decoded_for_notes.is_nace,
+                    _decoded_for_engine.valve_type.value,
+                    _decoded_for_engine.is_nace,
                 )
             except Exception:
                 pass
 
-        total = len(data)
-        filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
-        completion = round((filled / total * 100) if total else 0, 1)
-        # Use PMS-aware field sources with granular provenance
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
-        # Seat vs design temperature — warning, not fatal. PMS has already
-        # endorsed the VDS code for this class; the P-T upper endpoint is a
-        # class ceiling, not necessarily the actual service temperature.
         seat_warnings = check_seat_design_temperature(
             data.get("design_pressure", ""), seat_from_vds_code(vds_code)
         )
 
-        # Run full Phase 1 + Phase 2 validators (VMS/PMS rules) against index hits
-        # too, so warnings surface in chat + preview + download for every datasheet.
         phase_warnings: list[str] = []
         phase_notes: list[str] = []
         phase_errors: list[str] = []
         try:
-            from ..engine.vds_decoder import decode_vds
-            decoded = decode_vds(vds_code)
+            decoded = _decoded_for_engine
             size_str = (
                 overrides.get("size")
                 or overrides.get("size_range")
@@ -485,6 +537,7 @@ async def _handle_generate(input_data: dict) -> dict:
                 end_conn=decoded.end_connection.value,
                 bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
                 size_inches=size_val,
+                vds_code=vds_code,
             )
             p2 = validate_datasheet(
                 data=data,
@@ -496,24 +549,27 @@ async def _handle_generate(input_data: dict) -> dict:
             )
             phase_warnings = list(p1.warnings or []) + list(p2.warnings or [])
             phase_notes = list(p1.notes or []) + list(p2.notes or [])
-            # Index-hit codes are known-good per master reference — demote any
-            # Phase 1 errors to warnings (would indicate stale index, not a real
-            # invalid combination). Phase 2 errors are true conflicts (e.g.
-            # piston check valve must be horizontal) and stay as errors.
             if p1.errors:
-                phase_warnings.extend(p1.errors)
+                bs_fatal = raw_vds_bs_ball_prefix_retired_error(vds_code)
+                for err in p1.errors:
+                    if bs_fatal is not None and err == bs_fatal:
+                        phase_errors.append(err)
+                    else:
+                        phase_warnings.append(err)
             if p2.errors:
                 phase_errors.extend(p2.errors)
         except Exception:
-            # Decode failure on an index code shouldn't break generation —
-            # seat_errors alone still apply.
             pass
 
-        # Validate user-provided overrides against class P-T envelope + service
         override_check = validate_overrides(piping_class, overrides) if piping_class else {"errors": [], "warnings": []}
 
         all_errors = phase_errors + list(override_check.get("errors") or [])
         all_warnings = list(seat_warnings) + phase_warnings + list(override_check.get("warnings") or [])
+        data = filter_card_data(data)
+        sources = filter_card_metadata(sources, data)
+        total = len(data)
+        filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
+        completion = round((filled / total * 100) if total else 0, 1)
         result = {
             "vds_code": vds_code,
             "data": data,
@@ -532,7 +588,7 @@ async def _handle_generate(input_data: dict) -> dict:
             result["draft"] = True
         if applied_overrides:
             result["applied_overrides"] = applied_overrides
-        return result
+        return _finalize_generate_datasheet_response(result)
 
     # ── Step 2: Decode + validate unknown code ──
     from ..engine.vds_decoder import decode_vds
@@ -557,17 +613,18 @@ async def _handle_generate(input_data: dict) -> dict:
         end_conn=decoded.end_connection.value,
         bore=decoded.design if decoded.valve_type.value in ("BL", "BS") else None,
         size_inches=size_val,
+        vds_code=vds_code,
     )
 
     if not validation.is_valid:
         # Block generation — return validation errors + suggestions
-        return {
+        return _finalize_generate_datasheet_response({
             "error": "Invalid VDS combination — cannot generate datasheet.",
             "vds_code": vds_code,
             "decoded": decoded.to_dict(),
             "validation": validation.model_dump(),
             "hint": "Fix the errors above or use find_valves to search for valid specs.",
-        }
+        })
 
     # ── Step 3: Valid combination — generate datasheet from rules + PMS data ──
     from ..engine.rule_engine import generate_datasheet as rule_generate
@@ -592,10 +649,6 @@ async def _handle_generate(input_data: dict) -> dict:
         size_inches=size_val,
     )
 
-    total = len(data)
-    filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
-    completion = round((filled / total * 100) if total else 0, 1)
-
     piping_class = data.get("piping_class", decoded.piping_class)
     sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
@@ -608,6 +661,11 @@ async def _handle_generate(input_data: dict) -> dict:
     all_warnings = list(seat_warnings) + (validation.warnings or []) + (phase2.warnings or []) + list(override_check.get("warnings") or [])
     all_notes = (validation.notes or []) + (phase2.notes or [])
     all_errors = list(phase2.errors or []) + list(override_check.get("errors") or [])
+    data = filter_card_data(data)
+    sources = filter_card_metadata(sources, data)
+    total = len(data)
+    filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
+    completion = round((filled / total * 100) if total else 0, 1)
     result = {
         "vds_code": vds_code,
         "data": data,
@@ -625,7 +683,7 @@ async def _handle_generate(input_data: dict) -> dict:
         result["draft"] = True
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
-    return result
+    return _finalize_generate_datasheet_response(result)
 
 
 async def _handle_resolve_piping_class(input_data: dict) -> dict:
@@ -673,6 +731,7 @@ async def _handle_validate(input_data: dict) -> dict:
         bore=input_data.get("bore"),
         size_inches=size_val,
         service=input_data.get("service"),
+        vds_code=input_data.get("vds_code"),
     )
     return result.model_dump()
 
@@ -850,6 +909,7 @@ async def _handle_compare(input_data: dict) -> dict:
 
     comparison = {}
     missing = []
+    regeneration_failed: list[str] = []
 
     # Fields to compare
     compare_fields = [
@@ -859,12 +919,19 @@ async def _handle_compare(input_data: dict) -> dict:
         "fire_rating", "hydrotest_shell", "hydrotest_closure",
     ]
 
+    from ..engine.rule_engine import generate_datasheet as _compare_generate
+    from ..engine.vds_decoder import decode_vds as _compare_decode
+
     for code in codes:
         spec = kb.get(code)
-        if spec:
-            comparison[code] = {f: spec.data.get(f, "-") for f in compare_fields}
-        else:
+        if not spec:
             missing.append(code)
+            continue
+        try:
+            _live = _compare_generate(_compare_decode(code))
+            comparison[code] = {f: _live.get(f, "-") for f in compare_fields}
+        except Exception:
+            regeneration_failed.append(code)
 
     # Find differences
     differences = []
@@ -880,6 +947,7 @@ async def _handle_compare(input_data: dict) -> dict:
         "comparison": comparison,
         "differing_fields": differences,
         "missing_codes": missing,
+        "regeneration_failed": regeneration_failed,
     }
 
 

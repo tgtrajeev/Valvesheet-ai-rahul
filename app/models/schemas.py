@@ -21,6 +21,7 @@ class ValidateRequest(BaseModel):
     spec: str
     end_conn: Optional[str] = None
     bore: Optional[str] = None
+    vds_code: Optional[str] = None
 
 
 class Suggestion(BaseModel):

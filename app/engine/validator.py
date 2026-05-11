@@ -12,6 +12,33 @@ from ..models.schemas import ValidationResult, Suggestion
 VMS_DOC = "40801-SPE-80000-PP-SP-0002"   # Valve Material Specification
 PMS_DOC = "40801-SPE-80000-PP-SP-0001"   # Piping Material Specification
 
+# Retired two-letter BS ball encoding (BS + bore R/F/M + seat T/P/M), e.g. BSFPF25J — must use BL…
+_BS_TWO_LETTER_BALL_RE = re.compile(r"^BS[RFM][TPM]")
+
+
+def _normalize_vds_code_head(vds_code: str) -> str:
+    c = vds_code.strip().upper()
+    if c.startswith("VDS-"):
+        c = c[4:].strip()
+    return c
+
+
+def raw_vds_bs_ball_prefix_retired_error(vds_code: str | None) -> str | None:
+    """Return a Phase-1 error string if the raw VDS uses the retired BS ball prefix.
+
+    The decoder maps ``BS`` → ``BL`` for engineering rules, but the *printed* VDS must
+    start with ``BL`` per client policy; SDSS/material is in the piping class, not ``BS``."""
+    if not vds_code or not isinstance(vds_code, str):
+        return None
+    c = _normalize_vds_code_head(vds_code)
+    if _BS_TWO_LETTER_BALL_RE.match(c):
+        return (
+            "The two-letter ball-valve prefix 'BS' is not permitted on VDS codes. "
+            "Use 'BL' with the same bore, seat, piping class and end suffix "
+            f"(example: {c} -> BL{c[2:]})."
+        )
+    return None
+
 # Valid seat codes per valve type (Section 4, CLAUDE.md / vdsParser.ts)
 VALID_SEATS_BY_TYPE: dict[str, list[str]] = {
     "GA": ["M"],
@@ -32,8 +59,8 @@ VALID_DESIGNS_BY_TYPE: dict[str, list[str]] = {
     "DB": ["P", "M"], "NE": ["I", "A"],
 }
 
-# Complete FPSO Albacora PMS spec whitelist
-VALID_SPEC_CODES = {
+# Static FPSO Albacora PMS spec whitelist (kept as seed fallback)
+_STATIC_SPEC_CODES = {
     # CS non-NACE
     "A1", "B1", "D1", "E1", "F1", "G1", "A2",
     # CS NACE
@@ -57,6 +84,58 @@ VALID_SPEC_CODES = {
     # Tubing
     "T50A", "T50B", "T50C", "T60A", "T60B", "T60C",
 }
+
+# Dynamic spec codes loaded from the backend API — extended at runtime
+_dynamic_spec_codes: set[str] = set()
+_dynamic_loaded: bool = False
+
+
+def _load_dynamic_spec_codes() -> None:
+    """Query the backend /api/pms/classes and local JSON for all known spec codes."""
+    global _dynamic_spec_codes, _dynamic_loaded
+    if _dynamic_loaded:
+        return
+    # Source 1: backend DB (authoritative for fully-synced specs)
+    try:
+        import httpx
+        from ..config import settings
+        resp = httpx.get(f"{settings.backend_api_base_url}/pms/classes", timeout=5.0)
+        if resp.status_code == 200:
+            for cls in resp.json().get("classes", []):
+                code = cls.get("spec_code", "")
+                if code:
+                    _dynamic_spec_codes.add(code.upper())
+    except Exception:
+        pass
+    # Source 2: local pms_extracted.json via PmsLoader (catches specs whose DB
+    # write failed but whose file write succeeded — e.g. newly synced classes
+    # before the backend DB upsert is fully committed)
+    try:
+        from .pms_loader import get_pms_loader
+        loader = get_pms_loader()
+        for code in loader.spec_codes:
+            if code:
+                _dynamic_spec_codes.add(code.upper())
+    except Exception:
+        pass
+    _dynamic_loaded = True
+
+
+def refresh_valid_spec_codes() -> None:
+    """Force a refresh of dynamic spec codes from the backend (call after new PMS is ingested)."""
+    global _dynamic_loaded
+    _dynamic_loaded = False
+    _load_dynamic_spec_codes()
+
+
+def VALID_SPEC_CODES_ALL() -> set[str]:
+    """Return the full set of valid spec codes (static + backend-loaded)."""
+    _load_dynamic_spec_codes()
+    return _STATIC_SPEC_CODES | _dynamic_spec_codes
+
+
+# Alias kept for any code that imports VALID_SPEC_CODES directly
+VALID_SPEC_CODES = _STATIC_SPEC_CODES
 
 NON_METALLIC_SPECS = {"A30", "A31", "A40", "A41", "A42"}
 
@@ -231,6 +310,7 @@ def validate_combination(
     size_inches: float | None = None,
     service: str | None = None,
     pressure_class: int | None = None,
+    vds_code: str | None = None,
 ) -> ValidationResult:
     f"""Validate a VDS combination against FPSO Albacora PMS rules + spec 40801-SPE-80000-PP-SP-0002.
 
@@ -245,6 +325,16 @@ def validate_combination(
     st = seat.upper().strip()
     sp = spec.upper().strip()
     ec = (end_conn or "").upper().strip() if end_conn else None
+
+    _bs_raw = raw_vds_bs_ball_prefix_retired_error(vds_code)
+    if _bs_raw:
+        errors.append(_bs_raw)
+        suggestions.append(Suggestion(
+            type="fix",
+            title="Use BL ball prefix",
+            description="Replace the leading BS with BL; keep the rest of the code identical.",
+            action={"vds_prefix": "BL"},
+        ))
 
     # Resolve pressure class from spec if not provided
     if pressure_class is None:
@@ -271,15 +361,33 @@ def validate_combination(
                 action={"seat": s},
             ))
 
-    # 3. Piping spec is valid
-    if sp not in VALID_SPEC_CODES:
+    # 3. Piping spec is valid — check static list first, then backend-loaded dynamic list
+    all_valid = VALID_SPEC_CODES_ALL()
+    if sp not in all_valid:
         errors.append(
-            f"Piping spec '{sp}' is not a valid FPSO Albacora PMS code. "
-            f"Examples: A1, B1N, D1LN, A10, A20N, T50A"
+            f"Piping spec '{sp}' is not recognised in the PMS. "
+            f"Known classes include: A1, B1N, D1LN, A10, A20N, T50A and any class "
+            f"ingested via POST /api/pms. Check GET /api/pms/classes for the full list."
         )
 
+    # 3b. BS prefix retired per client policy (2026-05-11) — every ball valve
+    # must start with BL. Material distinction (incl. SDSS) is carried by the
+    # piping class code (B25, D25N, F25, …), not the valve-type prefix.
+    if vt == "BS":
+        errors.append(
+            f"VDS prefix 'BS' is not permitted. All ball valves must start with 'BL' "
+            f"per client policy. Material (incl. SDSS) is identified by the piping class "
+            f"code itself (e.g. B25, D25N, F25)."
+        )
+        suggestions.append(Suggestion(
+            type="fix",
+            title="Use BL prefix",
+            description=f"Replace BS with BL. Example: BSFPF25J → BLFPF25J.",
+            action={"valve_type": "BL"},
+        ))
+
     # 4. End connection compatibility
-    if ec and sp in VALID_SPEC_CODES:
+    if ec and sp in all_valid:
         valid_ends = end_conn_for_spec(sp, vt)
         if ec not in valid_ends:
             end_names = {"R": "RF", "J": "RTJ", "F": "FF", "JT": "RTJ+NPT"}

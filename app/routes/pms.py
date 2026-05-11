@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import logging
+import re
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -13,11 +15,158 @@ from ..config import settings
 from ..pms import store
 from ..pms.api_client import PMSApiClient, sync_from_local_file
 from ..pms.query import query as pms_query
+from ..pms.schema import (
+    AttributeValue,
+    PipeScheduleRow,
+    PipingClass,
+    ProjectMetadata,
+    ProjectPMS,
+    PTRating,
+    ValveAssignment,
+)
 from ..pms.vds_builder import build_vds_index
 from ..pms.xlsx_parser import parse_xlsx
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/pms", tags=["pms"])
+
+_SPEC_CODE_RE = re.compile(r"^([A-G]\d+[LN]*|T\d+[A-C]?)$", re.I)
+_DEV_PROJECT_ID = "fpso-albacora"
+
+
+def _attr(raw: Any) -> AttributeValue:
+    numeric = None
+    if isinstance(raw, bool):
+        numeric = 1.0 if raw else 0.0
+    elif isinstance(raw, (int, float)):
+        numeric = float(raw)
+    elif isinstance(raw, str):
+        try:
+            numeric = float(raw.replace("#", "").replace("%", "").strip())
+        except ValueError:
+            numeric = None
+    tokens = re.findall(r"[A-Za-z0-9_.#/%+-]+", str(raw).lower()) if raw is not None else []
+    return AttributeValue(raw=raw, numeric=numeric, tokens=tokens)
+
+
+def _split_vds_codes(raw_codes: Any) -> list[str]:
+    if raw_codes is None:
+        return []
+    if isinstance(raw_codes, str):
+        raw_iter = [raw_codes]
+    elif isinstance(raw_codes, list):
+        raw_iter = raw_codes
+    else:
+        return []
+    out: list[str] = []
+    for raw in raw_iter:
+        if not isinstance(raw, str):
+            continue
+        for part in raw.split(","):
+            code = part.strip().upper()
+            if code:
+                out.append(code)
+    return list(dict.fromkeys(out))
+
+
+def _class_from_raw_payload(spec_code: str, raw: dict[str, Any]) -> PipingClass:
+    pc = PipingClass(spec_code=spec_code)
+    header = raw.get("header") or {}
+    for key, value in header.items():
+        if key == "spec_code" or value is None:
+            continue
+        pc.attributes[key] = _attr(value)
+
+    for row in raw.get("pt_ratings") or []:
+        if row.get("temperature_c") is not None and row.get("max_pressure_barg") is not None:
+            pc.pt_ratings.append(PTRating(
+                temperature_c=float(row["temperature_c"]),
+                max_pressure_barg=float(row["max_pressure_barg"]),
+            ))
+
+    for row in raw.get("pipe_schedule") or []:
+        pc.pipe_schedule.append(PipeScheduleRow(
+            nps_inch=float(row.get("nps_inch")),
+            od_mm=row.get("od_mm"),
+            schedule_val=row.get("schedule_val"),
+            wall_thickness_mm=row.get("wall_thickness_mm"),
+            pipe_type=row.get("pipe_type"),
+            pipe_moc=row.get("pipe_moc"),
+            pipe_std=row.get("pipe_std"),
+            ends=row.get("ends"),
+        ))
+
+    for row in raw.get("valve_assignments") or []:
+        pc.valve_assignments.append(ValveAssignment(
+            valve_type=row.get("valve_type", "UNKNOWN"),
+            nps_min=row.get("nps_min"),
+            nps_max=row.get("nps_max"),
+            vds_codes=_split_vds_codes(row.get("vds_codes") or row.get("vds_code")),
+            raw_cell_value=row.get("raw_cell_value"),
+            notes=row.get("notes"),
+            valve_standard=row.get("valve_standard"),
+        ))
+
+    pc.flanges = raw.get("flanges") or []
+    pc.bolting_gaskets = raw.get("bolting_gaskets")
+    pc.fittings = raw.get("fittings") or []
+    pc.branch_chart = raw.get("branch_chart")
+    pc.extra = raw.get("extra") or {}
+    return pc
+
+
+def _piping_class_to_legacy_json(pc: PipingClass) -> dict[str, Any]:
+    attrs = pc.attributes
+    return {
+        "spec_code": pc.spec_code,
+        "header": {
+            "spec_code": pc.spec_code,
+            "pressure_rating": attrs.get("pressure_rating").raw if attrs.get("pressure_rating") else None,
+            "material_description": attrs.get("material_description").raw if attrs.get("material_description") else None,
+            "corrosion_allowance": attrs.get("corrosion_allowance").raw if attrs.get("corrosion_allowance") else None,
+            "service": attrs.get("service").raw if attrs.get("service") else None,
+            "design_code": attrs.get("design_code").raw if attrs.get("design_code") else None,
+            "mill_tolerance": attrs.get("mill_tolerance").raw if attrs.get("mill_tolerance") else None,
+            "nace_flag": bool(attrs.get("nace_flag").raw) if attrs.get("nace_flag") else False,
+            "lt_flag": bool(attrs.get("lt_flag").raw) if attrs.get("lt_flag") else False,
+            "hydrotest_pressure_barg": attrs.get("hydrotest_pressure_barg").raw if attrs.get("hydrotest_pressure_barg") else None,
+            "design_pressure_barg": attrs.get("design_pressure_barg").raw if attrs.get("design_pressure_barg") else None,
+            "valve_rating_label": attrs.get("valve_rating_label").raw if attrs.get("valve_rating_label") else None,
+        },
+        "pt_ratings": [r.model_dump() for r in pc.pt_ratings],
+        "pipe_schedule": [r.model_dump() for r in pc.pipe_schedule],
+        "flanges": pc.flanges,
+        "bolting_gaskets": pc.bolting_gaskets,
+        "valve_assignments": [r.model_dump() for r in pc.valve_assignments],
+        "fittings": pc.fittings,
+        "branch_chart": pc.branch_chart,
+        "extra": pc.extra,
+    }
+
+
+def _range_diagnostics(updates: dict[str, PipingClass]) -> dict[str, Any]:
+    diagnostics: dict[str, Any] = {}
+    for spec_code, pc in updates.items():
+        pipe_sizes = [r.nps_inch for r in pc.pipe_schedule if r.nps_inch is not None]
+        valve_ranges = [
+            {
+                "valve_type": va.valve_type,
+                "nps_min": va.nps_min,
+                "nps_max": va.nps_max,
+                "vds_codes": _split_vds_codes(va.vds_codes),
+            }
+            for va in pc.valve_assignments
+        ]
+        diagnostics[spec_code] = {
+            "pipe_schedule_min": min(pipe_sizes) if pipe_sizes else None,
+            "pipe_schedule_max": max(pipe_sizes) if pipe_sizes else None,
+            "valve_assignment_ranges": valve_ranges,
+            "note": (
+                "Datasheet size_range is resolved from the matching valve_assignment row first; "
+                "editing pipe_schedule alone will not expand a VDS whose valve_assignment nps_max is unchanged."
+            ),
+        }
+    return diagnostics
 
 
 class FilterSpec(BaseModel):
@@ -113,6 +262,133 @@ async def query_endpoint(project_id: str, body: QueryRequest):
     filters = [f.model_dump() for f in body.filters]
     results = pms_query(pms, filters, limit=body.limit)
     return {"results": [pc.model_dump() for pc in results], "count": len(results)}
+
+
+@router.post("")
+async def dev_sync_pms_json(
+    body: Dict[str, Any],
+    project_id: str = _DEV_PROJECT_ID,
+):
+    """Dev/Test: upsert PMS JSON keyed by piping-class code.
+
+    This route backs the "Generate PMS" menu test panel. It intentionally
+    accepts full PMS-shaped JSON so a future or edited class can be tested
+    without changing backend rules.
+    """
+    if not body:
+        raise HTTPException(400, "PMS payload must be an object keyed by piping class code")
+
+    updates: dict[str, PipingClass] = {}
+    errors: list[str] = []
+    for raw_code, raw_class in body.items():
+        spec_code = str(raw_code).upper().strip()
+        if not _SPEC_CODE_RE.match(spec_code):
+            errors.append(f"{raw_code}: invalid piping class code")
+            continue
+        if not isinstance(raw_class, dict):
+            errors.append(f"{spec_code}: payload must be an object")
+            continue
+        header_code = str((raw_class.get("header") or {}).get("spec_code") or spec_code).upper().strip()
+        if header_code != spec_code:
+            errors.append(f"{spec_code}: header.spec_code '{header_code}' does not match key")
+            continue
+        try:
+            updates[spec_code] = _class_from_raw_payload(spec_code, raw_class)
+        except Exception as exc:
+            errors.append(f"{spec_code}: {exc}")
+
+    if errors:
+        raise HTTPException(400, {"errors": errors})
+    if not updates:
+        raise HTTPException(400, "No valid PMS classes supplied")
+
+    existing = store.load_pms(project_id)
+    if existing:
+        pms = existing
+        pms.piping_classes.update(updates)
+    else:
+        pms = ProjectPMS(
+            metadata=ProjectMetadata(
+                project_id=project_id,
+                name=project_id,
+                source_file="dev_pms_json",
+                uploaded_at=datetime.now(timezone.utc).isoformat(),
+                status="draft",
+            ),
+            piping_classes=updates,
+        )
+
+    store.save_pms(pms)
+    idx = build_vds_index(pms)
+    store.save_vds_index(idx)
+    store.warm_pms_cache(project_id, pms)
+
+    db_failed: list[str] = []
+    try:
+        await store.save_pms_to_db(
+            project_id=project_id,
+            project_name=pms.metadata.name,
+            piping_classes=updates,
+            source="dev_json",
+            source_file="POST /api/pms",
+        )
+    except Exception as exc:
+        logger.warning("Dev PMS JSON DB write failed: %s", exc)
+        db_failed = list(updates)
+
+    try:
+        from ..engine.pms_loader import refresh_pms_loader
+        refresh_pms_loader()
+    except Exception:
+        pass
+
+    affected_vds = sorted({
+        code
+        for pc in updates.values()
+        for va in pc.valve_assignments
+        for code in _split_vds_codes(va.vds_codes)
+    })
+    return {
+        "ok": True,
+        "project_id": project_id,
+        "sheets_total": len(updates),
+        "saved_codes": sorted(updates),
+        "db_failed": db_failed,
+        "vds_codes": affected_vds,
+        "vds_count": len(affected_vds),
+        "range_diagnostics": _range_diagnostics(updates),
+    }
+
+
+@router.get("")
+async def get_dev_pms_json(spec_code: str, project_id: str = _DEV_PROJECT_ID):
+    code = spec_code.upper().strip()
+    pms = store.load_pms(project_id)
+    if not pms or code not in pms.piping_classes:
+        raise HTTPException(404, f"piping class {code} not found")
+    return {"spec_code": code, "project_id": project_id, "data": _piping_class_to_legacy_json(pms.piping_classes[code])}
+
+
+@router.get("/classes")
+async def list_dev_pms_classes(project_id: str = _DEV_PROJECT_ID):
+    pms = store.load_pms(project_id)
+    if not pms:
+        return {"classes": []}
+    classes = []
+    for spec_code, pc in sorted(pms.piping_classes.items()):
+        attrs = pc.attributes
+        classes.append({
+            "spec_code": spec_code,
+            "pressure_rating": attrs.get("pressure_rating").raw if attrs.get("pressure_rating") else None,
+            "material": attrs.get("material_description").raw if attrs.get("material_description") else None,
+            "corrosion_allowance": attrs.get("corrosion_allowance").raw if attrs.get("corrosion_allowance") else None,
+            "service": attrs.get("service").raw if attrs.get("service") else None,
+            "nace": bool(attrs.get("nace_flag").raw) if attrs.get("nace_flag") else False,
+            "low_temp": bool(attrs.get("lt_flag").raw) if attrs.get("lt_flag") else False,
+            "design_pressure_barg": attrs.get("design_pressure_barg").raw if attrs.get("design_pressure_barg") else None,
+            "hydrotest_pressure_barg": attrs.get("hydrotest_pressure_barg").raw if attrs.get("hydrotest_pressure_barg") else None,
+        })
+    return {"classes": classes}
 
 
 # ── Sync routes ──────────────────────────────────────────────────────────────

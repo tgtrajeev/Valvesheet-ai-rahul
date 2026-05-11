@@ -97,8 +97,13 @@ class DesignCode(str, Enum):
 
 
 class DecodedVDS(BaseModel):
-    """Fully parsed VDS number."""
+    """Fully parsed VDS number.
+
+    ``raw_vds`` is canonical (no ``VDS-`` prefix) for PMS matching.
+    ``display_vds`` is what we show on the sheet (may include ``VDS-`` if the user typed it).
+    """
     raw_vds: str
+    display_vds: str = ""
     valve_type: ValveType
     design: str = ""
     seat_type: Optional[SeatType] = None
@@ -111,6 +116,10 @@ class DecodedVDS(BaseModel):
 
     def model_post_init(self, __context) -> None:
         self.raw_vds = self.raw_vds.upper().strip()
+        if not (self.display_vds or "").strip():
+            self.display_vds = self.raw_vds
+        else:
+            self.display_vds = self.display_vds.strip().upper()
         if not self.piping_class_base:
             inst = re.match(r"^(T\d+[A-C]?)$", self.piping_class)
             std = re.match(r"^([A-G]\d+)", self.piping_class)
@@ -122,13 +131,18 @@ class DecodedVDS(BaseModel):
     @classmethod
     def validate_piping_class(cls, v: str) -> str:
         v = v.upper().strip()
-        if not re.match(r"^([A-G]\d+[LN]*|T\d+[A-C]?)$", v):
+        # Accept any alphanumeric piping class code starting with a letter.
+        # Standard codes (A1, B1N, T50A…) and custom project codes (PROJ1, GAIL1…)
+        # are all valid here; existence against the project PMS is checked later
+        # by validate_combination → VALID_SPEC_CODES_ALL().
+        if not re.match(r"^[A-Z][A-Z0-9]{0,19}$", v):
             raise ValueError(f"Invalid piping class: {v}")
         return v
 
     def to_dict(self) -> dict:
         return {
             "raw_vds": self.raw_vds,
+            "display_vds": self.display_vds,
             "valve_type": self.valve_type.value,
             "valve_type_name": self.valve_type.full_name,
             "design": self.design,

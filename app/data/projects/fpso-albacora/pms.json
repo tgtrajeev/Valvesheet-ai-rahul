@@ -28262,10 +28262,10 @@
           "nps_min": 0.5,
           "nps_max": 32.0,
           "vds_codes": [
-            "BSRB25R",
-            "BSFB25R"
+            "BLRB25R",
+            "BLFB25R"
           ],
-          "raw_cell_value": "BSRB25R, BSFB25R",
+          "raw_cell_value": "BLRB25R, BLFB25R",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },
@@ -28667,10 +28667,10 @@
           "nps_min": 0.5,
           "nps_max": 24.0,
           "vds_codes": [
-            "BSRD25R",
-            "BSFD25R"
+            "BLRD25R",
+            "BLFD25R"
           ],
-          "raw_cell_value": "BSRD25R, BSFD25R",
+          "raw_cell_value": "BLRD25R, BLFD25R",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },
@@ -29081,10 +29081,10 @@
           "nps_min": 2.0,
           "nps_max": 24.0,
           "vds_codes": [
-            "BSRE25J",
-            "BSFE25J"
+            "BLRE25J",
+            "BLFE25J"
           ],
-          "raw_cell_value": "BSRE25J, BSFE25J",
+          "raw_cell_value": "BLRE25J, BLFE25J",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },
@@ -29515,10 +29515,10 @@
           "nps_min": 2.0,
           "nps_max": 24.0,
           "vds_codes": [
-            "BSRF25J",
-            "BSFF25J"
+            "BLRF25J",
+            "BLFF25J"
           ],
-          "raw_cell_value": "BSRF25J, BSFF25J",
+          "raw_cell_value": "BLRF25J, BLFF25J",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },
@@ -30845,10 +30845,10 @@
           "nps_min": 0.5,
           "nps_max": 32.0,
           "vds_codes": [
-            "BSRB25NR",
-            "BSFB25NR"
+            "BLRB25NR",
+            "BLFB25NR"
           ],
-          "raw_cell_value": "BSRB25NR, BSFB25NR",
+          "raw_cell_value": "BLRB25NR, BLFB25NR",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },
@@ -31245,10 +31245,10 @@
           "nps_min": 0.5,
           "nps_max": 24.0,
           "vds_codes": [
-            "BSRD25NR",
-            "BSFD25NR"
+            "BLRD25NR",
+            "BLFD25NR"
           ],
-          "raw_cell_value": "BSRD25NR, BSFD25NR",
+          "raw_cell_value": "BLRD25NR, BLFD25NR",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },
@@ -31654,10 +31654,10 @@
           "nps_min": 2.0,
           "nps_max": 24.0,
           "vds_codes": [
-            "BSRE25NJ",
-            "BSFE25NJ"
+            "BLRE25NJ",
+            "BLFE25NJ"
           ],
-          "raw_cell_value": "BSRE25NJ, BSFE25NJ",
+          "raw_cell_value": "BLRE25NJ, BLFE25NJ",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },
@@ -32094,10 +32094,10 @@
           "nps_min": 2.0,
           "nps_max": 24.0,
           "vds_codes": [
-            "BSRF25NJ",
-            "BSFF25NJ"
+            "BLRF25NJ",
+            "BLFF25NJ"
           ],
-          "raw_cell_value": "BSRF25NJ, BSFF25NJ",
+          "raw_cell_value": "BLRF25NJ, BLFF25NJ",
           "notes": null,
           "valve_standard": "API SPEC 6D / ISO 14313"
         },

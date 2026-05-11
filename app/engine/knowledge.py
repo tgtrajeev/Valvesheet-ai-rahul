@@ -344,6 +344,28 @@ class KnowledgeBase:
 
         return result
 
+    def has_piping_class(self, spec_code: str) -> bool:
+        """Return True if any index entries exist for this piping class."""
+        pc = spec_code.upper().strip()
+        return any(s.piping_class.upper() == pc for s in self.specs.values())
+
+    def add_entries(self, new_entries: dict[str, dict]) -> int:
+        """Inject new VDS entries into the in-memory index without re-reading file.
+
+        Called after pms_index_builder writes new entries to disk so the
+        knowledge base reflects them immediately within the same process.
+        Returns the number of entries actually added (skips duplicates).
+        """
+        added = 0
+        for code, data in new_entries.items():
+            key = code.upper().strip()
+            if key not in self.specs:
+                self.specs[key] = ValveSpec(vds_code=key, data=data)
+                added += 1
+        if added:
+            self._piping_classes = sorted(set(s.piping_class for s in self.specs.values()))
+        return added
+
     def list_piping_classes_for_requirements(
         self,
         material: str | None = None,
