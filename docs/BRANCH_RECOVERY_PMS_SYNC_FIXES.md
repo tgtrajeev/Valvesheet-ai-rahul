@@ -5,8 +5,9 @@ This document records where the PMS sync and datasheet-card fixes are saved, and
 ## Saved Branch
 
 - Branch name: `pms-sync-datasheet-fixes`
-- Saved commit: `4d77aacbfd89b80cdb2c3a112b44a3f93711474f`
-- Commit message: `Update PMS sync and datasheet card behavior`
+- Base commit when the branch was created: `4d77aacbfd89b80cdb2c3a112b44a3f93711474f`
+- Full code commit: `3c52bafa700e338d44431e0aaa47238a55650111`
+- Full code commit message: `Save PMS sync fixes and recovery notes`
 
 ## Return To This Code
 
@@ -18,16 +19,22 @@ git switch pms-sync-datasheet-fixes
 git status
 ```
 
-If you want to confirm the exact saved commit:
+If you want to confirm the branch you are on:
 
 ```powershell
-git rev-parse HEAD
+git branch --show-current
 ```
 
 Expected output:
 
 ```text
-4d77aacbfd89b80cdb2c3a112b44a3f93711474f
+pms-sync-datasheet-fixes
+```
+
+If you want to see the latest commit on this branch:
+
+```powershell
+git rev-parse HEAD
 ```
 
 ## If You Are On Main
