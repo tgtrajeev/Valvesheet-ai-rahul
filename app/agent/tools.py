@@ -664,7 +664,7 @@ async def _handle_generate(input_data: dict) -> dict:
 
         all_errors = phase_errors
         all_warnings = list(seat_warnings) + phase_warnings
-        data = filter_card_data(data)
+        data = filter_card_data(data, for_chat_ui=True)
         sources = filter_card_metadata(sources, data)
         sources_links = filter_card_metadata(sources_links, data)
         sources_quotes = filter_card_metadata(sources_quotes, data)
@@ -813,7 +813,7 @@ async def _handle_generate(input_data: dict) -> dict:
     all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or [])
     all_warnings = list(seat_warnings) + list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
     all_notes = list(val_dump.get("notes", [])) + list(phase2.notes or [])
-    data = filter_card_data(data)
+    data = filter_card_data(data, for_chat_ui=True)
     sources = filter_card_metadata(sources, data)
     pdf_provenance_links = filter_card_metadata(pdf_provenance_links, data)
     pdf_provenance_quotes = filter_card_metadata(pdf_provenance_quotes, data)

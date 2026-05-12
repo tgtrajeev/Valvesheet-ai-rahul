@@ -157,3 +157,36 @@ Copy/paste this template and fill it in:
   - Asserted comma-separated `vds_codes` normalize to separate VDS index entries.
   - Asserted range diagnostics show `pipe_schedule_max: 26` while the `DBB_INST` valve assignment remains `nps_max: 24`, explaining why `DBRPF2LNJT` still shows `1" - 24"` unless the assignment range is also changed.
 
+## 2026-05-12 — Globe material rows on card/XLSX; butterfly spring hidden; 316L back-seat trim alignment
+
+- Area: datasheet UI (preview + Excel), rule engine trim normalization
+- Problem:
+  - Butterfly datasheets sometimes still showed **Spring** (e.g. Inconel 750) in the Materials grid.
+  - Globe datasheets: **Seal** and **Spring** (and seal note) appeared in AI/rule output but not on the card or downloaded XLSX; users also reported **back seat** text missing the **L** in 316L-grade classes when PMS listed bare F316.
+- Impact: VMS-style material tables disagreed with engineering output; globe comparison vs reference sheets failed on seal/spring/back-seat rows.
+- Root cause:
+  - `valveTypeHiddenKeys` in the frontend **suppressed seal + spring (+ note) for every globe**, and hid butterfly spring only when `valve_type` contained the word “butterfly”. If `valve_type` was missing or shown as “-” (e.g. `readValue` path), the butterfly spring row was not hidden even when `shaft_material` was present.
+  - `_resolve_stem_grade_for_trim` only promoted F316 → category 316L when the VDS suffix flagged NACE or low temperature, so **material category** (e.g. SS316L_NACE) could still leave bare F316 from PMS on stem/back-seat lines in edge cases.
+- Fix:
+  - Frontend (`DatasheetCard`, `SuggestionCard`, `excelBuilder`): **Do not hide globe seal/spring**; treat **shaft present + stem absent** (or explicit butterfly title) as butterfly layout and hide **spring_material** only there; treat missing `valve_type` as empty for the butterfly string match in Excel builder.
+  - App + backend `rule_engine`: Derive F316→F316L trim from **`cat` vs PMS text** whenever the category’s `STEM_MATERIAL` fallback is a 316L family grade (same alignment for stem, disc, and back-seat material).
+- Files touched:
+  - `SPE-Valvesheet-Frontend-Staging/src/components/agent/DatasheetCard.tsx`
+  - `SPE-Valvesheet-Frontend-Staging/src/components/agent/SuggestionCard.tsx`
+  - `SPE-Valvesheet-Frontend-Staging/src/lib/excelBuilder.ts`
+  - `Valvesheet-ai-rahul/app/engine/rule_engine.py`
+  - `Valvesheet-ai-rahul/backend/app/engine/rule_engine.py`
+- Verification:
+  - Asserted `_resolve_stem_grade_for_trim('SS316L_NACE', '...F316...', is_nace=False, is_lt=False)` yields 316L fallback.
+  - Confirmed `generate_datasheet` for `BFWTB4R` has no `spring_material`; `GLYMA2NR` includes seal/spring in API data (card/XLSX now allowed to display them).
+
+## 2026-05-12 — DBB and needle valves: drop extra Material rows (Seal, Back Seat Mat., Spring)
+
+- Area: rule engine, datasheet prune, double-block-and-bleed (`DB`), needle (`NE`)
+- Problem: Process and instrumentation **DBB** datasheets showed **Back Seat Mat.**, **Seal**, and (in some payloads) **Spring** in the Materials section; **needle** valves showed **Spring** from PMS — rows that are not on the project VMS grid for these valve types.
+- Fix:
+  - **DB**: Do not assign `seal_material` from the ball-valve elastomer map; strip `back_seat_material`, `seal_material`, `seal_material_note`, and `spring_material` before prune; skip `resilient_seat_note` for DB; prune allowance for process DBB no longer includes seal/spring/seal note.
+  - **NE**: Never inherit PMS `spring_material`; strip before prune (prune already omitted `spring_material` for NE).
+- Files touched: `app/engine/rule_engine.py`, `backend/app/engine/rule_engine.py`, `app/engine/datasheet_prune.py`, `backend/app/engine/datasheet_prune.py`
+- Verification: Asserted `DBRPG25NJ`, `DBRPE1J`, `DBFPT80BJT`, `DBRPF2LNJ` have no seal/back_seat/spring; `NEIPT80AF` has no spring.
+

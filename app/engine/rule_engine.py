@@ -164,6 +164,49 @@ STEM_MATERIAL = {
     "TUBING_SS": "Forged - ASTM A182 F316L", "TUBING_6MO": "Forged - 6Mo UNS S31254",
 }
 
+
+def _resolve_stem_grade_for_trim(
+    cat: str,
+    pms_stem: str,
+    *,
+    is_nace: bool,
+    is_lt: bool,
+) -> str:
+    """When the material *category* expects 316L trim but PMS lists bare *F316*, use category STEM_MATERIAL.
+
+    Applies from SS316L / NACE / LT categories (and any future category whose STEM row is 316L),
+    not only when the VDS piping-class suffix flags NACE or low temperature — so back-seat and
+    disc lines stay aligned with the stem row.
+    """
+    del is_nace, is_lt  # callers pass flags; normalization is driven by ``cat`` vs PMS text.
+    fallback = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+    if "316L" not in fallback.upper():
+        return pms_stem
+    u = (pms_stem or "").upper().replace(" ", "")
+    if "F316L" in u or "316L" in (pms_stem or "").upper():
+        return pms_stem
+    if re.search(r"\bF316\b", pms_stem, re.I):
+        return fallback
+    # PMS shorthand: SS316 / bare "316" in ASTM string when category mandates 316L trim.
+    if re.search(r"\bSS316\b(?!\s*L\b)", pms_stem, re.I):
+        return fallback
+    if re.search(r"\b316\b(?!\s*L\b)", pms_stem, re.I) and not re.search(r"F316", pms_stem, re.I):
+        return fallback
+    return pms_stem
+
+
+def _stem_trim_row(
+    cat: str,
+    pms_stem: str | None,
+    *,
+    is_nace: bool,
+    is_lt: bool,
+) -> str:
+    if pms_stem:
+        return _resolve_stem_grade_for_trim(cat, pms_stem, is_nace=is_nace, is_lt=is_lt)
+    return STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+
+
 GLAND_MATERIAL = {
     "CS": "Forged - ASTM A182 F6A CL 2", "CS_NACE": "Forged - ASTM A182 F6A CL 2",
     "LTCS_NACE": "Forged - ASTM A350 LF2",
@@ -1607,26 +1650,29 @@ def generate_datasheet(
         if forged_parts:
             body_mat = forged_parts[0]
     data["body_material"] = body_mat
-    data["stem_material"]    = (_pms_mat.stem_material if _pms_mat else None)    or STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+    data["stem_material"] = _stem_trim_row(
+        cat,
+        (_pms_mat.stem_material if _pms_mat else None),
+        is_nace=is_nace,
+        is_lt=is_lt,
+    )
     data["gland_material"]   = (_pms_mat.gland_material if _pms_mat else None)   or GLAND_MATERIAL.get(cat, GLAND_MATERIAL["CS"])
     data["gland_packing"]    = (_pms_mat.gland_packing if _pms_mat else None)    or GLAND_PACKING.get(cat, _GLAND_PACKING_STD)
     data["lever_handwheel"]  = (_pms_mat.lever_handwheel if _pms_mat else None)  or "Solid ASTM A47 HDG/ ASTM A220 HDG/ SS316"
     _pms_spring = _pms_mat.spring_material if _pms_mat else None
-    # Spring in the Material table is only meaningful for a few valve types.
-    # Butterfly, needle, and DBB valves were incorrectly getting the ball/check
-    # default "Inconel 750" (Final Report — BFW* / NEIPT* / DB*).
-    if vt in ("BF", "NE", "DB"):
-        if _pms_spring:
-            data["spring_material"] = _pms_spring
-    elif vt in ("BL", "BS", "CH"):
+    # Spring row: ball / check / globe only; BF / DB / NE have no spring trim line on VMS.
+    if vt == "BF":
+        pass
+    elif vt in ("BL", "BS", "CH", "GL"):
         data["spring_material"] = _pms_spring or "Inconel 750"
-    elif _pms_spring:
+    elif _pms_spring and vt not in ("NE", "DB", "BF"):
         data["spring_material"] = _pms_spring
 
     if vt in ("BL", "BS", "DB"):
         data["ball_material"] = (_pms_mat.ball_material if _pms_mat else None) or BALL_MATERIAL.get(cat, BALL_MATERIAL["CS"])
         data["seat_material"] = (_pms_mat.seat_material if _pms_mat else None) or SEAT_MATERIAL.get(seat, "Metal seated, hard faced, Renewable")
-        if not (vt == "DB" and _dbb_inst):
+        # DBB process/instrument blocks: elastomer grade is covered by seat/obturator narrative — no separate Seal row on VMS.
+        if vt in ("BL", "BS"):
             data["seal_material"] = SEAL_MATERIAL_BALL.get(seat, "Viton AED")
         if vt != "DB":
             data["seat_construction"] = SEAT_CONSTRUCTION_BY_SEAT.get(seat, "")
@@ -1641,7 +1687,16 @@ def generate_datasheet(
         if cat.startswith("CS") and seat == "M":
             data["hardness_requirement"] = "Body seat and wedge min 250 BHN, min 50 BHN differential"
     elif vt == "GL":
-        data["disc_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"]) + ", Hard faced"
+        data["disc_material"] = data["stem_material"] + ", Hard faced"
+        data["seat_material"] = (
+            (_pms_mat.seat_material if _pms_mat else None)
+            or SEAT_MATERIAL.get(seat, "Metal seated, hard faced, Renewable")
+        )
+        data["seal_material"] = SEAL_MATERIAL_GATE.get(seat, "Flexible Graphite")
+        if cat.startswith("CS") and seat == "M":
+            data["hardness_requirement"] = (
+                "Body seat and disc min 250 BHN, min 50 BHN differential"
+            )
     elif vt == "CH":
         data["disc_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
         if design == "S":
@@ -1649,7 +1704,12 @@ def generate_datasheet(
     elif vt == "BF":
         # BF datasheet uses **Shaft Material** (field `shaft_material`); PMS `stem_material`
         # for the class is the shaft/disc trim grade for this layout.
-        data["shaft_material"] = (_pms_mat.stem_material if _pms_mat else None) or STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+        data["shaft_material"] = _stem_trim_row(
+            cat,
+            (_pms_mat.stem_material if _pms_mat else None),
+            is_nace=is_nace,
+            is_lt=is_lt,
+        )
         data["seat_material"] = (_pms_mat.seat_material if _pms_mat else None) or SEAT_MATERIAL.get(seat, "Reinforced PTFE (max 200\u00b0C)")
     elif vt == "NE":
         data["needle_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
@@ -1658,6 +1718,7 @@ def generate_datasheet(
     # Butterfly: one trim row on the sheet — **Shaft Material**, not Stem Material.
     if vt == "BF":
         data.pop("stem_material", None)
+        data.pop("spring_material", None)
 
     # Backseat for GA, GL, NE
     if vt in ("GA", "GL", "NE"):
@@ -1667,13 +1728,7 @@ def generate_datasheet(
     # must mirror trim grade with Stellite facing; gate/globe/needle only.
     # DBB ball valves must not show a gate-style back-seat material line.
     if vt in ("GA", "GL", "NE"):
-        _stem_trim = (
-            (_pms_mat.stem_material if _pms_mat else None)
-            or STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
-        )
-        data["back_seat_material"] = f"{_stem_trim}, Stellite Hard Faced"
-    elif vt == "DB":
-        data.pop("back_seat_material", None)
+        data["back_seat_material"] = f'{data["stem_material"]}, Stellite Hard Faced'
 
     # Seat pocket CRA overlay in corrosive service (VMS §6.15)
     if vt in ("GA", "GL", "CH") and is_nace and cat.startswith("CS"):
@@ -1697,7 +1752,7 @@ def generate_datasheet(
         data["seal_material_note"] = "FFKM recommended for Methanol/Glycol service per MY-K-20-PI-SP-0002 §7.8"
 
     # Preferred resilient seating materials (VMS §7.8)
-    if seat in ("T", "P") and not (vt == "DB" and _dbb_inst):
+    if seat in ("T", "P") and vt != "DB":
         data["resilient_seat_note"] = (
             "Preferred resilient seating: Nitrile, Viton, or RPTFE for -18\u00b0C to 93\u00b0C. "
             "Below -18\u00b0C: use softer materials (Kel-F, unreinforced PTFE). "
@@ -1810,6 +1865,15 @@ def generate_datasheet(
     # Standard datasheet footer notes (numbered list rendered in XLSX Notes section
     # and returned in API response). NACE variant adds note 6 (NACE MR0175 compliance).
     data["datasheet_notes"] = footer_notes_as_text(vt, is_nace)
+
+    # Omit gate/ball-style material rows that do not appear on DBB or instrument-needle VMS grids.
+    if vt == "DB":
+        data.pop("back_seat_material", None)
+        data.pop("seal_material", None)
+        data.pop("seal_material_note", None)
+        data.pop("spring_material", None)
+    if vt == "NE":
+        data.pop("spring_material", None)
 
     prune_datasheet_by_valve_type(vt, design, seat, data, dbb_instrument=_dbb_inst)
 

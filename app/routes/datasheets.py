@@ -66,7 +66,11 @@ def _generate_live_datasheet(code: str) -> tuple[dict, dict, dict, dict, dict, d
 
 
 @router.get("/datasheets/{vds_code}")
-async def get_datasheet(vds_code: str, include_empty: bool = False):
+async def get_datasheet(
+    vds_code: str,
+    include_empty: bool = False,
+    chat_ui: bool = False,
+):
     """Fetch a datasheet — tries VDS index first, then ML API."""
     code = vds_code.upper().strip()
 
@@ -96,7 +100,7 @@ async def get_datasheet(vds_code: str, include_empty: bool = False):
                         "Fix the VDS / piping-class data or retry later."
                     ),
                 ) from exc
-        data = filter_card_data(_inject_footer_notes(code, data))
+        data = filter_card_data(_inject_footer_notes(code, data), for_chat_ui=chat_ui)
         # Use PMS-aware field sources with granular provenance
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
@@ -142,7 +146,7 @@ async def get_datasheet(vds_code: str, include_empty: bool = False):
     except httpx.ConnectError:
         raise HTTPException(status_code=503, detail="ML API service unavailable")
 
-    flat_data = filter_card_data(data.get("data", {}))
+    flat_data = filter_card_data(data.get("data", {}), for_chat_ui=chat_ui)
     total = len(flat_data)
     filled = sum(1 for v in flat_data.values() if v and v != "-")
     completion = round((filled / total * 100) if total else 0, 1)
@@ -193,7 +197,7 @@ async def generate_batch(vds_codes: list[str]):
                         "status": "error",
                     })
                     continue
-            data = filter_card_data(_inject_footer_notes(code, data))
+            data = filter_card_data(_inject_footer_notes(code, data), for_chat_ui=False)
             piping_class = data.get("piping_class", "")
             sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
             sources.update(provenance)

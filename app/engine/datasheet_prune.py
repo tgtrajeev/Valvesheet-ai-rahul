@@ -125,8 +125,10 @@ def _allowed_typed_keys(
             "back_seat_construction", "packing_construction",
             "bonnet_material", "backseat", "back_seat_material",
             "seat_pocket_overlay",
-            "flange_face_note", "body_form",
+            "seat_material", "seal_material", "spring_material",
             "seal_material_note", "resilient_seat_note",
+            "hardness_requirement",
+            "flange_face_note", "body_form",
             "locks",
             *_stem_construction,
             *_stem_trim_pack_lever,
@@ -155,10 +157,8 @@ def _allowed_typed_keys(
             *_stem_trim_pack_lever,
         }
         if not dbb_instrument:
-            keys |= {"spring_material"}
             keys |= {
-                "seal_material", "seat_construction", "dbb_end_connection",
-                "seal_material_note", "resilient_seat_note",
+                "seat_construction", "dbb_end_connection",
             }
             if st in ("T", "P"):
                 keys |= {"fire_test", "antistatic_device"}
@@ -176,6 +176,26 @@ def _allowed_typed_keys(
         })
 
     return frozenset()
+
+
+def keys_to_drop_for_chat_ui(
+    vt: str,
+    design: str,
+    seat: str,
+    *,
+    dbb_instrument: bool = False,
+) -> frozenset[str]:
+    """Subset of :func:`_TYPED_SECTION_KEYS` to strip from AI/chatbot payloads only.
+
+    Full verification datasheets (REST ``/datasheets``, client generator) keep the
+    rule-engine output; the chat card must not show rows that are not on the VMS
+    grid for this valve type (and globe must omit seal/spring per product policy).
+    """
+    allowed = _allowed_typed_keys(vt, design, seat, dbb_instrument=dbb_instrument)
+    drops: set[str] = {k for k in _TYPED_SECTION_KEYS if k not in allowed}
+    if vt == "GL":
+        drops.update({"seal_material", "spring_material"})
+    return frozenset(drops)
 
 
 def prune_datasheet_by_valve_type(

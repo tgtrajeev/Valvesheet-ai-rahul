@@ -340,6 +340,18 @@ sections:
         default: "Inconel 750"
         description: "Spring material from VDS Index"
 
+      backseat:
+        display_name: "Backseat"
+        source: CALCULATED
+        is_required: false
+        description: "Back seating feature (gate/globe/needle)"
+
+      back_seat_material:
+        display_name: "Back Seat Mat."
+        source: CALCULATED
+        is_required: false
+        description: "Back seat trim / facing (material section)"
+
       bonnet_material:
         display_name: "Bonnet Material"
         source: CALCULATED

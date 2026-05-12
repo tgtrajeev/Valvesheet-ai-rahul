@@ -40,7 +40,11 @@ def _inject_footer_notes(code: str, data: dict) -> dict:
 
 
 @router.get("/datasheets/{vds_code}")
-async def get_datasheet(vds_code: str, include_empty: bool = False):
+async def get_datasheet(
+    vds_code: str,
+    include_empty: bool = False,
+    chat_ui: bool = False,
+):
     """Fetch a datasheet — tries VDS index first, then ML API."""
     code = vds_code.upper().strip()
     _bs_err = raw_vds_bs_ball_prefix_retired_error(code)
@@ -61,7 +65,7 @@ async def get_datasheet(vds_code: str, include_empty: bool = False):
                     "stale VDS index snapshots are not returned."
                 ),
             ) from exc
-        data = filter_card_data(_inject_footer_notes(code, data))
+        data = filter_card_data(_inject_footer_notes(code, data), for_chat_ui=chat_ui)
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
@@ -94,7 +98,7 @@ async def get_datasheet(vds_code: str, include_empty: bool = False):
     except httpx.ConnectError:
         raise HTTPException(status_code=503, detail="ML API service unavailable")
 
-    flat_data = filter_card_data(data.get("data", {}))
+    flat_data = filter_card_data(data.get("data", {}), for_chat_ui=chat_ui)
     total = len(flat_data)
     filled = sum(1 for v in flat_data.values() if v and v != "-")
     completion = round((filled / total * 100) if total else 0, 1)
@@ -130,7 +134,7 @@ async def generate_batch(vds_codes: list[str]):
                     "status": "error",
                 })
                 continue
-            data = filter_card_data(_inject_footer_notes(code, data))
+            data = filter_card_data(_inject_footer_notes(code, data), for_chat_ui=False)
             total = len(data)
             filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
             completion = round((filled / total * 100) if total else 0, 1)
