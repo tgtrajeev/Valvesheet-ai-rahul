@@ -30,3 +30,6 @@ Thumbs.db
 
 # Node
 node_modules/
+
+# Render sync debug/audit dumps (created by sync scripts; not for git)
+app/data/_render_diff/
