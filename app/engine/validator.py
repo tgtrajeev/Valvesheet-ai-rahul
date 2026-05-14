@@ -1,4 +1,4 @@
-f"""VDS combination validation against FPSO Albacora PMS rules + VMS 40801-SPE-80000-PP-SP-0002.
+f"""VDS combination validation against FPSO Albacora PMS rules + VMS PMS_PDF.pdf.
 
 Two-phase validation:
   Phase 1 (validate_combination): Pre-generation checks — valve type, seat, spec, end conn
@@ -9,7 +9,7 @@ import re
 from ..models.schemas import ValidationResult, Suggestion
 
 # ── Document reference constants ─────────────────────────────────────────────
-VMS_DOC = "40801-SPE-80000-PP-SP-0002"   # Valve Material Specification
+VMS_DOC = "PMS_PDF.pdf"   # Valve Material Specification
 PMS_DOC = "40801-SPE-80000-PP-SP-0001"   # Piping Material Specification
 
 # Retired two-letter BS ball encoding (BS + bore R/F/M + seat T/P/M), e.g. BSFPF25J — must use BL…
@@ -197,7 +197,7 @@ def check_seat_design_temperature(design_pressure: str, seat: str | None) -> lis
 PRESSURE_CLASS_NUM = {"A": 150, "B": 300, "D": 600, "E": 900, "F": 1500, "G": 2500}
 
 # ============================================================================
-# VMS ENGINEERING RULES (40801-SPE-80000-PP-SP-0002)
+# VMS ENGINEERING RULES (PMS_PDF.pdf)
 # ============================================================================
 
 # Rule A1: Floating vs Trunnion size thresholds (inches)
@@ -312,7 +312,7 @@ def validate_combination(
     pressure_class: int | None = None,
     vds_code: str | None = None,
 ) -> ValidationResult:
-    f"""Validate a VDS combination against FPSO Albacora PMS rules + spec 40801-SPE-80000-PP-SP-0002.
+    f"""Validate a VDS combination against FPSO Albacora PMS rules + spec PMS_PDF.pdf.
 
     Returns ValidationResult with errors, warnings, and fix suggestions.
     """
@@ -408,7 +408,7 @@ def validate_combination(
             errors.append(f"Invalid design '{d}' for Needle Valve. Valid: I (Inline), A (Angle)")
 
     # ============================================================================
-    # VMS SPEC RULES (40801-SPE-80000-PP-SP-0002)
+    # VMS SPEC RULES (PMS_PDF.pdf)
     # ============================================================================
 
     is_hc = _is_hc_service(sp)

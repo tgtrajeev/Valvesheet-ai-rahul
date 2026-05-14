@@ -346,3 +346,111 @@ def get_pms_field_sources(spec_code: str, data: dict[str, str]) -> dict[str, str
         sources[key] = base_source
 
     return sources
+
+
+# ── User-override validation helpers ─────────────────────────────────────
+
+_BARG_RE = re.compile(r"(-?\d+(?:\.\d+)?)\s*bar", re.IGNORECASE)
+_CELSIUS_RE = re.compile(r"(-?\d+(?:\.\d+)?)\s*(?:deg\s*)?°?\s*c\b", re.IGNORECASE)
+_MM_RE = re.compile(r"(\d+(?:\.\d+)?)\s*mm", re.IGNORECASE)
+_RATING_RE = re.compile(r"(\d+)")
+
+
+def _parse_barg(value) -> float | None:
+    """Extract a single barg numeric value from a user string.
+    Returns None if the string looks like a P-T curve (multiple temps) or is empty.
+    """
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    if s.count("@") >= 1 or s.count(",") >= 1:
+        return None
+    m = _BARG_RE.search(s)
+    if m:
+        return float(m.group(1))
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _parse_celsius(value) -> float | None:
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    m = _CELSIUS_RE.search(s)
+    if m:
+        return float(m.group(1))
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _parse_mm(value) -> float | None:
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    if s.upper() == "NIL":
+        return 0.0
+    m = _MM_RE.search(s)
+    if m:
+        return float(m.group(1))
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _rating_to_int(pressure_rating: str | None) -> int | None:
+    """Extract integer class from a rating label, e.g. '150#' / '300#, RF' → 150."""
+    if not pressure_rating:
+        return None
+    m = _RATING_RE.search(str(pressure_rating))
+    return int(m.group(1)) if m else None
+
+
+def _interpolate_pressure(pt_breakpoints: list[dict], temperature_c: float) -> float | None:
+    """Linearly interpolate the allowable barg at temperature_c from PMS P-T breakpoints.
+
+    Breakpoint schema (app PmsIndexRow): list of {"temp_c": float, "press_barg": float}.
+    Returns the endpoint value if temperature_c is outside the tabulated range.
+    """
+    if not pt_breakpoints:
+        return None
+    pts = sorted(
+        ((r.get("temp_c"), r.get("press_barg")) for r in pt_breakpoints),
+        key=lambda x: (x[0] if x[0] is not None else -1e9),
+    )
+    pts = [(t, p) for t, p in pts if t is not None and p is not None]
+    if not pts:
+        return None
+    if temperature_c <= pts[0][0]:
+        return pts[0][1]
+    if temperature_c >= pts[-1][0]:
+        return pts[-1][1]
+    for i in range(len(pts) - 1):
+        t1, p1 = pts[i]
+        t2, p2 = pts[i + 1]
+        if t1 <= temperature_c <= t2:
+            if t2 == t1:
+                return p1
+            ratio = (temperature_c - t1) / (t2 - t1)
+            return p1 + ratio * (p2 - p1)
+    return None
+
+
+def _service_covered(user_service: str, allowed_service: str) -> bool:
+    """Check if every non-trivial token in user_service appears in allowed_service."""
+    if not user_service or not allowed_service:
+        return True
+    stop = {"service", "and", "or", "the", "a", "for", "of", "with", "low", "high"}
+    u_tokens = {t for t in re.findall(r"[a-z0-9]+", user_service.lower()) if t not in stop and len(t) > 2}
+    a_text = allowed_service.lower()
+    return all(t in a_text for t in u_tokens) if u_tokens else True

@@ -556,7 +556,7 @@ def get_justification(field: str, decoded, material_category: str = "",
                 "A and B levels only.")
     if field == "design_life":
         return ("15-year design life is the project's specified service life per "
-                "MY-K-20-PI-SP-0002 §6.8. Drives material corrosion-allowance "
+                "PMS_PDF.pdf §6.8. Drives material corrosion-allowance "
                 "calculations and packing/seal renewal intervals.")
     if field == "elastomer_requirement":
         return ("Per API 6D §6.0 — elastomers in hydrocarbon gas/liquid service with "
@@ -611,7 +611,7 @@ def get_justification(field: str, decoded, material_category: str = "",
     if field == "max_handwheel_diameter":
         return ("Per API 6D §5.13 (Errata 9) — hand-wheel diameter shall not exceed "
                 "1016 mm (40 in). The 750 mm in the value is the project's tighter "
-                "limit per MY-K-20-PI-SP-0002 §6.11.2 to keep the operator station "
+                "limit per PMS_PDF.pdf §6.11.2 to keep the operator station "
                 "reasonable in size.")
     if field == "max_lever_length":
         return ("Project specifies max 500 mm each side of the stem axis per MY-K-20-"
@@ -673,7 +673,7 @@ def get_justification(field: str, decoded, material_category: str = "",
                 "(e.g., FFKM for methanol or amine service).")
     if field == "seal_material_note":
         return ("Per project PMS — FFKM (perfluoroelastomer) is recommended for "
-                "methanol/glycol service per MY-K-20-PI-SP-0002 §6.0. Standard FKM "
+                "methanol/glycol service per PMS_PDF.pdf §6.0. Standard FKM "
                 "(Viton) swells unacceptably in methanol; FFKM resists.")
     if field == "spring_material":
         return ("Per API 6D §6 + industry practice — springs use Inconel 718 / 750 "

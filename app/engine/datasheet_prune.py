@@ -92,14 +92,19 @@ def _allowed_typed_keys(
 
     if vt == "BF":
         keys = {
+            "stem_material",
             "shaft_material",
+            "disc_material",
+            "seal_material",
+            "disc_construction",
+            "stem_construction",
             "shaft_construction",
             "seat_material",
             "seat_construction",
             "flange_face_note",
             "body_form",
             "position_indicator",
-            "locks",
+            "seal_material_note",
             *_gland_pack_lever,
         }
         if st in ("T", "P"):
@@ -108,7 +113,7 @@ def _allowed_typed_keys(
 
     if vt == "GA":
         return frozenset({
-            "wedge_material", "wedge_construction", "seal_material", "seat_construction",
+            "wedge_material", "wedge_construction", "seat_material", "seal_material", "seat_construction",
             "back_seat_construction", "packing_construction",
             "bonnet_material", "backseat", "back_seat_material",
             "seat_pocket_overlay",
@@ -136,7 +141,7 @@ def _allowed_typed_keys(
 
     if vt == "CH":
         keys = {
-            "disc_material", "seat_construction",
+            "disc_material", "seat_material", "seal_material", "seat_construction",
             "flange_face_note", "body_form", "spring_material",
         }
         if d == "S":
@@ -149,8 +154,11 @@ def _allowed_typed_keys(
         return frozenset(keys)
 
     if vt == "DB":
+        # Modular DBB (Ball/Needle/Ball construction) and instrument DBB both
+        # have a needle element per the PMS appendix; keep needle_material and
+        # spring_material so the override layer's PMS values flow through.
         keys = {
-            "ball_material", "seat_material",
+            "ball_material", "seat_material", "needle_material", "spring_material",
             "flange_face_note", "body_form", "position_indicator",
             "locks",
             *_stem_construction,
@@ -168,7 +176,7 @@ def _allowed_typed_keys(
 
     if vt == "NE":
         return frozenset({
-            "needle_material", "minimum_bore", "backseat", "back_seat_material",
+            "needle_material", "seat_material", "minimum_bore", "backseat", "back_seat_material",
             "flange_face_note", "body_form",
             "seal_material_note",
             *_stem_construction,

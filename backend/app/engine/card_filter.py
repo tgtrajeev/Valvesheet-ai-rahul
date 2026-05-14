@@ -42,10 +42,14 @@ def _infer_dbb_instrument_for_chat(dec: Any) -> bool:
     return bool(re.match(r"^T\d", pc))
 
 
-def apply_chatbot_field_mask(data: dict[str, Any]) -> dict[str, Any]:
+def apply_chatbot_field_mask(
+    data: dict[str, Any],
+    *,
+    vds_code: str | None = None,
+) -> dict[str, Any]:
     """Drop typed rows that must not appear in the AI chatbot card (verification sheet unchanged)."""
     out = dict(data)
-    raw = str(out.get("vds_no") or out.get("vds_code") or "").strip()
+    raw = str(vds_code or out.get("vds_no") or out.get("vds_code") or "").strip()
     if not raw:
         return out
     try:
@@ -67,6 +71,7 @@ def filter_card_data(
     data: Mapping[str, Any] | None,
     *,
     for_chat_ui: bool = False,
+    vds_code_for_mask: str | None = None,
 ) -> dict[str, Any]:
     """Remove fields that would render under the card's "Others" section.
 
@@ -74,13 +79,16 @@ def filter_card_data(
     valve-type-specific construction and material rows that must not appear in
     the chatbot. REST ``/datasheets`` uses ``for_chat_ui=False`` so client
     verification flows keep the full rule-engine grid.
+
+    ``vds_code_for_mask`` supplies the VDS when header fields were stripped
+    before filtering, so the chatbot mask still decodes valve type correctly.
     """
     if not isinstance(data, Mapping):
         return {}
     allowed = card_field_keys()
     filtered = {str(k): v for k, v in data.items() if str(k) in allowed}
     if for_chat_ui:
-        filtered = apply_chatbot_field_mask(filtered)
+        filtered = apply_chatbot_field_mask(filtered, vds_code=vds_code_for_mask)
     return filtered
 
 

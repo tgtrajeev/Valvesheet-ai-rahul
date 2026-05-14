@@ -364,7 +364,7 @@ def _check_operation(
     proposed: str,
     concurrent_size: str | None = None,
 ) -> tuple[str, str]:
-    """Per MY-K-20-PI-SP-0002 Clause 9: ball/gate/globe ≥ 6" at class ≥ 300
+    """Per PMS_PDF.pdf Clause 9: ball/gate/globe ≥ 6" at class ≥ 300
     require gear operation. Manual/lever on such valves is a warning.
 
     If size is being changed in the same overrides batch, use that value
@@ -382,7 +382,7 @@ def _check_operation(
         return (
             "warning",
             f"Size {size_val:g}\" at class {rating_int}#: gear operation is required "
-            f"per MY-K-20-PI-SP-0002 Clause 9. '{proposed}' may not meet torque limits.",
+            f"per PMS_PDF.pdf Clause 9. '{proposed}' may not meet torque limits.",
         )
     return ("safe", "")
 

@@ -565,7 +565,7 @@ async def _handle_generate(input_data: dict) -> dict:
 
         all_errors = phase_errors + list(override_check.get("errors") or [])
         all_warnings = list(seat_warnings) + phase_warnings + list(override_check.get("warnings") or [])
-        data = filter_card_data(data, for_chat_ui=True)
+        data = filter_card_data(data, for_chat_ui=True, vds_code_for_mask=vds_code)
         sources = filter_card_metadata(sources, data)
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
@@ -661,7 +661,7 @@ async def _handle_generate(input_data: dict) -> dict:
     all_warnings = list(seat_warnings) + (validation.warnings or []) + (phase2.warnings or []) + list(override_check.get("warnings") or [])
     all_notes = (validation.notes or []) + (phase2.notes or [])
     all_errors = list(phase2.errors or []) + list(override_check.get("errors") or [])
-    data = filter_card_data(data, for_chat_ui=True)
+    data = filter_card_data(data, for_chat_ui=True, vds_code_for_mask=vds_code)
     sources = filter_card_metadata(sources, data)
     total = len(data)
     filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())

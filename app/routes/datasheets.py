@@ -30,7 +30,7 @@ def _overlay_pdf_provenance(vds_code: str, sources: dict[str, str], project_id: 
     except Exception:
         pass
     return sources
-from ..engine.rule_engine import footer_notes_as_text
+from ..engine.rule_engine import apply_bf_vms_construction_overrides, footer_notes_as_text
 from ..engine.vds_decoder import decode_vds
 from ..engine.validator import raw_vds_bs_ball_prefix_retired_error
 
@@ -71,8 +71,11 @@ async def get_datasheet(
     include_empty: bool = False,
     chat_ui: bool = False,
 ):
-    """Fetch a datasheet — tries VDS index first, then ML API."""
+    """Fetch a datasheet — rule engine + PMS first; ML predict only as last resort."""
     code = vds_code.upper().strip()
+    _bs_err = raw_vds_bs_ball_prefix_retired_error(code)
+    if _bs_err:
+        raise HTTPException(status_code=400, detail=_bs_err)
 
     # Try local VDS index first (instant, 100% accurate)
     kb = get_knowledge_base()
@@ -100,7 +103,11 @@ async def get_datasheet(
                         "Fix the VDS / piping-class data or retry later."
                     ),
                 ) from exc
-        data = filter_card_data(_inject_footer_notes(code, data), for_chat_ui=chat_ui)
+        data = filter_card_data(
+            _inject_footer_notes(code, data),
+            for_chat_ui=chat_ui,
+            vds_code_for_mask=code,
+        )
         # Use PMS-aware field sources with granular provenance
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
@@ -129,9 +136,68 @@ async def get_datasheet(
         })
         return response
 
-    # Fall back to ML API if configured
+    # Not in index — still prefer rules + current PMS over ML/index field blobs.
+    live_tuple = None
+    try:
+        live_tuple = _generate_live_datasheet(code)
+    except Exception:
+        try:
+            from ..engine.rule_engine import generate_datasheet
+
+            decoded = decode_vds(code)
+            data = generate_datasheet(decoded, return_provenance=False)
+            provenance = {}
+            links = data.pop("_provenance_links", {}) if isinstance(data, dict) else {}
+            quotes = data.pop("_provenance_quotes", {}) if isinstance(data, dict) else {}
+            source_values = data.pop("_source_values", {}) if isinstance(data, dict) else {}
+            justifications = data.pop("_justifications", {}) if isinstance(data, dict) else {}
+            live_tuple = (data, provenance, links, quotes, source_values, justifications)
+        except Exception:
+            live_tuple = None
+
+    if live_tuple is not None:
+        data, provenance, links, quotes, source_values, justifications = live_tuple
+        data = filter_card_data(
+            _inject_footer_notes(code, data),
+            for_chat_ui=chat_ui,
+            vds_code_for_mask=code,
+        )
+        piping_class = data.get("piping_class", "")
+        sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
+        sources.update(provenance)
+        sources = _overlay_pdf_provenance(code, sources)
+        sources = filter_card_metadata(sources, data)
+        links = filter_card_metadata(links, data)
+        quotes = filter_card_metadata(quotes, data)
+        source_values = filter_card_metadata(source_values, data)
+        justifications = filter_card_metadata(justifications, data)
+        total = len(data)
+        filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
+        completion = round((filled / total * 100) if total else 0, 1)
+        response = DatasheetResponse(
+            vds_code=code,
+            datasheet=data,
+            field_sources=sources,
+            validation_status="complete" if completion > 90 else "partial",
+            completion_pct=completion,
+        ).model_dump()
+        response.update({
+            "field_sources_links": links,
+            "field_sources_quotes": quotes,
+            "field_source_values": source_values,
+            "field_justifications": justifications,
+        })
+        return response
+
+    # Last resort: legacy ML predict (butterfly construction rows are repaired).
     if not settings.ml_api_base_url or settings.ml_api_base_url == "http://localhost:8080/api":
-        raise HTTPException(status_code=404, detail=f"VDS code '{code}' not found in index ({kb.total_specs} specs)")
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"VDS code '{code}' not in index ({kb.total_specs} specs) and "
+                "could not be generated from rules / PMS."
+            ),
+        )
 
     url = f"{settings.ml_api_base_url}/ml/predict/{code}/flat"
     params = {"include_empty": str(include_empty).lower()}
@@ -146,7 +212,19 @@ async def get_datasheet(
     except httpx.ConnectError:
         raise HTTPException(status_code=503, detail="ML API service unavailable")
 
-    flat_data = filter_card_data(data.get("data", {}), for_chat_ui=chat_ui)
+    payload = data.get("data", {})
+    if isinstance(payload, dict):
+        try:
+            if decode_vds(code).valve_type.value == "BF":
+                apply_bf_vms_construction_overrides(payload)
+        except Exception:
+            pass
+
+    flat_data = filter_card_data(
+        payload,
+        for_chat_ui=chat_ui,
+        vds_code_for_mask=code,
+    )
     total = len(flat_data)
     filled = sum(1 for v in flat_data.values() if v and v != "-")
     completion = round((filled / total * 100) if total else 0, 1)
@@ -197,7 +275,11 @@ async def generate_batch(vds_codes: list[str]):
                         "status": "error",
                     })
                     continue
-            data = filter_card_data(_inject_footer_notes(code, data), for_chat_ui=False)
+            data = filter_card_data(
+                _inject_footer_notes(code, data),
+                for_chat_ui=False,
+                vds_code_for_mask=code,
+            )
             piping_class = data.get("piping_class", "")
             sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
             sources.update(provenance)
@@ -223,10 +305,62 @@ async def generate_batch(vds_codes: list[str]):
                 "source": "vds_index",
             })
         else:
+            live_tuple = None
+            try:
+                live_tuple = _generate_live_datasheet(code)
+            except Exception:
+                try:
+                    from ..engine.rule_engine import generate_datasheet
+
+                    decoded = decode_vds(code)
+                    data = generate_datasheet(decoded, return_provenance=False)
+                    provenance = {}
+                    links = data.pop("_provenance_links", {}) if isinstance(data, dict) else {}
+                    quotes = data.pop("_provenance_quotes", {}) if isinstance(data, dict) else {}
+                    source_values = data.pop("_source_values", {}) if isinstance(data, dict) else {}
+                    justifications = data.pop("_justifications", {}) if isinstance(data, dict) else {}
+                    live_tuple = (data, provenance, links, quotes, source_values, justifications)
+                except Exception:
+                    live_tuple = None
+            if live_tuple is None:
+                results.append({
+                    "vds_code": code,
+                    "error": (
+                        f"Not in VDS index ({kb.total_specs} specs) and rule engine "
+                        "could not build a datasheet for this code."
+                    ),
+                    "status": "error",
+                })
+                continue
+            data, provenance, links, quotes, source_values, justifications = live_tuple
+            data = filter_card_data(
+                _inject_footer_notes(code, data),
+                for_chat_ui=False,
+                vds_code_for_mask=code,
+            )
+            piping_class = data.get("piping_class", "")
+            sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
+            sources.update(provenance)
+            sources = _overlay_pdf_provenance(code, sources)
+            sources = filter_card_metadata(sources, data)
+            links = filter_card_metadata(links, data)
+            quotes = filter_card_metadata(quotes, data)
+            source_values = filter_card_metadata(source_values, data)
+            justifications = filter_card_metadata(justifications, data)
+            total = len(data)
+            filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
+            completion = round((filled / total * 100) if total else 0, 1)
             results.append({
                 "vds_code": code,
-                "error": f"Not found in VDS index ({kb.total_specs} specs)",
-                "status": "error",
+                "data": data,
+                "field_sources": sources,
+                "field_sources_links": links,
+                "field_sources_quotes": quotes,
+                "field_source_values": source_values,
+                "field_justifications": justifications,
+                "completion_pct": completion,
+                "status": "success",
+                "source": "rule_engine",
             })
 
     return {"results": results, "total": len(results)}

@@ -127,7 +127,11 @@ class DecodedVDS(BaseModel):
     @classmethod
     def validate_piping_class(cls, v: str) -> str:
         v = v.upper().strip()
-        if not re.match(r"^([A-G]\d+[LN]*|T\d+[A-C]?)$", v):
+        # Accept any alphanumeric piping class code starting with a letter.
+        # Standard codes (A1, B1N, T50A…) and custom project codes (PROJ1, GAIL1…)
+        # are all valid here; existence against the project PMS is checked later
+        # by validate_combination → VALID_SPEC_CODES_ALL().
+        if not re.match(r"^[A-Z][A-Z0-9]{0,19}$", v):
             raise ValueError(f"Invalid piping class: {v}")
         return v
 

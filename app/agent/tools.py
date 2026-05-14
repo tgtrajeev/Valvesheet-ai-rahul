@@ -434,7 +434,7 @@ async def _handle_find_valves(input_data: dict) -> dict:
     }
 
 
-async def _handle_piping_class_info(input_data: dict) -> dict:
+async def _handle_piping_class_info(    input_data: dict) -> dict:
     """Get comprehensive piping class details."""
     kb = get_knowledge_base()
     return kb.get_piping_class_info(input_data["piping_class"])
@@ -664,7 +664,7 @@ async def _handle_generate(input_data: dict) -> dict:
 
         all_errors = phase_errors
         all_warnings = list(seat_warnings) + phase_warnings
-        data = filter_card_data(data, for_chat_ui=True)
+        data = filter_card_data(data, for_chat_ui=True, vds_code_for_mask=vds_code)
         sources = filter_card_metadata(sources, data)
         sources_links = filter_card_metadata(sources_links, data)
         sources_quotes = filter_card_metadata(sources_quotes, data)
@@ -813,7 +813,7 @@ async def _handle_generate(input_data: dict) -> dict:
     all_errors = list(val_dump.get("errors", [])) + list(phase2.errors or [])
     all_warnings = list(seat_warnings) + list(val_dump.get("warnings", [])) + list(phase2.warnings or [])
     all_notes = list(val_dump.get("notes", [])) + list(phase2.notes or [])
-    data = filter_card_data(data, for_chat_ui=True)
+    data = filter_card_data(data, for_chat_ui=True, vds_code_for_mask=vds_code)
     sources = filter_card_metadata(sources, data)
     pdf_provenance_links = filter_card_metadata(pdf_provenance_links, data)
     pdf_provenance_quotes = filter_card_metadata(pdf_provenance_quotes, data)

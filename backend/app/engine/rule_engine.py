@@ -15,6 +15,7 @@ never seen before, as long as the combination is valid.
 import re
 from ..models.vds import DecodedVDS, ValveType, SeatType, EndConnection
 from .pms_loader import get_pms_loader
+from .pms_datasheet_loader import get_global_vds_loader, get_reference_tables
 from .datasheet_prune import prune_datasheet_by_valve_type
 
 # ============================================================================
@@ -173,7 +174,7 @@ def _resolve_stem_grade_for_trim(
     disc lines stay aligned with the stem row.
     """
     del is_nace, is_lt  # callers pass flags; normalization is driven by ``cat`` vs PMS text.
-    fallback = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+    fallback = get_reference_tables().get("stem_material", cat)
     if "316L" not in fallback.upper():
         return pms_stem
     u = (pms_stem or "").upper().replace(" ", "")
@@ -198,7 +199,7 @@ def _stem_trim_row(
 ) -> str:
     if pms_stem:
         return _resolve_stem_grade_for_trim(cat, pms_stem, is_nace=is_nace, is_lt=is_lt)
-    return STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+    return get_reference_tables().get("stem_material", cat)
 
 
 GLAND_MATERIAL = {
@@ -216,6 +217,8 @@ GLAND_MATERIAL = {
 # Gland packing
 _GLAND_PACKING_STD = "Flexible graphite with Braided (Non asbestos, yarn reinforced with Inconel, corrosion inhibitor), Renewable"
 _GLAND_PACKING_SIMPLE = "Flexible graphite Braided (Non asbestos, corrosion inhibitor), Renewable"
+# Butterfly appendix: short packing line (PMS gland_packing still wins when set).
+_GLAND_PACKING_BF = "Flexible graphite, asbestos-free"
 GLAND_PACKING = {
     "CS": _GLAND_PACKING_STD, "CS_NACE": _GLAND_PACKING_STD,
     "LTCS_NACE": _GLAND_PACKING_STD,
@@ -267,6 +270,17 @@ NUT_MATERIAL = {
     "TUBING_SS": "ASTM A194 Gr. 7ML, XYLAR 2 + XYLAN 1070 coated, min 50 \u03bcm combined",
     "TUBING_6MO": "ASTM A194 Gr. 7ML, XYLAR 2 + XYLAN 1070 coated, min 50 \u03bcm combined",
 }
+
+# Wafer / lug butterfly on class B (RF) SS316L — flat elastomer ring per project appendix when PMS omits gaskets.
+_BF_GASKET_SS316L_RF = "3mm thick flat ring of neoprene/ EPDM rubber as ASME B 16.21"
+_BF_BODY_SS316L = 'ASTM A182 F316L (1.5" and below), A351 CF3M (2" and above)'
+# Butterfly + austenitic SS piping class: appendix stud/nut grades when PMS bolting is absent.
+_BF_BOLT_SS316L = (
+    "ASTM A 193 Gr. B7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50\u03bcm"
+)
+_BF_NUT_SS316L = (
+    "ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50\u03bcm"
+)
 
 GASKET_MATERIAL = {
     ("CS", False): "ASME B16.20, 4.5 mm, SS316/SS316L Spiral Wound with Flexible Graphite (F.G.) filler",
@@ -573,7 +587,9 @@ CONSTRUCTION = {
     },
     "BF": {
         "body_construction": "Wafer Type, Solid Fully Lugged, Threaded Lug",
-        "shaft_construction": "One-piece through shaft, blowout-proof retention, anti-static continuity",
+        "disc_construction": "Rotating, Eccentric",
+        "stem_construction": "Rotating, Blowout proof stem",
+        "shaft_construction": "Strengthen, Blow out-Proof shaft, antistatic device",
         "seat_construction": "Double-offset seat",
         "operation": 'Lever Operated for 4" and below ; Gear box for 6" and above, Fully enclosed, dust proof, with Position Indicator',
     },
@@ -617,11 +633,31 @@ CONSTRUCTION = {
         "operation": "Lever (Ball)/ T-Bar (Needle), with Position Indicator",
     },
     "NE": {
-        "body_construction": "Integral body, straight or angle pattern, Outside Screw and Yoke (OS&Y) per MY-K-20-PI-SP-0002 §6.5",
+        "body_construction": "Integral body, straight or angle pattern, Outside Screw and Yoke (OS&Y) per PMS_PDF.pdf §6.5",
         "stem_construction": "Non-rotating stem tip, Outside Screw and Yoke (OS&Y), Back Seated",
         "operation": "Hand wheel / T-bar handle",
     },
 }
+
+
+def apply_bf_vms_construction_overrides(data: dict) -> None:
+    """In-place: butterfly construction matches project datasheet grid (PMS appendix).
+
+    Locks are not on this grid. ML/index may drift; re-apply canonical BF lines.
+    """
+    bf = CONSTRUCTION.get("BF") or {}
+    data.pop("locks", None)
+    for key in (
+        "body_construction",
+        "disc_construction",
+        "stem_construction",
+        "shaft_construction",
+        "seat_construction",
+    ):
+        val = bf.get(key)
+        if val:
+            data[key] = val
+
 
 # Seat material depends on seat type, not material category
 SEAT_MATERIAL = {
@@ -653,7 +689,7 @@ PROJECT_CONSTANTS = {
     "welding_procedure": "WPS per BS EN 288-2, PQR per BS EN 287-1, welding per ASME B31.3 / ASME SEC.IX",
     "finish": "General Specification for Paint and Protective Coating doc : XXX",
     "quality_system": "BS EN ISO 9001 compliant",
-    "design_life": "15 years per MY-K-20-PI-SP-0002 §6.8",
+    "design_life": "15 years per PMS_PDF.pdf §6.8",
 }
 
 
@@ -668,7 +704,7 @@ def _resolve_end_connection(end_conn: EndConnection, piping_class: str, cat: str
                             pms_flange_std: str | None = None) -> str:
     """Derive the full end connection description from the end connection code.
 
-    Per MY-K-20-PI-SP-0002 §6.22:
+    Per PMS_PDF.pdf §6.22:
       - Flanges ≤24" per ASME B16.5
       - Flanges 26"+ per ASME B16.47 Series A
 
@@ -1134,7 +1170,7 @@ def _calc_hydrotest(design_pressure_str: str) -> tuple[str, str]:
 
 
 # ============================================================================
-# SIZE-DEPENDENT ENGINEERING RULES (MY-K-20-PI-SP-0002)
+# SIZE-DEPENDENT ENGINEERING RULES (PMS_PDF.pdf)
 # ============================================================================
 
 # Ball valve: Floating vs Trunnion thresholds
@@ -1173,7 +1209,7 @@ _NDT_EXTENT = {
 
 
 def _resolve_ball_mounting(size_inches: float | None, pressure_class: int) -> dict:
-    """Determine floating vs trunnion mounting per MY-K-20-PI-SP-0002 Clause 5."""
+    """Determine floating vs trunnion mounting per PMS_PDF.pdf Clause 5."""
     thresholds = _BALL_MOUNTING.get(pressure_class, _BALL_MOUNTING[150])
     max_float = thresholds["max_floating"]
 
@@ -1196,7 +1232,7 @@ def _resolve_ball_mounting(size_inches: float | None, pressure_class: int) -> di
 
 
 def _resolve_operation(vt: str, size_inches: float | None, pressure_class: int) -> str:
-    """Compute operation method per MY-K-20-PI-SP-0002 Clause 9."""
+    """Compute operation method per PMS_PDF.pdf Clause 9."""
     gear_table = _GEARBOX.get(vt, {})
     gear_min = gear_table.get(pressure_class)
 
@@ -1232,7 +1268,7 @@ def _resolve_operation(vt: str, size_inches: float | None, pressure_class: int) 
 
 
 def _resolve_ndt_extent(pressure_class: int, size_inches: float | None, cat: str) -> str:
-    """Determine NDT/RT inspection extent per MY-K-20-PI-SP-0002 Clause 15."""
+    """Determine NDT/RT inspection extent per PMS_PDF.pdf Clause 15."""
     # NACE / SS / alloys always 100%
     if cat in ("CS_NACE", "LTCS_NACE", "SS316L", "SS316L_NACE", "DSS",
                "SDSS", "SDSS_NACE", "CUNI", "COPPER"):
@@ -1247,7 +1283,7 @@ def _resolve_ndt_extent(pressure_class: int, size_inches: float | None, cat: str
 
 
 def _resolve_extended_stem(size_inches: float | None) -> str:
-    """Return extended stem requirement for insulated lines per MY-K-20-PI-SP-0002 Clause 10."""
+    """Return extended stem requirement for insulated lines per PMS_PDF.pdf Clause 10."""
     if size_inches is None:
         return '75mm (1/2"-1-1/2"), 100mm (2"-6"), 150mm (8" and above) — if insulated line'
     if size_inches <= 1.5:
@@ -1258,7 +1294,7 @@ def _resolve_extended_stem(size_inches: float | None) -> str:
 
 
 def _resolve_wedge_type(size_inches: float | None) -> str:
-    """Gate valve wedge type per MY-K-20-PI-SP-0002 Clause 6."""
+    """Gate valve wedge type per PMS_PDF.pdf Clause 6."""
     if size_inches is None:
         return 'Solid wedge (1-1/2" and below), Flexible wedge (2" and above)'
     if size_inches <= 1.5:
@@ -1322,7 +1358,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
       - Construction from valve type
       - Bolting/gaskets/hydrotest from PMS data (authoritative) or rules (fallback)
       - Standards and constants from project requirements
-      - Size-dependent rules from MY-K-20-PI-SP-0002
+      - Size-dependent rules from PMS_PDF.pdf
 
     Args:
         decoded: A DecodedVDS object from vds_decoder.decode_vds()
@@ -1331,6 +1367,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     Returns:
         Flat dict of field_name -> value, ready to populate a datasheet card.
     """
+    _rt = get_reference_tables()
     vt = decoded.valve_type.value     # e.g. "BL"
     design = decoded.design            # e.g. "R" (reduced bore)
     seat = decoded.seat_type.value if decoded.seat_type else "M"
@@ -1397,19 +1434,19 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     # Standards — context-dependent selection per VMS §6.1, §6.2
     if vt == "GA" and cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE"):
         # API STD 603 for corrosion-resistant gate valves (VMS §6.2)
-        data["valve_standard"] = VALVE_STANDARD.get("GA_CRA", VALVE_STANDARD.get("GA", ""))
+        data["valve_standard"] = _rt.get("valve_standard", "GA_CRA")
     elif vt in ("BL", "BS") and seat == "M":
         # API STD 608 for metal ball valves (VMS §4.3)
-        data["valve_standard"] = VALVE_STANDARD.get("BL_METAL", VALVE_STANDARD.get(vt, ""))
+        data["valve_standard"] = _rt.get("valve_standard", "BL_METAL")
     elif vt in ("BL", "BS"):
         # ISO 17292 only up to 24", CL 600 and below; above that API 6D (VMS §6.1)
         if size_inches is not None and (size_inches > 24 or pc_num > 600):
             data["valve_standard"] = "API SPEC 6D / ISO 14313"
         else:
-            data["valve_standard"] = VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, ""))
+            data["valve_standard"] = _rt.lookup("valve_standard", vt, design)
     else:
-        data["valve_standard"] = VALVE_STANDARD.get((vt, design), VALVE_STANDARD.get(vt, ""))
-    data["pressure_class"] = pms.get("pressure_class_label") or PRESSURE_CLASS.get(pc_letter, "")
+        data["valve_standard"] = _rt.lookup("valve_standard", vt, design)
+    data["pressure_class"] = pms.get("pressure_class_label") or _rt.get("pressure_class", pc_letter)
 
     # Design pressure — PMS first, then fallback
     data["design_pressure"] = pms.get("design_pressure", DESIGN_PRESSURE_FALLBACK.get(pc, ""))
@@ -1449,7 +1486,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["flange_material"] = pms["flange_moc"]
 
     # Face to face
-    data["face_to_face"] = FACE_TO_FACE.get((vt, design), FACE_TO_FACE.get(vt, ""))
+    data["face_to_face"] = _rt.lookup("face_to_face", vt, design)
 
     # ── Construction (from valve type template) ──
     tmpl_key = f"{vt}_{design}" if vt == "CH" else vt
@@ -1457,7 +1494,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     for field, value in tmpl.items():
         data[field] = value
 
-    # ── Size-dependent construction (MY-K-20-PI-SP-0002) ──
+    # ── Size-dependent construction (PMS_PDF.pdf) ──
     if vt in ("BL", "BS"):
         mounting = _resolve_ball_mounting(size_inches, pc_num)
         data["ball_construction"] = f'{mounting["description"]}, no vent hole, Solid Type'
@@ -1488,7 +1525,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["body_construction"] = "Integral Flanged, Bolted Cover (Piston Type required for 1/2\"-1-1/2\")"
         data["seat_construction"] = "Spring assisted Metal to metal, Renewable Seat Ring"
         data["operation"] = "Horizontal installation only (piston type check valve)"
-        data["check_valve_note"] = "Small bore check valves (1/2\"-1-1/2\") SHALL be Piston Type, horizontal only per MY-K-20-PI-SP-0002 §6.2"
+        data["check_valve_note"] = "Small bore check valves (1/2\"-1-1/2\") SHALL be Piston Type, horizontal only per PMS_PDF.pdf §6.2"
 
     if vt == "DB" and _dbb_inst:
         data["body_construction"] = (
@@ -1504,9 +1541,9 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     # End flange class/face table per VMS §6.22.1
     if ec in (EndConnection.RF, EndConnection.RTJ, EndConnection.FF):
         if pc_num <= 600:
-            data["flange_face_note"] = f"CL {pc_num}: Raised Face (RF) per MY-K-20-PI-SP-0002 §6.22.1"
+            data["flange_face_note"] = f"CL {pc_num}: Raised Face (RF) per PMS_PDF.pdf §6.22.1"
         else:
-            data["flange_face_note"] = f"CL {pc_num}: Ring Type Joint (RTJ) per MY-K-20-PI-SP-0002 §6.22.1"
+            data["flange_face_note"] = f"CL {pc_num}: Ring Type Joint (RTJ) per PMS_PDF.pdf §6.22.1"
 
     data["operation"] = _resolve_operation(vt, size_inches, pc_num)
 
@@ -1519,8 +1556,10 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["body_form"] = 'Forged (1-1/2" and below), Cast or Forged (2" and above)'
 
     # ── Materials — PMS ``materials`` block first, then category rules (same as app) ──
-    body_mat = (_pms_mat.body_material if _pms_mat else None) or BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
-    if size_inches is not None and size_inches <= 1.5:
+    body_mat = (_pms_mat.body_material if _pms_mat else None) or _rt.get("body_material", cat)
+    if vt == "BF" and cat in ("SS316L", "SS316L_NACE") and not (_pms_mat and _pms_mat.body_material):
+        body_mat = _BF_BODY_SS316L
+    if size_inches is not None and size_inches <= 1.5 and vt != "BF":
         parts = body_mat.split("/")
         forged_parts = [p.strip() for p in parts if "forged" in p.lower()]
         if forged_parts:
@@ -1532,8 +1571,10 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         is_nace=is_nace,
         is_lt=is_lt,
     )
-    data["gland_material"] = (_pms_mat.gland_material if _pms_mat else None) or GLAND_MATERIAL.get(cat, GLAND_MATERIAL["CS"])
-    data["gland_packing"] = (_pms_mat.gland_packing if _pms_mat else None) or GLAND_PACKING.get(cat, _GLAND_PACKING_STD)
+    data["gland_material"] = (_pms_mat.gland_material if _pms_mat else None) or _rt.get("gland_material", cat)
+    data["gland_packing"] = (_pms_mat.gland_packing if _pms_mat else None) or _rt.get("gland_packing", cat)
+    if vt == "BF" and not (_pms_mat and _pms_mat.gland_packing):
+        data["gland_packing"] = _GLAND_PACKING_BF
     data["lever_handwheel"] = (_pms_mat.lever_handwheel if _pms_mat else None) or "Solid ASTM A47 HDG/ ASTM A220 HDG/ SS316"
     _pms_spring = _pms_mat.spring_material if _pms_mat else None
     # Spring row: ball / check / globe only; BF / DB / NE have no spring trim line on VMS.
@@ -1545,37 +1586,40 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["spring_material"] = _pms_spring
 
     if vt in ("BL", "BS", "DB"):
-        data["ball_material"] = (_pms_mat.ball_material if _pms_mat else None) or BALL_MATERIAL.get(cat, BALL_MATERIAL["CS"])
-        data["seat_material"] = (_pms_mat.seat_material if _pms_mat else None) or SEAT_MATERIAL.get(seat, "Metal seated, hard faced, Renewable")
+        data["ball_material"] = (_pms_mat.ball_material if _pms_mat else None) or _rt.get("ball_material", cat)
+        data["seat_material"] = (_pms_mat.seat_material if _pms_mat else None) or _rt.get("seat_material", seat)
         if vt in ("BL", "BS"):
-            data["seal_material"] = SEAL_MATERIAL_BALL.get(seat, "Viton AED")
+            data["seal_material"] = _rt.get("seal_material_ball", seat)
         if vt != "DB":
-            data["seat_construction"] = SEAT_CONSTRUCTION_BY_SEAT.get(seat, "")
+            data["seat_construction"] = _rt.get("seat_construction_by_seat", seat)
         if seat == "M" and vt in ("BL", "BS"):
             data["seat_coating"] = "Tungsten Carbide overlay, min 1050 HV, 150-250 \u03bcm thickness"
             if cat.startswith("CS"):
                 data["hardness_requirement"] = "Body/disc min 250 BHN, min 50 BHN differential"
             data["stellite_overlay"] = "Stellite 6 by deposition, min 1.6 mm finished thickness"
     elif vt == "GA":
-        data["wedge_material"] = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"]) + ", Hard faced"
-        data["seal_material"] = SEAL_MATERIAL_GATE.get(seat, "Flexible Graphite")
+        data["wedge_material"] = _rt.get("body_material", cat) + ", Hard faced"
+        data["seat_material"] = _rt.get("seat_material", seat)
+        data["seal_material"] = _rt.get("seal_material_gate", seat)
         if cat.startswith("CS") and seat == "M":
             data["hardness_requirement"] = "Body seat and wedge min 250 BHN, min 50 BHN differential"
     elif vt == "GL":
         data["disc_material"] = data["stem_material"] + ", Hard faced"
         data["seat_material"] = (
             (_pms_mat.seat_material if _pms_mat else None)
-            or SEAT_MATERIAL.get(seat, "Metal seated, hard faced, Renewable")
+            or _rt.get("seat_material", seat)
         )
-        data["seal_material"] = SEAL_MATERIAL_GATE.get(seat, "Flexible Graphite")
+        data["seal_material"] = _rt.get("seal_material_gate", seat)
         if cat.startswith("CS") and seat == "M":
             data["hardness_requirement"] = (
                 "Body seat and disc min 250 BHN, min 50 BHN differential"
             )
     elif vt == "CH":
-        data["disc_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+        data["disc_material"] = _rt.get("stem_material", cat)
+        data["seat_material"] = _rt.get("seat_material", seat)
+        data["seal_material"] = _rt.get("seal_material_gate", seat)
         if design == "S":
-            data["hinge_pin_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+            data["hinge_pin_material"] = _rt.get("stem_material", cat)
     elif vt == "BF":
         data["shaft_material"] = _stem_trim_row(
             cat,
@@ -1583,13 +1627,21 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
             is_nace=is_nace,
             is_lt=is_lt,
         )
-        data["seat_material"] = (_pms_mat.seat_material if _pms_mat else None) or SEAT_MATERIAL.get(seat, "Reinforced PTFE (max 200\u00b0C)")
+        # Butterfly material grid: disc + seal rows align with PMS appendix / VDS index pattern.
+        data["disc_material"] = data["shaft_material"] + ", Stellite Hard Faced"
+        data["seal_material"] = _rt.get("seal_material_ball", seat)
+        _seat_bf = (_pms_mat.seat_material if _pms_mat else None) or _rt.get("seat_material", seat)
+        if seat == "T" and not (_pms_mat and _pms_mat.seat_material):
+            _seat_bf = "Reinforced PTFE"
+        data["seat_material"] = _seat_bf
     elif vt == "NE":
-        data["needle_material"] = STEM_MATERIAL.get(cat, STEM_MATERIAL["CS"])
+        data["needle_material"] = _rt.get("stem_material", cat)
+        data["seat_material"] = _rt.get("seat_material", seat)
         data["minimum_bore"] = "10 mm (instrument connections)"
 
+    # Butterfly: the PMS appendix has BOTH Stem Material and Shaft Material rows
+    # (typically same value). Keep both; only spring isn't on the BF grid.
     if vt == "BF":
-        data.pop("stem_material", None)
         data.pop("spring_material", None)
 
     # Backseat for GA, GL, NE
@@ -1603,7 +1655,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     if vt in ("GA", "GL", "CH") and is_nace and cat.startswith("CS"):
         data["seat_pocket_overlay"] = (
             "Body seat pockets overlayed with corrosion resistant material "
-            "per MY-K-20-PI-SP-0002 §6.15 (CS valve in corrosive service)"
+            "per PMS_PDF.pdf §6.15 (CS valve in corrosive service)"
         )
 
     # Elastomer explosive decompression resistance (VMS §7.9)
@@ -1611,37 +1663,58 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["elastomer_requirement"] = (
             "All elastomers in HC gas/liquid service with H\u2082, CH\u2084, or CO\u2082 "
             "shall have proven resistance to explosive decompression. "
-            "Max O-ring section: 7 mm diameter per MY-K-20-PI-SP-0002 §7.9. "
+            "Max O-ring section: 7 mm diameter per PMS_PDF.pdf §7.9. "
             "No precautions needed for gaseous service <30 barg."
         )
 
     # FFKM for methanol service (VMS §7.8)
     service_str = data.get("service", "").lower()
     if ("methanol" in service_str or "glycol" in service_str) and data.get("seal_material"):
-        data["seal_material_note"] = "FFKM recommended for Methanol/Glycol service per MY-K-20-PI-SP-0002 §7.8"
+        data["seal_material_note"] = "FFKM recommended for Methanol/Glycol service per PMS_PDF.pdf §7.8"
 
     # Preferred resilient seating materials (VMS §7.8)
     if seat in ("T", "P") and vt != "DB":
         data["resilient_seat_note"] = (
             "Preferred resilient seating: Nitrile, Viton, or RPTFE for -18\u00b0C to 93\u00b0C. "
             "Below -18\u00b0C: use softer materials (Kel-F, unreinforced PTFE). "
-            "Not recommended where solids/abrasives present per MY-K-20-PI-SP-0002 §7.8."
+            "Not recommended where solids/abrasives present per PMS_PDF.pdf §7.8."
         )
 
     # Torque and operation limits (VMS §6.11.2)
-    data["max_torque"] = "Max 150 Nm (handwheel), Max 270 Nm (lever) per MY-K-20-PI-SP-0002 §6.11.2"
-    data["max_handwheel_diameter"] = "750 mm max per MY-K-20-PI-SP-0002 §6.11.2"
-    data["max_lever_length"] = "500 mm max each side per MY-K-20-PI-SP-0002 §6.11.2"
+    data["max_torque"] = "Max 150 Nm (handwheel), Max 270 Nm (lever) per PMS_PDF.pdf §6.11.2"
+    data["max_handwheel_diameter"] = "750 mm max per PMS_PDF.pdf §6.11.2"
+    data["max_lever_length"] = "500 mm max each side per PMS_PDF.pdf §6.11.2"
     data["operating_force"] = "Max 45 kg (100 lbs) to break open/close, 35 kg (75 lbs) at mid-stroke"
 
-    # ── Bolting & gaskets ──
-    data["bolts"] = pms.get("bolts", BOLT_MATERIAL.get(cat, BOLT_MATERIAL["CS"]))
-    data["nuts"] = pms.get("nuts", NUT_MATERIAL.get(cat, NUT_MATERIAL["CS"]))
-    data["gaskets"] = pms.get("gaskets", GASKET_MATERIAL.get((cat, is_rtj), GASKET_MATERIAL.get((cat, False), "")))
+    # ── Bolting & gaskets (PMS bolting_gaskets block wins; BF SS316L RF uses appendix gasket if unset) ──
+    if pms.get("gaskets"):
+        data["gaskets"] = pms["gaskets"]
+    elif (
+        vt == "BF"
+        and not is_rtj
+        and cat in ("SS316L", "SS316L_NACE")
+    ):
+        data["gaskets"] = _BF_GASKET_SS316L_RF
+    else:
+        data["gaskets"] = GASKET_MATERIAL.get((cat, is_rtj), GASKET_MATERIAL.get((cat, False), ""))
+    data["bolts"] = pms.get("bolts", _rt.get("bolt_material", cat))
+    data["nuts"] = pms.get("nuts", _rt.get("nut_material", cat))
+    if (
+        vt == "BF"
+        and cat in ("SS316L", "SS316L_NACE")
+        and not pms.get("bolts")
+    ):
+        data["bolts"] = _BF_BOLT_SS316L
+    if (
+        vt == "BF"
+        and cat in ("SS316L", "SS316L_NACE")
+        and not pms.get("nuts")
+    ):
+        data["nuts"] = _BF_NUT_SS316L
     data["bolt_plating"] = "No cadmium plating. XYLAN 1070 or equivalent fluoropolymer coating"
 
     if vt in ("GA", "GL"):
-        data["bonnet_material"] = BODY_MATERIAL.get(cat, BODY_MATERIAL["CS"])
+        data["bonnet_material"] = _rt.get("body_material", cat)
 
     # ── Hydrotest ──
     if "hydrotest_shell" in pms:
@@ -1660,7 +1733,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         else:
             data["fire_rating"] = "API SPEC 6FA (Trunnion) / API STD 607 (Floating), third-party witnessed"
     else:
-        data["fire_rating"] = FIRE_RATING.get(vt, "N/A")
+        data["fire_rating"] = _rt.get("fire_rating", vt)
 
     if seat in ("T", "P"):
         if vt in ("BL", "BS"):
@@ -1670,7 +1743,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
             data["fire_test"] = "Required \u2014 BS EN ISO 10497 / API 607, third-party witnessed"
             data["antistatic_device"] = "Required for soft-seated primary obturator per manufacturer / API 6D"
 
-    # ── Inspection & testing (MY-K-20-PI-SP-0002) ──
+    # ── Inspection & testing (PMS_PDF.pdf) ──
     data["ndt_extent"] = _resolve_ndt_extent(pc_num, size_inches, cat)
     data["functional_test"] = "5 cycles at manufacturer, 5 at fabrication yard, 5 offshore"
 
@@ -1699,7 +1772,7 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         )
         data["chloride_restriction"] = (
             "300-series SS SHALL NOT be used where chloride >5 ppm AND temperature >60\u00b0C "
-            "(stress corrosion cracking region) per MY-K-20-PI-SP-0002 \u00a77.2. "
+            "(stress corrosion cracking region) per PMS_PDF.pdf \u00a77.2. "
             "Gaskets exempted for T \u2264120\u00b0C."
         )
 
@@ -1713,7 +1786,8 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data["impact_test"] = "Charpy V-notch impact test per ASME B31.3 / ASME B16.34"
     if cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE", "CUNI"):
         data["pmi"] = "Required \u2014 Positive Material Identification per project document, random PMI per mill cert"
-    if vt != "CH" and "locks" not in data:
+    # Butterfly VMS layout has no Locks row; other quarter-turn / multTurn types do.
+    if vt not in ("CH", "BF") and "locks" not in data:
         data["locks"] = "Valve lockable using padlock - Full Open, Fully Closed"
     if vt in ("BL", "BS", "BF", "DB"):
         data["position_indicator"] = "Visual position indicator required"
@@ -1740,6 +1814,52 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
     if vt == "NE":
         data.pop("spring_material", None)
 
+    # ── Per-VDS PMS override (PMS_PDF.pdf is authoritative) ─────────────────
+    # If pms_vds_datasheets.json carries a value for this VDS code, it wins
+    # over the rule-based derivation above. Mirrors the override pass in
+    # app/engine/rule_engine.py so both servers emit identical PMS-sourced
+    # output for the 745 VDS codes that have a dedicated PMS PDF sheet.
+    try:
+        _gvds = get_global_vds_loader()
+    except Exception:
+        _gvds = None
+    _vds_rec = _gvds.get(decoded.display_vds) if _gvds else None
+    if _vds_rec:
+        _direct = (
+            "size_range", "service", "valve_type",
+            "valve_standard", "pressure_class", "design_pressure",
+            "corrosion_allowance", "sour_service", "end_connections",
+            "body_material", "ball_material", "disc_material",
+            "wedge_material", "needle_material", "seat_material",
+            "seal_material", "stem_material", "shaft_material",
+            "gland_material", "gland_packing", "lever_handwheel",
+            "gaskets", "bolts", "nuts",
+            "marking_purchaser", "marking_manufacturer", "inspection_testing",
+            "leakage_rate", "hydrotest_shell", "hydrotest_closure",
+            "material_certification", "fire_rating", "finish",
+        )
+        for _k in _direct:
+            _v = _vds_rec.get(_k)
+            if _v:
+                data[_k] = _v
+        if _vds_rec.get("spring"):
+            data["spring_material"] = _vds_rec["spring"]
+        if _vds_rec.get("face_to_face_dimension"):
+            data["face_to_face"] = _vds_rec["face_to_face_dimension"]
+        _cons = _vds_rec.get("construction") or {}
+        for _ck, _ek in (
+            ("body", "body_construction"), ("ball", "ball_construction"),
+            ("disc", "disc_construction"), ("wedge", "wedge_construction"),
+            ("stem", "stem_construction"), ("shaft", "shaft_construction"),
+            ("seat", "seat_construction"), ("locks", "locks"),
+        ):
+            _cv = _cons.get(_ck)
+            if _cv:
+                data[_ek] = _cv
+
     prune_datasheet_by_valve_type(vt, design, seat, data, dbb_instrument=_dbb_inst)
+
+    if vt == "BF":
+        apply_bf_vms_construction_overrides(data)
 
     return data

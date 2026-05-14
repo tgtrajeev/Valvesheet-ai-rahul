@@ -218,9 +218,11 @@ def cite_end_connections(end_char: str) -> dict:
         }
     if end_char == "W":  # Wafer
         return {
-            "rule": "Wafer / lug type per API 594 (check) or API 609 (butterfly)",
-            "primary": _cite(API_594, "API 594 Type A wafer & lug check valves", 0, 0, ""),
-            "supporting": [_support(API_609, "Butterfly valves wafer / lug type")],
+            "rule": "Wafer / lug end pattern — selection guide per API 615 §4.1.4 (butterfly) and §4.2 (check)",
+            "primary": _cite(API_615, "§4.1.4 Butterfly Valves / §4.2 Check Valves (wafer & lug end patterns)", 6, _api615(6),
+                             "API 615 identifies wafer and lug patterns as the standard end forms for butterfly and check valves"),
+            "supporting": [_support(API_594, "Check valves — flanged, lug, wafer and butt-welding"),
+                           _support(API_609, "Butterfly valves wafer / lug type")],
         }
     if end_char == "H":  # Hub
         return {
@@ -257,10 +259,14 @@ def cite_face_to_face(valve_type: str) -> dict:
             "supporting": [_support(API_6D, "5.4 Face-to-face dimensions")],
         }
     if valve_type == "BF":
+        # API 615 §4.1.4 directs to API 609 Cat A/B for butterfly face-to-face. Cite the
+        # whitelisted selection guide as primary; the underlying dimension table lives
+        # in API 609 (supporting).
         return {
-            "rule": "Butterfly valves face-to-face per API 609 Category A / B",
-            "primary": _cite(API_609, "API 609 Cat A / Cat B face-to-face dimensions", 0, 0, ""),
-            "supporting": [],
+            "rule": "Butterfly valves face-to-face — API 615 §4.1.4 selection guide (API 609 Cat A / B dimensions)",
+            "primary": _cite(API_615, "§4.1.4 Butterfly Valves — face-to-face per API 609 Cat A / Cat B", 6, _api615(6),
+                             "Butterfly valves are defined in API 609 as two major types, Category A and Category B"),
+            "supporting": [_support(API_609, "API 609 Cat A / Cat B face-to-face dimensions")],
         }
     if valve_type in ("DB", "NE"):
         return {"rule": "Manufacturer standard", "primary": _cite("Manufacturer standard","",0,0,""), "supporting": []}
