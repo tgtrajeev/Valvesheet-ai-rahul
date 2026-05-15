@@ -12,6 +12,7 @@ This makes the system genuinely intelligent — it can handle VDS codes it has
 never seen before, as long as the combination is valid.
 """
 
+import os
 import re
 from ..models.vds import DecodedVDS, ValveType, SeatType, EndConnection
 from .pms_loader import get_pms_loader
@@ -1815,27 +1816,39 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data.pop("spring_material", None)
 
     # ── Per-VDS PMS override (PMS_PDF.pdf is authoritative) ─────────────────
-    # If pms_vds_datasheets.json carries a value for this VDS code, it wins
-    # over the rule-based derivation above. Mirrors the override pass in
-    # app/engine/rule_engine.py so both servers emit identical PMS-sourced
-    # output for the 745 VDS codes that have a dedicated PMS PDF sheet.
+    # Reads pms_vds_datasheets.json (the 745-record appendix) and overlays it
+    # onto the rule-derived output. Mirrors app/engine/rule_engine.py.
+    #
+    # SWITCH: env var DATASHEET_USE_APPENDIX_OVERRIDE
+    #   "0" / unset (default) → appendix override DISABLED. All fields come
+    #     from class PMS (pms_extracted.json) + reference tables + rules.
+    #     User edits to PMS class sync reflect immediately.
+    #   "1" / "true" / "on" → appendix override ENABLED. Restores prior
+    #     behavior for material/test/marking/construction fields. Class-level
+    #     fields are always derived from PMS regardless of this flag.
+    _appendix_flag = (os.environ.get("DATASHEET_USE_APPENDIX_OVERRIDE", "0") or "0").strip().lower()
+    _use_appendix = _appendix_flag in ("1", "true", "on", "yes")
     try:
-        _gvds = get_global_vds_loader()
+        _gvds = get_global_vds_loader() if _use_appendix else None
     except Exception:
         _gvds = None
     _vds_rec = _gvds.get(decoded.display_vds) if _gvds else None
     if _vds_rec:
+        # Class-level fields (size_range, pressure_class, design_pressure,
+        # corrosion_allowance, sour_service, end_connections, hydrotest_*)
+        # come from PMS class data, not the appendix — user edits to PMS sync
+        # must reflect immediately. The appendix retains authority only for
+        # material/test/marking fields not derivable from class-level PMS.
         _direct = (
-            "size_range", "service", "valve_type",
-            "valve_standard", "pressure_class", "design_pressure",
-            "corrosion_allowance", "sour_service", "end_connections",
+            "service", "valve_type",
+            "valve_standard",
             "body_material", "ball_material", "disc_material",
             "wedge_material", "needle_material", "seat_material",
             "seal_material", "stem_material", "shaft_material",
             "gland_material", "gland_packing", "lever_handwheel",
             "gaskets", "bolts", "nuts",
             "marking_purchaser", "marking_manufacturer", "inspection_testing",
-            "leakage_rate", "hydrotest_shell", "hydrotest_closure",
+            "leakage_rate",
             "material_certification", "fire_rating", "finish",
         )
         for _k in _direct:
@@ -1846,13 +1859,38 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
             data["spring_material"] = _vds_rec["spring"]
         if _vds_rec.get("face_to_face_dimension"):
             data["face_to_face"] = _vds_rec["face_to_face_dimension"]
+
+        # PMS-mirroring for material rows: drop rule-template material fields
+        # PMS did not list for this VDS (mirrors the construction block below).
+        _material_pms_to_engine = {
+            "body_material":"body_material","ball_material":"ball_material",
+            "disc_material":"disc_material","wedge_material":"wedge_material",
+            "needle_material":"needle_material","seat_material":"seat_material",
+            "seal_material":"seal_material","stem_material":"stem_material",
+            "shaft_material":"shaft_material","gland_material":"gland_material",
+            "gland_packing":"gland_packing","lever_handwheel":"lever_handwheel",
+            "back_seat_material":"back_seat_material","spring":"spring_material",
+        }
+        if any(_vds_rec.get(_pk) for _pk in _material_pms_to_engine):
+            _mat_kept = {_ek for _pk, _ek in _material_pms_to_engine.items() if _vds_rec.get(_pk)}
+            for _ek in set(_material_pms_to_engine.values()):
+                if _ek not in _mat_kept:
+                    data.pop(_ek, None)
         _cons = _vds_rec.get("construction") or {}
-        for _ck, _ek in (
-            ("body", "body_construction"), ("ball", "ball_construction"),
+        _construction_map = (
+            ("body", "body_construction"), ("bonnet", "bonnet_construction"),
+            ("ball", "ball_construction"),
             ("disc", "disc_construction"), ("wedge", "wedge_construction"),
             ("stem", "stem_construction"), ("shaft", "shaft_construction"),
             ("seat", "seat_construction"), ("locks", "locks"),
-        ):
+            ("packing", "packing_construction"), ("back_seat", "back_seat_construction"),
+        )
+        if any(_cons.get(_k) for _k, _ in _construction_map):
+            _kept = {ek for ck, ek in _construction_map if _cons.get(ck)}
+            for _ek in (e for _, e in _construction_map):
+                if _ek not in _kept and _ek != "locks":
+                    data.pop(_ek, None)
+        for _ck, _ek in _construction_map:
             _cv = _cons.get(_ck)
             if _cv:
                 data[_ek] = _cv

@@ -39,12 +39,14 @@ def raw_vds_bs_ball_prefix_retired_error(vds_code: str | None) -> str | None:
         )
     return None
 
-# Valid seat codes per valve type (Section 4, CLAUDE.md / vdsParser.ts)
+# Valid seat codes per valve type — sourced from PMS PDF appendix.
+# DBB modular (Ball/Needle/Ball) and instrument DBB use the same seat options
+# as ball valves; PEEK is common for high-pressure / high-temp instrument bleeds.
 VALID_SEATS_BY_TYPE: dict[str, list[str]] = {
     "GA": ["M"],
     "GL": ["M"],
     "CH": ["M"],
-    "DB": ["M"],
+    "DB": ["T", "P", "M"],
     "NE": ["T", "P", "M"],
     "BF": ["T", "P", "M"],
     "BL": ["T", "P", "M"],
@@ -254,11 +256,31 @@ def _is_hc_service(spec: str) -> bool:
 
 
 def _pressure_class_from_spec(spec: str) -> int | None:
-    """Extract ASME pressure class number from spec code."""
+    """Resolve ASME pressure class number for a spec code.
+
+    For standard A/B/D/E/F/G classes the first letter is sufficient. For
+    custom/non-standard classes (e.g. ``GAIL1``, ``PROJ1``) the first letter
+    can be misleading, so we consult the PmsLoader header for the actual
+    project ``pressure_rating`` first and fall back to the letter map.
+    """
     if not spec:
         return None
-    letter = spec[0].upper()
-    return PRESSURE_CLASS_NUM.get(letter)
+    sp = spec.upper().strip()
+    # Try PmsLoader header first — works for any custom class on Render too.
+    try:
+        from .pms_loader import get_pms_loader
+        loader = get_pms_loader()
+        s = loader.get_spec(sp)
+        if s and s.header and s.header.pressure_rating:
+            m = re.search(r"\d+", str(s.header.pressure_rating))
+            if m:
+                return int(m.group())
+    except Exception:
+        pass
+    # Standard class shorthand only applies when the spec is letter+digit.
+    if re.match(r"^[A-G]\d", sp):
+        return PRESSURE_CLASS_NUM.get(sp[0])
+    return None
 
 
 def parse_size_inches(size_str: str | None) -> float | None:
@@ -283,16 +305,15 @@ def end_conn_for_spec(spec: str, valve_type: str | None = None) -> list[str]:
     """Return valid end connection codes for this (valve_type, spec).
 
     When valve_type is provided and the pair is present in PMS, returns the
-    single PMS-derived end connection (per the rule: end connection is fully
-    determined by valve type + piping class + pressure + material — verified
-    100% on pms_extracted.json 2026-04-20). Falls back to the permissive list
-    only when the pair isn't in PMS.
+    full SET of PMS-derived end-connection codes. A pair often has multiple
+    valid ends (instrument DBB with both J and JT, tubing with F + J, etc.).
+    Falls back to the permissive list only when the pair isn't in PMS.
     """
     if valve_type:
-        from .pms_derivations import get_end_conn
-        ec = get_end_conn(valve_type, spec)
-        if ec is not None:
-            return [ec]
+        from .pms_derivations import get_end_conns
+        ecs = get_end_conns(valve_type, spec)
+        if ecs:
+            return list(ecs)
     return ["R", "J", "F", "T", "H", "JT"]
 
 
@@ -439,25 +460,22 @@ def validate_combination(
             action={"end_conn": "R"},
         ))
 
-    # Rule 12: Butterfly restricted to clean non-HC service
-    if vt == "BF" and is_hc:
+    # Rule 12 + 13: HC-service butterfly is design-specific. Per PMS appendix:
+    # * Wafer butterfly (design W) is excluded from hydrocarbon service.
+    # * Triple-offset butterfly (design T / P) is permitted on HC (e.g. BFTPB25R
+    #   exists for SDSS NACE class B25). So only the W design is blocked.
+    if vt == "BF" and is_hc and (bore or design or "").upper() == "W":
         errors.append(
-            f"Butterfly valves are restricted to clean non-hydrocarbon service per {VMS_DOC} §6.3. "
-            f"Spec '{sp}' is for hydrocarbon service."
+            f"Wafer-type butterfly (BFW…) is not permitted in hydrocarbon service "
+            f"(spec '{sp}') per {VMS_DOC} §6.3. Use a Triple-Offset butterfly "
+            f"(BFTP/BFTM) or a Ball valve."
         )
         suggestions.append(Suggestion(
             type="fix",
-            title="Use Ball Valve instead",
-            description="Ball valves are suitable for HC service. Change valve type to BL.",
-            action={"valve_type": "BL"},
+            title="Use Triple-Offset butterfly",
+            description="Switch to BFTP or BFTM design for hydrocarbon service.",
+            action={"design": "T"},
         ))
-
-    # Rule 13: Wafer butterfly rejected in flammable service
-    if vt == "BF" and (bore or design or "").upper() == "W" and is_hc:
-        warnings.append(
-            f"Wafer-type butterfly valves are rejected in flammable/combustible service per {VMS_DOC} §6.0. "
-            "Must use solid lug type with threaded lugs."
-        )
 
     # Rule 9: Gate/Globe restricted to clean non-HC (except HC >= 900# <= 1.5")
     if vt in ("GA", "GL") and is_hc:
@@ -562,23 +580,14 @@ def validate_combination(
         )
 
     # Rule: End flange class/face table (VMS §6.22.1)
+    # Note: the ≥900 RTJ-required hard check already fires earlier (Rule 31).
+    # Only the ≤600 RTJ advisory remains here.
     if pressure_class and ec:
         if pressure_class <= 600 and ec == "J":
             warnings.append(
                 f"Class {pressure_class} (≤600): standard face is RF (Raised Face). "
                 f"RTJ specified — verify this is intentional per {VMS_DOC} §6.22.1."
             )
-        if pressure_class >= 900 and ec == "R":
-            errors.append(
-                f"Class {pressure_class} (≥900): RTJ face REQUIRED per {VMS_DOC} §6.22.1. "
-                "RF (Raised Face) is not acceptable for classes 900-2500."
-            )
-            suggestions.append(Suggestion(
-                type="fix",
-                title="Use RTJ end connection",
-                description=f"Change to J (RTJ) for class {pressure_class}",
-                action={"end_conn": "J"},
-            ))
 
     # Rule: Compact flange for CL 1500+ at 3"+ (VMS §6.22.1)
     if pressure_class and pressure_class >= 1500 and size_inches is not None and size_inches >= 3:

@@ -76,6 +76,10 @@ class EndConnection(str, Enum):
         value = value.upper()
         if value == "JT":
             return cls.RTJ_NPT
+        # `FF` and `F` are both Flat Face — some non-standard classes (e.g. A40
+        # CPVC) encode the end as `FF` in the VDS string while others use `F`.
+        if value == "FF":
+            return cls.FF
         for member in cls:
             if member.value == value:
                 return member
@@ -116,6 +120,10 @@ class DecodedVDS(BaseModel):
 
     def model_post_init(self, __context) -> None:
         self.raw_vds = self.raw_vds.upper().strip()
+        if not (self.display_vds or "").strip():
+            self.display_vds = self.raw_vds
+        else:
+            self.display_vds = self.display_vds.strip().upper()
         if not self.piping_class_base:
             inst = re.match(r"^(T\d+[A-C]?)$", self.piping_class)
             std = re.match(r"^([A-G]\d+)", self.piping_class)
