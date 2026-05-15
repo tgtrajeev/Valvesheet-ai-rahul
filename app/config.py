@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     pms_api_key: str = ""
     pms_sync_enabled: bool = False      # flip to True once API is live
 
+    # Render-deployed PMS sources (consumed by scripts/sync_from_render.py).
+    # Empty by default — only set in .env when syncing from Render.
+    pms_generator_database_url: str = ""
+    valve_agent_database_url: str = ""
+
     # CORS — comma-separated origins for production
     frontend_url: str = "http://localhost:5173"
     cors_origins: str = ""
