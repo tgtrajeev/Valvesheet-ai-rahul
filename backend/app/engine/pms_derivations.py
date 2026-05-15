@@ -16,11 +16,14 @@ from __future__ import annotations
 from .pms_loader import get_pms_loader
 from .vds_decoder import decode_vds
 
-# (valve_type_code, spec_code) -> end_connection_code
-_end_conn_map: dict[tuple[str, str], str] | None = None
+# (valve_type, spec) -> sorted tuple of end-connection codes that PMS shows
+# valid for that pair. A pair can have multiple ends (instrument DBB with
+# both J and JT, tubing with both F and J) — earlier this map collapsed to
+# one which made the validator reject legitimate VDS codes.
+_end_conn_map: dict[tuple[str, str], tuple[str, ...]] | None = None
 
 
-def _build_end_conn_map() -> dict[tuple[str, str], str]:
+def _build_end_conn_map() -> dict[tuple[str, str], tuple[str, ...]]:
     loader = get_pms_loader()
     m: dict[tuple[str, str], set[str]] = {}
     for code in loader.spec_codes:
@@ -37,22 +40,29 @@ def _build_end_conn_map() -> dict[tuple[str, str], str]:
                 ec = decoded.end_connection.value
                 sp = decoded.piping_class.upper()
                 m.setdefault((vt, sp), set()).add(ec)
-
-    # Collapse to single value; if PMS ever shows ambiguity, keep the first
-    # deterministically so behavior stays predictable.
-    return {k: sorted(v)[0] for k, v in m.items() if v}
+    return {k: tuple(sorted(v)) for k, v in m.items() if v}
 
 
-def get_end_conn(valve_type: str, spec: str) -> str | None:
-    """Return the PMS-derived end-connection code for a (valve_type, spec).
+def get_end_conns(valve_type: str, spec: str) -> tuple[str, ...] | None:
+    """Return all PMS-derived end-connection codes valid for (valve_type, spec).
 
-    Returns None if the pair is not present in PMS — caller should fall back
-    to the legacy "any end connection allowed" behavior.
+    Returns None if the pair is not present in PMS — caller should fall back to
+    the legacy "any end connection allowed" behavior.
     """
     global _end_conn_map
     if _end_conn_map is None:
         _end_conn_map = _build_end_conn_map()
     return _end_conn_map.get((valve_type.upper().strip(), spec.upper().strip()))
+
+
+def get_end_conn(valve_type: str, spec: str) -> str | None:
+    """Compatibility shim: return the first end-conn code for the pair, or None.
+
+    Prefer :func:`get_end_conns` in new code so multi-end specs don't get
+    rejected (e.g. instrument DBB JT vs J).
+    """
+    ecs = get_end_conns(valve_type, spec)
+    return ecs[0] if ecs else None
 
 
 def reset_cache() -> None:

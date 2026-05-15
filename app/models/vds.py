@@ -76,6 +76,10 @@ class EndConnection(str, Enum):
         value = value.upper()
         if value == "JT":
             return cls.RTJ_NPT
+        # `FF` and `F` are both Flat Face — some non-standard classes (e.g. A40
+        # CPVC) encode the end as `FF` in the VDS string while others use `F`.
+        if value == "FF":
+            return cls.FF
         for member in cls:
             if member.value == value:
                 return member

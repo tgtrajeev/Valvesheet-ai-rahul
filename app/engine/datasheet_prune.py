@@ -127,7 +127,7 @@ def _allowed_typed_keys(
     if vt == "GL":
         return frozenset({
             "disc_material", "disc_construction",
-            "back_seat_construction", "packing_construction",
+            "back_seat_construction", "packing_construction", "seat_construction",
             "bonnet_material", "backseat", "back_seat_material",
             "seat_pocket_overlay",
             "seat_material", "seal_material", "spring_material",
@@ -142,12 +142,11 @@ def _allowed_typed_keys(
     if vt == "CH":
         keys = {
             "disc_material", "seat_material", "seal_material", "seat_construction",
+            "disc_construction",
             "flange_face_note", "body_form", "spring_material",
         }
         if d == "S":
             keys.add("hinge_pin_material")
-        if d == "D":
-            keys.add("disc_construction")
         # Small-bore piston note is conditional in rule_engine; keep if present
         keys.add("check_valve_note")
         # Check valves do not use a gate/ball-style stem row or stem packing table lines.
@@ -157,8 +156,11 @@ def _allowed_typed_keys(
         # Modular DBB (Ball/Needle/Ball construction) and instrument DBB both
         # have a needle element per the PMS appendix; keep needle_material and
         # spring_material so the override layer's PMS values flow through.
+        # Also keep ball_construction — PMS appendix has it ("Trunnion mounted,
+        # Solid type, Full Bore") for every DBB code.
         keys = {
             "ball_material", "seat_material", "needle_material", "spring_material",
+            "ball_construction", "ball_mounting_type",
             "flange_face_note", "body_form", "position_indicator",
             "locks",
             *_stem_construction,
@@ -177,8 +179,11 @@ def _allowed_typed_keys(
     if vt == "NE":
         return frozenset({
             "needle_material", "seat_material", "minimum_bore", "backseat", "back_seat_material",
+            "bonnet_construction", "disc_construction", "seat_construction",
+            "back_seat_construction", "packing_construction",
             "flange_face_note", "body_form",
             "seal_material_note",
+            "locks",
             *_stem_construction,
             *_stem_trim_pack_lever,
         })
