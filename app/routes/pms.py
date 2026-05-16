@@ -525,3 +525,56 @@ async def list_db_projects():
     """List all projects stored in the DB (pms_sheets table)."""
     projects = await store.list_projects_from_db()
     return {"projects": projects}
+
+
+@router.post("/sync-from-generator/{spec_code}")
+async def sync_from_generator(spec_code: str):
+    """Engineer-approved push: pull a single PMS class from the PMS Generator
+    Render DB into the Valvesheet AI agent.
+
+    Flow:
+      1. Engineer reviews and approves the class in PMS Generator UI (upstream).
+      2. PMS Generator persists to `pms_cache.response_json`.
+      3. Frontend hits this endpoint with the approved spec_code.
+      4. Endpoint pulls + transforms + writes to Valvesheet DB and local
+         pms_extracted.json (via render_sync.sync_one).
+      5. In-process PmsLoader cache is invalidated so the next request sees
+         the new data without a server restart.
+      6. KnowledgeBase VDS index entries for this class are evicted; the next
+         chat request for the class triggers a fresh build_and_register.
+
+    Returns a sync summary the frontend can show to the engineer.
+    """
+    pc = (spec_code or "").upper().strip()
+    if not _SPEC_CODE_RE.match(pc):
+        raise HTTPException(400, f"Invalid spec_code '{spec_code}'")
+
+    from ..pms.render_sync import sync_one
+    from ..engine.pms_loader import refresh_pms_loader
+    from ..engine.knowledge import get_knowledge_base
+
+    try:
+        data = sync_one(pc)
+    except RuntimeError as exc:
+        # Env var missing — PMS_GENERATOR_DATABASE_URL or VALVE_AGENT_DATABASE_URL.
+        raise HTTPException(503, str(exc))
+    except Exception as exc:  # pragma: no cover — surface DB / network failures
+        logger.exception("sync-from-generator failed for %s", pc)
+        raise HTTPException(502, f"Sync failed: {exc}")
+
+    if data is None:
+        raise HTTPException(404, f"No PMS row for spec_code '{pc}' in PMS Generator DB")
+
+    refresh_pms_loader()
+    evicted = get_knowledge_base().evict_piping_class(pc)
+
+    return {
+        "ok": True,
+        "spec_code": data["spec_code"],
+        "valve_assignments": len(data.get("valve_assignments") or []),
+        "pipe_schedule": len(data.get("pipe_schedule") or []),
+        "pt_ratings": len(data.get("pt_ratings") or []),
+        "flanges": len(data.get("flanges") or []),
+        "vds_entries_evicted": evicted,
+        "synced_at": datetime.now(timezone.utc).isoformat(),
+    }

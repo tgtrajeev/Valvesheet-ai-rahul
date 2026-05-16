@@ -1816,17 +1816,17 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         data.pop("spring_material", None)
 
     # ── Per-VDS PMS override (PMS_PDF.pdf is authoritative) ─────────────────
-    # Reads pms_vds_datasheets.json (the 745-record appendix) and overlays it
-    # onto the rule-derived output. Mirrors app/engine/rule_engine.py.
+    # Policy: use appendix data only for VDS codes that have an appendix record
+    # (existing 745 codes). New classes from PMS Generator have no appendix
+    # entry — those codes naturally synthesize from reference tables + rules.
+    # Class-level fields (size_range, pressure_class, design_pressure, etc.)
+    # always come from live PMS class data, never appendix.
     #
     # SWITCH: env var DATASHEET_USE_APPENDIX_OVERRIDE
-    #   "0" / unset (default) → appendix override DISABLED. All fields come
-    #     from class PMS (pms_extracted.json) + reference tables + rules.
-    #     User edits to PMS class sync reflect immediately.
-    #   "1" / "true" / "on" → appendix override ENABLED. Restores prior
-    #     behavior for material/test/marking/construction fields. Class-level
-    #     fields are always derived from PMS regardless of this flag.
-    _appendix_flag = (os.environ.get("DATASHEET_USE_APPENDIX_OVERRIDE", "0") or "0").strip().lower()
+    #   "1" / unset (default) → appendix override ENABLED. Existing codes
+    #     get rich appendix material/construction data. New codes synthesize.
+    #   "0" → appendix override DISABLED. Forces synthesis path for all codes.
+    _appendix_flag = (os.environ.get("DATASHEET_USE_APPENDIX_OVERRIDE", "1") or "1").strip().lower()
     _use_appendix = _appendix_flag in ("1", "true", "on", "yes")
     try:
         _gvds = get_global_vds_loader() if _use_appendix else None

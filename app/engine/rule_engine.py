@@ -1782,23 +1782,26 @@ def generate_datasheet(
         data.pop("spring_material", None)
 
     # ── Per-VDS PMS override (PMS_PDF.pdf is authoritative) ─────────────────
-    # Reads pms_vds_datasheets.json (the 745-record appendix) and overlays it
-    # onto the rule-derived output.
+    # Policy: use appendix data only for VDS codes that have an appendix record
+    # (the existing 745 codes from project PMS_PDF). For new classes coming
+    # from PMS Generator (PROJ1, etc.) there is no appendix entry — those
+    # codes naturally fall through to synthesis (reference tables + rules +
+    # standards PDFs), which is what we want.
+    #
+    # Class-level fields (size_range, pressure_class, design_pressure,
+    # corrosion_allowance, sour_service, end_connections, hydrotest_shell/
+    # closure) are NEVER taken from the appendix — they always derive from
+    # the live PMS class data so user edits to PMS sync reflect immediately.
     #
     # SWITCH: env var DATASHEET_USE_APPENDIX_OVERRIDE
-    #   "0" / "false" / "off" / unset → appendix override DISABLED (default).
-    #     All fields come from class-level PMS (pms_extracted.json) + reference
-    #     tables (pms_reference_tables.json) + rule engine. User edits to PMS
-    #     class sync reflect immediately in agent output. Material output is
-    #     category-derived only — valve-type overrides like butterfly→SS316
-    #     and coating callouts (XYLAR/XYLAN) are not produced until the
-    #     synthesis path is extended.
-    #   "1" / "true" / "on" → appendix override ENABLED. Restores the prior
-    #     behavior: the 745 appendix records win for material/test/marking/
-    #     construction fields. Class-level fields (size_range, pressure_class,
-    #     etc.) still come from PMS — those have been removed from _direct.
+    #   "1" / "true" / "on" / unset → appendix override ENABLED (default).
+    #     Existing codes get rich appendix data for materials/coatings/
+    #     construction. New codes synthesize automatically (no appendix hit).
+    #   "0" / "false" / "off" → appendix override DISABLED entirely. Forces
+    #     every code through the synthesis path. Use for testing parity
+    #     between synthesis and appendix.
     _pms_vds_overrides: dict[str, str] = {}
-    _appendix_flag = (os.environ.get("DATASHEET_USE_APPENDIX_OVERRIDE", "0") or "0").strip().lower()
+    _appendix_flag = (os.environ.get("DATASHEET_USE_APPENDIX_OVERRIDE", "1") or "1").strip().lower()
     _use_appendix = _appendix_flag in ("1", "true", "on", "yes")
     try:
         _gvds = get_global_vds_loader() if _use_appendix else None
