@@ -349,6 +349,21 @@ class KnowledgeBase:
         pc = spec_code.upper().strip()
         return any(s.piping_class.upper() == pc for s in self.specs.values())
 
+    def evict_piping_class(self, spec_code: str) -> int:
+        """Remove every cached VDS entry for a piping class.
+
+        Called after a PMS class is re-synced from PMS Generator so the next
+        chat request triggers a fresh `pms_index_builder.build_and_register`.
+        Returns the number of entries removed.
+        """
+        pc = spec_code.upper().strip()
+        to_drop = [code for code, spec in self.specs.items() if spec.piping_class.upper() == pc]
+        for code in to_drop:
+            del self.specs[code]
+        if to_drop:
+            self._piping_classes = sorted(set(s.piping_class for s in self.specs.values()))
+        return len(to_drop)
+
     def add_entries(self, new_entries: dict[str, dict]) -> int:
         """Inject new VDS entries into the in-memory index without re-reading file.
 
