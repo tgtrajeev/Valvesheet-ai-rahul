@@ -571,6 +571,16 @@ async def sync_from_generator(spec_code: str):
     if data is None:
         raise HTTPException(404, f"No PMS row for spec_code '{pc}' in PMS Generator DB")
 
+    # Demo / debugging aid — log the transformed PMS so reviewers can see
+    # exactly what flowed from PMS Generator into Valvesheet AI.
+    import json as _json
+    logger.info(
+        "\n========== Synced PMS from PMS Generator: %s ==========\n%s\n========== End %s ==========",
+        pc,
+        _json.dumps(data, indent=2, ensure_ascii=False, default=str),
+        pc,
+    )
+
     refresh_pms_loader()
     evicted = get_knowledge_base().evict_piping_class(pc)
 
