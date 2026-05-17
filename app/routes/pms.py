@@ -30,7 +30,13 @@ from ..pms.xlsx_parser import parse_xlsx
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/pms", tags=["pms"])
 
-_SPEC_CODE_RE = re.compile(r"^([A-G]\d+[LN]*|T\d+[A-C]?)$", re.I)
+# Permissive class-code matcher. PMS Generator's §5.5 naming rules can emit
+# any letter + digit(s) + optional letter suffix (e.g. A1, G2N, T2N, T80A,
+# A1LN, projects' custom PROJ1). Anything PMS Generator can compute should
+# be accepted here — class-code-specific gating belongs in business logic,
+# not in input validation. Kept letters-only-after-the-first-letter to
+# block path traversal / injection.
+_SPEC_CODE_RE = re.compile(r"^[A-Z][A-Z0-9]{0,9}$", re.I)
 _DEV_PROJECT_ID = "fpso-albacora"
 
 

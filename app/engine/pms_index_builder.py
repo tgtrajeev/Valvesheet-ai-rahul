@@ -132,8 +132,14 @@ def _material_category(
     if "316" in md or "stainless" in md:
         return "SS316L_NACE" if nace_flag else "SS316L"
 
+    # Titanium — no dedicated reference-table category yet, fall back to
+    # SS316L (closest corrosion-resistant alloy in tables). Marked so future
+    # extension can add a TITANIUM category without touching this branch.
+    if "titanium" in md or "ti gr" in md or "asme b 367" in md or "asme b367" in md:
+        return "SS316L"
+
     # Galvanized with SS valve body
-    if ("galvaniz" in md or "galv" in md) and ("stainless" in md or "316" in md):
+    if ("galvaniz" in md or "galv" in md) and ("stainless" in md or "316" in md or "ss" in md):
         return "GALV_SS_BODY"
     # Galvanized plain
     if "galvaniz" in md or "galv" in md:
@@ -155,9 +161,18 @@ def _material_category(
     if "cpvc" in md or "chlorinated pvc" in md:
         return "CPVC"
 
+    # LTCS — Low-Temperature Carbon Steel. Reference tables only have
+    # LTCS_NACE; treat plain LTCS as LTCS_NACE so cold-service grades
+    # (A350 LF2 etc.) are emitted instead of degrading to CS room-temp
+    # grades. This is safe: LTCS_NACE specs are a superset of LTCS.
+    if "ltcs" in md or "lt cs" in md or "low temp" in md or "a350" in md or "lf2" in md:
+        return "LTCS_NACE"
+
     # Carbon Steel (default)
     if lt_flag and nace_flag:
         return "LTCS_NACE"
+    if lt_flag:
+        return "LTCS_NACE"  # safer than plain CS for cold service
     if nace_flag:
         return "CS_NACE"
     return "CS"
