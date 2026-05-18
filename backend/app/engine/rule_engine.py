@@ -102,6 +102,8 @@ def _material_category_from_description(description: str | None, is_nace: bool) 
         return "DSS"
     if "316" in text or "stainless" in text or "ss" in text:
         return "SS316L_NACE" if is_nace else "SS316L"
+    if "titanium" in text or "ti gr" in text or "b265" in text or "b367" in text:
+        return "TITANIUM"
     if "galv" in text:
         return "GALV_SS_BODY" if "ss" in text or "stainless" in text else "GALV"
     if "ltcs" in text or "low temperature carbon" in text:
@@ -127,6 +129,7 @@ BODY_MATERIAL = {
     "SDSS_NACE":    "Super Duplex Stainless Steel UNS S32750, ASTM A182 Gr. F53 (NACE MR0175 / ISO 15156)",
     "GALV":         "Carbon Steel, ASTM A216 Gr. WCB (Hot-Dip Galvanized per ASTM A123/A153)",
     "GALV_SS_BODY": "Stainless Steel, ASTM A351 Gr. CF3M (Valve body SS - piping CS galvanized)",
+    "TITANIUM":     "Titanium Grade 2 — ASTM B265 Gr. 2 with 3mm Ti weld deposit on CS backing / ASTM B367 Gr. C-2 (cast), per ASME B16.34 Group 4.2",
     "CUNI":         "90/10 Cu-Ni Alloy UNS C70600 (EEMUA 234)",
     "COPPER":       "Bronze, ASTM B61 UNS C92200",
     "GRE":          "NAB (Nickel Aluminium Bronze) - Valve body for GRE piping",

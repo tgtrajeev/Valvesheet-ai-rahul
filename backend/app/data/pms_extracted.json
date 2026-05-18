@@ -1636,15 +1636,6 @@
         "spec_code": "E1",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E1",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE1J",
           "BLFPE1J"
         ],
@@ -2085,15 +2076,6 @@
         "spec_code": "F1",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F1",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF1J",
           "BLFPF1J"
         ],
@@ -2530,15 +2512,6 @@
       "gasket_spec": "ASME B 16.20, OCT ring of Soft Iron with Max. Hardness of 90 BHN, HDG"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G1",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G1",
         "valve_type": "ball",
@@ -4334,15 +4307,6 @@
         "spec_code": "E1N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E1N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE1NJ",
           "BLFPE1NJ"
         ],
@@ -4784,15 +4748,6 @@
         "spec_code": "F1N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F1N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF1NJ",
           "BLFPF1NJ"
         ],
@@ -5229,15 +5184,6 @@
       "gasket_spec": "ASME B 16.20, OCT ring of Soft Iron with Max. Hardness of 90 BHN, HDG"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G1N",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G1N",
         "valve_type": "ball",
@@ -7332,15 +7278,6 @@
         "spec_code": "E2N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 1.0,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E2N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE2NJ",
           "BLFPE2NJ"
         ],
@@ -8103,15 +8040,6 @@
       "gasket_spec": "ASME B 16.20, OCT ring of Soft Iron with Max. Hardness of 90 BHN, HDG"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G2N",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 1.0,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G2N",
         "valve_type": "ball",
@@ -9902,15 +9830,6 @@
         "spec_code": "E1L",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E1L",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE1LJ",
           "BLFPE1LJ"
         ],
@@ -10352,15 +10271,6 @@
         "spec_code": "F1L",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F1L",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF1LJ",
           "BLFPF1LJ"
         ],
@@ -10797,15 +10707,6 @@
       "gasket_spec": "ASME B 16.20, OCT ring of Soft Iron with Max. Hardness of 90 BHN, HDG"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G1L",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G1L",
         "valve_type": "gate",
@@ -12573,15 +12474,6 @@
         "spec_code": "E1LN",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E1LN",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE1LNJ",
           "BLFPE1LNJ"
         ],
@@ -13023,15 +12915,6 @@
         "spec_code": "F1LN",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F1LN",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF1LNJ",
           "BLFPF1LNJ"
         ],
@@ -13468,15 +13351,6 @@
       "gasket_spec": "ASME B 16.20, OCT ring of Soft Iron with Max. Hardness of 90 BHN, HDG"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G1LN",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G1LN",
         "valve_type": "ball",
@@ -15208,15 +15082,6 @@
         "spec_code": "E2LN",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 1.0,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E2LN",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE2LNJ",
           "BLFPE2LNJ"
         ],
@@ -15623,15 +15488,6 @@
       "gasket_spec": "ASME B 16.20, OCT ring of Soft Iron with Max. Hardness of 90 BHN, HDG"
     },
     "valve_assignments": [
-      {
-        "spec_code": "F2LN",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 1.0,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "F2LN",
         "valve_type": "ball",
@@ -16065,15 +15921,6 @@
       "gasket_spec": "ASME B 16.20, OCT ring of Soft Iron with Max. Hardness of 90 BHN, HDG"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G2LN",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 0.75
-      },
       {
         "spec_code": "G2LN",
         "valve_type": "ball",
@@ -20351,15 +20198,6 @@
         "spec_code": "E10",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E10",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE10J",
           "BLFPE10J"
         ],
@@ -20846,15 +20684,6 @@
         "spec_code": "F10",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F10",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF10J",
           "BLFPF10J"
         ],
@@ -21227,15 +21056,6 @@
       "gasket_spec": "OCT Ring, SS316L, Max 160 BHN Hardness, ASME B16.20"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G10",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G10",
         "valve_type": "ball",
@@ -22920,15 +22740,6 @@
         "spec_code": "E10N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E10N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE10NJ",
           "BLFPE10NJ"
         ],
@@ -23360,15 +23171,6 @@
         "spec_code": "F10N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F10N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF10NJ",
           "BLFPF10NJ"
         ],
@@ -23730,15 +23532,6 @@
       "gasket_spec": "OCT Ring, SS316L, Max 160 BHN Hardness, ASME B16.20"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G10N",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G10N",
         "valve_type": "ball",
@@ -25542,15 +25335,6 @@
         "spec_code": "E20",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E20",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE20NJ",
           "BLFPE20NJ"
         ],
@@ -25982,15 +25766,6 @@
         "spec_code": "F20",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F20",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF20J",
           "BLFPF20J"
         ],
@@ -26385,15 +26160,6 @@
       "gasket_spec": "OCT Ring, DSS UNS S31803, Max 22 HRC Hardness, ASME B16.20"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G20",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G20",
         "valve_type": "ball",
@@ -28209,15 +27975,6 @@
         "spec_code": "E20N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E20N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE20NJ",
           "BLFPE20NJ"
         ],
@@ -28649,15 +28406,6 @@
         "spec_code": "F20N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F20N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF20NJ",
           "BLFPF20NJ"
         ],
@@ -29052,15 +28800,6 @@
       "gasket_spec": "OCT Ring, DSS UNS S31803, Max 22 HRC Hardness, ASME B16.20"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G20N",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G20N",
         "valve_type": "ball",
@@ -30891,15 +30630,6 @@
         "spec_code": "E25",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E25",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE25J",
           "BLFPE25J"
         ],
@@ -31332,15 +31062,6 @@
         "spec_code": "F25",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F25",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF25J",
           "BLFPF25J"
         ],
@@ -31768,15 +31489,6 @@
       "gasket_spec": "OCT Ring, SDSS UNS S32750, Max 22 HRC Hardness, ASME B16.20"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G25",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G25",
         "valve_type": "ball",
@@ -33612,15 +33324,6 @@
         "spec_code": "E25N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "E25N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPE25NJ",
           "BLFPE25NJ"
         ],
@@ -34052,15 +33755,6 @@
         "spec_code": "F25N",
         "valve_type": "ball",
         "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
-      {
-        "spec_code": "F25N",
-        "valve_type": "ball",
-        "vds_codes": [
           "BLRPF25NJ",
           "BLFPF25NJ"
         ],
@@ -34488,15 +34182,6 @@
       "gasket_spec": "OCT Ring, SDSS UNS S32750, Max 22 HRC Hardness, ASME B16.20"
     },
     "valve_assignments": [
-      {
-        "spec_code": "G25N",
-        "valve_type": "ball",
-        "vds_codes": [
-          "USE GATE VALVE"
-        ],
-        "nps_min": 0.5,
-        "nps_max": 1.5
-      },
       {
         "spec_code": "G25N",
         "valve_type": "ball",
@@ -35602,7 +35287,8 @@
         "spec_code": "A50",
         "valve_type": "ball",
         "vds_codes": [
-          "NAB"
+          "BLFTA50F",
+          "BLRTA50F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -35611,7 +35297,7 @@
         "spec_code": "A50",
         "valve_type": "gate",
         "vds_codes": [
-          "NAB"
+          "GAYMA50F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -35620,7 +35306,7 @@
         "spec_code": "A50",
         "valve_type": "globe",
         "vds_codes": [
-          "NAB"
+          "GLYMA50F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -35629,7 +35315,9 @@
         "spec_code": "A50",
         "valve_type": "check",
         "vds_codes": [
-          "NAB"
+          "CHPMA50F",
+          "CHSMA50F",
+          "CHDMA50F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -35638,7 +35326,7 @@
         "spec_code": "A50",
         "valve_type": "butterfly",
         "vds_codes": [
-          "NAB"
+          "BFWTA50F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -36186,7 +35874,8 @@
         "spec_code": "A52",
         "valve_type": "ball",
         "vds_codes": [
-          "NAB"
+          "BLFTA52F",
+          "BLRTA52F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -36195,7 +35884,7 @@
         "spec_code": "A52",
         "valve_type": "gate",
         "vds_codes": [
-          "NAB"
+          "GAYMA52F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -36204,7 +35893,7 @@
         "spec_code": "A52",
         "valve_type": "globe",
         "vds_codes": [
-          "NAB"
+          "GLYMA52F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -36213,7 +35902,9 @@
         "spec_code": "A52",
         "valve_type": "check",
         "vds_codes": [
-          "NAB"
+          "CHPMA52F",
+          "CHSMA52F",
+          "CHDMA52F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -36222,7 +35913,7 @@
         "spec_code": "A52",
         "valve_type": "butterfly",
         "vds_codes": [
-          "NAB"
+          "BFWTA52F"
         ],
         "nps_min": 1.0,
         "nps_max": 40.0
@@ -39297,5 +38988,342 @@
     ],
     "nps_sizes": [],
     "index_row": null
+  },
+  "T80": {
+    "spec_code": "T80",
+    "header": {
+      "spec_code": "T80",
+      "pressure_rating": "-",
+      "material_description": "SS 316 / 316L (Tubing)",
+      "corrosion_allowance": "NIL",
+      "mill_tolerance": "12.5%",
+      "design_code": "ASME B 31.3",
+      "service": "Chemical Injection (Except Hypochlorite)",
+      "branch_chart": "",
+      "nace_flag": false,
+      "lt_flag": false,
+      "valve_rating_label": "10000# (69 Mpa)",
+      "design_pressure_barg": 125.0,
+      "hydrotest_pressure_barg": 187.5
+    },
+    "pt_ratings": [
+      {
+        "spec_code": "T80",
+        "temperature_c": 0.0,
+        "max_pressure_barg": 125.0
+      },
+      {
+        "spec_code": "T80",
+        "temperature_c": 60.0,
+        "max_pressure_barg": 116.0
+      }
+    ],
+    "pipe_schedule": [
+      {
+        "spec_code": "T80",
+        "nps_inch": 0.5,
+        "od_mm": 12.7,
+        "schedule_val": "-",
+        "wall_thickness_mm": 2.11,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 Type 316/316L SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "PE"
+      },
+      {
+        "spec_code": "T80",
+        "nps_inch": 0.75,
+        "od_mm": 19.05,
+        "schedule_val": "-",
+        "wall_thickness_mm": 2.77,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 Type 316/316L SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "PE"
+      },
+      {
+        "spec_code": "T80",
+        "nps_inch": 1.0,
+        "od_mm": 25.4,
+        "schedule_val": "-",
+        "wall_thickness_mm": 3.38,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 Type 316/316L SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "PE"
+      },
+      {
+        "spec_code": "T80",
+        "nps_inch": 1.5,
+        "od_mm": 38.1,
+        "schedule_val": "-",
+        "wall_thickness_mm": 4.57,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 Type 316/316L SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "PE"
+      }
+    ],
+    "flanges": [
+      {
+        "spec_code": "T80",
+        "size_range": "0.5\"-1.5\"",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "flange_moc": "ASTM A 182 F 316L",
+        "flange_face": "10000# (69 Mpa)",
+        "flange_type": "Compression fitting to flanged connection",
+        "flange_std": "Compression fitting standard"
+      }
+    ],
+    "bolting_gaskets": {
+      "spec_code": "T80",
+      "stud_bolt_spec": "ASTM A 320 Gr. L7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "hex_nut_spec": "ASTM A 194 Gr. 7ML, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "gasket_spec": "OCT Ring, SS316L, Max 160 BHN Hardness, ASME B16.20"
+    },
+    "valve_assignments": [
+      {
+        "spec_code": "T80",
+        "valve_type": "BALL_INST",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "BLFPT80JT"
+        ],
+        "raw_cell_value": "BLFPT80JT",
+        "notes": null,
+        "valve_standard": "ISO 17292"
+      },
+      {
+        "spec_code": "T80",
+        "valve_type": "CHECK_PISTON",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMT80JT"
+        ],
+        "raw_cell_value": "CHPMT80JT",
+        "notes": null,
+        "valve_standard": "API STD 594 / BS 1868"
+      },
+      {
+        "spec_code": "T80",
+        "valve_type": "DBB_INST",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "DBFPT80JT"
+        ],
+        "raw_cell_value": "DBFPT80JT",
+        "notes": null,
+        "valve_standard": "API SPEC 6D"
+      },
+      {
+        "spec_code": "T80",
+        "valve_type": "NEEDLE_INST",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "NEIPT80JT"
+        ],
+        "raw_cell_value": "NEIPT80JT",
+        "notes": null,
+        "valve_standard": "Manufacturer Standard"
+      }
+    ],
+    "nps_sizes": [
+      {
+        "col": 2,
+        "nps_inch": 0.5
+      },
+      {
+        "col": 3,
+        "nps_inch": 0.75
+      },
+      {
+        "col": 4,
+        "nps_inch": 1.0
+      },
+      {
+        "col": 5,
+        "nps_inch": 1.5
+      }
+    ],
+    "index_row": {
+      "spec_code": "T80",
+      "hydrotest_barg": 187.5,
+      "design_pressure_barg": 125.0,
+      "min_temp_c": 0.0,
+      "pt_breakpoints": [
+        {
+          "temp_c": 60.0,
+          "press_barg": 116.0
+        }
+      ]
+    }
+  },
+  "T90": {
+    "spec_code": "T90",
+    "header": {
+      "spec_code": "T90",
+      "pressure_rating": null,
+      "material_description": "6 MO Tubing",
+      "corrosion_allowance": "NIL",
+      "mill_tolerance": null,
+      "design_code": "ASME B 31.3",
+      "service": "Chemical Injection (Except Hypochlorite)",
+      "branch_chart": null,
+      "nace_flag": false,
+      "lt_flag": false,
+      "valve_rating_label": null,
+      "design_pressure_barg": 125.0,
+      "hydrotest_pressure_barg": 174.0
+    },
+    "pt_ratings": [
+      {
+        "spec_code": "T90",
+        "temperature_c": 0.0,
+        "max_pressure_barg": 125.0
+      },
+      {
+        "spec_code": "T90",
+        "temperature_c": 60.0,
+        "max_pressure_barg": 116.0
+      }
+    ],
+    "pipe_schedule": [
+      {
+        "spec_code": "T90",
+        "nps_inch": 0.5,
+        "od_mm": 12.7,
+        "schedule_val": "-",
+        "wall_thickness_mm": 2.11,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 (UNS S31254) SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "Compression Fitting"
+      },
+      {
+        "spec_code": "T90",
+        "nps_inch": 0.75,
+        "od_mm": 19.05,
+        "schedule_val": "-",
+        "wall_thickness_mm": 2.77,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 (UNS S31254) SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "Compression Fitting"
+      },
+      {
+        "spec_code": "T90",
+        "nps_inch": 1.0,
+        "od_mm": 25.4,
+        "schedule_val": "-",
+        "wall_thickness_mm": 3.38,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 (UNS S31254) SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "Compression Fitting"
+      },
+      {
+        "spec_code": "T90",
+        "nps_inch": 1.5,
+        "od_mm": 38.1,
+        "schedule_val": "-",
+        "wall_thickness_mm": 4.57,
+        "pipe_type": "Seamless",
+        "pipe_moc": "ASTM A269 (UNS S31254) SML, Annealed, Hardness <= 90 HRB",
+        "pipe_std": "ASME B 36.19M",
+        "ends": "Compression Fitting"
+      }
+    ],
+    "flanges": [],
+    "bolting_gaskets": {
+      "spec_code": "T90",
+      "stud_bolt_spec": "ASTM A 320 Gr. L7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "hex_nut_spec": "ASTM A 194 Gr. 7ML, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "gasket_spec": "OCT Ring, SS316L, Max 160 BHN Hardness, ASME B16.20"
+    },
+    "valve_assignments": [
+      {
+        "spec_code": "T90",
+        "valve_type": "BALL_INST",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "BLFPT90JT"
+        ],
+        "raw_cell_value": "BLFPT90JT",
+        "notes": null,
+        "valve_standard": "ISO 17292"
+      },
+      {
+        "spec_code": "T90",
+        "valve_type": "CHECK_PISTON",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "CHPMT90JT"
+        ],
+        "raw_cell_value": "CHPMT90JT",
+        "notes": null,
+        "valve_standard": "API STD 594 / BS 1868"
+      },
+      {
+        "spec_code": "T90",
+        "valve_type": "DBB_INST",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "DBFPT90JT"
+        ],
+        "raw_cell_value": "DBFPT90JT",
+        "notes": null,
+        "valve_standard": "API SPEC 6D"
+      },
+      {
+        "spec_code": "T90",
+        "valve_type": "NEEDLE_INST",
+        "nps_min": 0.5,
+        "nps_max": 1.5,
+        "vds_codes": [
+          "NEIPT90JT"
+        ],
+        "raw_cell_value": "NEIPT90JT",
+        "notes": null,
+        "valve_standard": "Manufacturer Standard"
+      }
+    ],
+    "nps_sizes": [
+      {
+        "col": 2,
+        "nps_inch": 0.5
+      },
+      {
+        "col": 3,
+        "nps_inch": 0.75
+      },
+      {
+        "col": 4,
+        "nps_inch": 1.0
+      },
+      {
+        "col": 5,
+        "nps_inch": 1.5
+      }
+    ],
+    "index_row": {
+      "spec_code": "T90",
+      "hydrotest_barg": 174.0,
+      "design_pressure_barg": 125.0,
+      "min_temp_c": 0.0,
+      "pt_breakpoints": [
+        {
+          "temp_c": 60.0,
+          "press_barg": 116.0
+        }
+      ]
+    }
   }
 }

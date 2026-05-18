@@ -111,6 +111,8 @@ def _material_category_from_description(description: str | None, is_nace: bool) 
         return "DSS"
     if "316" in text or "stainless" in text or "ss" in text:
         return "SS316L_NACE" if is_nace else "SS316L"
+    if "titanium" in text or "ti gr" in text or "b265" in text or "b367" in text:
+        return "TITANIUM"
     if "galv" in text:
         return "GALV_SS_BODY" if "ss" in text or "stainless" in text else "GALV"
     if "ltcs" in text or "low temperature carbon" in text:

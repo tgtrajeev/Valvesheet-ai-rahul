@@ -34,6 +34,9 @@ def _bolt_base(material_category: str) -> str:
         return "ASTM A 320 Gr. L7M  (per API 6D §6.7 — austenitic / impact tested)"
     if material_category in ("DSS", "SDSS", "SDSS_NACE"):
         return "ASTM A 453 Gr. 660  (per API 6D §6.7 — duplex / Inconel-grade fastener)"
+    if material_category == "TITANIUM":
+        return ("ASTM A 193 Gr. B7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm "
+                "(per project PMS B70 bolting spec — galvanic isolation from titanium body)")
     # default = carbon steel
     return "ASTM A 193 Gr. B7M  (per API 6D §6.7 + NACE MR0175 hardness limit HRC ≤ 35)"
 
@@ -43,6 +46,9 @@ def _nut_base(material_category: str) -> str:
         return "ASTM A 194 Gr. 7ML  (per API 6D §6.6 impact testing requirement)"
     if material_category in ("DSS", "SDSS", "SDSS_NACE"):
         return "ASTM A 453 Gr. 660  (duplex)"
+    if material_category == "TITANIUM":
+        return ("ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm "
+                "(per project PMS B70 bolting spec)")
     return "ASTM A 194 Gr. 2HM  (per API 6D §6.7)"
 
 
@@ -59,6 +65,11 @@ def _body_base(material_category: str) -> str:
         return "Super-duplex SS UNS S32750 per ASME B16.34"
     if material_category == "CUNI":
         return "Group 3 (copper alloy) — ASTM B148 C95800 (Ni-Al-bronze)"
+    if material_category == "TITANIUM":
+        return ("Group 4.2 (Titanium alloys) per ASME B16.34 §6.1 — "
+                "ASTM B367 Gr. C-2 (cast) / ASTM B265 Gr. 2 with 3mm Titanium weld deposit on CS backing (≤ 1.5\"), "
+                "ASTM A105N with 3mm Titanium weld deposit / ASTM B265 Gr. 2 (2\" and above) "
+                "per project PMS B70 materials section")
     return f"Material per ASME B16.34 §6.1 selection for {material_category}"
 
 
@@ -71,6 +82,8 @@ def _trim_base(material_category: str) -> str:
         return "Trim A182 F60 (matched to duplex body per API 615 §6.2)"
     if material_category in ("SDSS", "SDSS_NACE"):
         return "Trim A182 F53 (matched to super-duplex body per API 615 §6.2)"
+    if material_category == "TITANIUM":
+        return "Titanium Grade 2 (ASTM B265 Gr. 2) trim — matched to body per API 615 §6.2 corrosion resistance"
     return f"Trim corrosion-resistance ≥ body per API 615 §6.2 (category {material_category})"
 
 

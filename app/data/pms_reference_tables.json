@@ -22,7 +22,8 @@
       "GRE_BONSTRAND":{"value": "ASTM B61 UNS C92200",                                                                                                                    "source": "PMS_PDF.pdf §7.1 (GRE Bondstrand class)"},
       "CPVC":         {"value": "ASTM B61 UNS C92200",                                                                                                                    "source": "PMS_PDF.pdf §7.1 (CPVC class metallic valves)"},
       "TUBING_SS":    {"value": "ASTM A182 F316L",                                                                                                                        "source": "PMS_PDF.pdf §7.2 (SS instrument tubing)"},
-      "TUBING_6MO":   {"value": "ASTM A182 F316L",                                                                                                                        "source": "PMS_PDF.pdf §7.2 (6Mo instrument tubing — fallback grade)"}
+      "TUBING_6MO":   {"value": "ASTM A182 F316L",                                                                                                                        "source": "PMS_PDF.pdf §7.2 (6Mo instrument tubing — fallback grade)"},
+      "TITANIUM":     {"value": "ASTM A105N RF with 3mm Titanium weld deposit (≤ 1.5\"), ASTM A105N with 3mm Titanium weld deposit / ASTM B265 Gr. 2 (2\" and above) per project PMS B70 — ASME B16.34 Group 4.2", "source": "PMS_PDF.pdf §7.1 (Titanium lined class B70 — Group 4.2 per project PMS)"}
     },
     "ball_material": {
       "CS":           {"value": "Forged - ASTM A182-F316",       "source": "PMS_PDF.pdf §7.8 Seat And Seal (ball trim 316)"},
@@ -41,7 +42,8 @@
       "GRE_BONSTRAND":{"value": "NAB UNS C95800",                "source": "PMS_PDF.pdf §7.1"},
       "CPVC":         {"value": "NAB UNS C95800",                "source": "PMS_PDF.pdf §7.1"},
       "TUBING_SS":    {"value": "Forged - ASTM A182-F316L",      "source": "PMS_PDF.pdf §7.2 (SS tubing ball)"},
-      "TUBING_6MO":   {"value": "Forged - 6Mo UNS S31254",       "source": "PMS_PDF.pdf §7.2 (6Mo tubing ball)"}
+      "TUBING_6MO":   {"value": "Forged - 6Mo UNS S31254",       "source": "PMS_PDF.pdf §7.2 (6Mo tubing ball)"},
+      "TITANIUM":     {"value": "Titanium Grade 2 — ASTM B265 Gr. 2",  "source": "PMS_PDF.pdf §7.1 (Titanium class B70 ball trim — Group 4.2 per project PMS)"}
     },
     "stem_material": {
       "CS":           {"value": "Forged - ASTM A182 F316",       "source": "PMS_PDF.pdf §7.8 (stem trim)"},
@@ -60,7 +62,8 @@
       "GRE_BONSTRAND":{"value": "NAB UNS C95800",                "source": "PMS_PDF.pdf §7.1"},
       "CPVC":         {"value": "NAB UNS C95800",                "source": "PMS_PDF.pdf §7.1"},
       "TUBING_SS":    {"value": "Forged - ASTM A182 F316L",      "source": "PMS_PDF.pdf §7.2"},
-      "TUBING_6MO":   {"value": "Forged - 6Mo UNS S31254",       "source": "PMS_PDF.pdf §7.2"}
+      "TUBING_6MO":   {"value": "Forged - 6Mo UNS S31254",       "source": "PMS_PDF.pdf §7.2"},
+      "TITANIUM":     {"value": "Titanium Grade 2 — ASTM B265 Gr. 2",  "source": "PMS_PDF.pdf §7.1 (Titanium class B70 stem — matched to body)"}
     },
     "gland_material": {
       "CS":           {"value": "Forged - ASTM A182 F6A CL 2",   "source": "PMS_PDF.pdf §7.7 Packing And Gaskets (gland)"},
@@ -79,7 +82,8 @@
       "GRE_BONSTRAND":{"value": "NAB UNS C95800",                "source": "PMS_PDF.pdf §7.1"},
       "CPVC":         {"value": "NAB UNS C95800",                "source": "PMS_PDF.pdf §7.1"},
       "TUBING_SS":    {"value": "Forged - ASTM A182 F316L",      "source": "PMS_PDF.pdf §7.2"},
-      "TUBING_6MO":   {"value": "Forged - 6Mo UNS S31254",       "source": "PMS_PDF.pdf §7.2"}
+      "TUBING_6MO":   {"value": "Forged - 6Mo UNS S31254",       "source": "PMS_PDF.pdf §7.2"},
+      "TITANIUM":     {"value": "Titanium Grade 2 — ASTM B265 Gr. 2",  "source": "PMS_PDF.pdf §7.1 (Titanium class B70 gland — matched to body)"}
     },
     "gland_packing": {
       "CS":           {"value": "Flexible graphite, asbestos-free", "source": "PMS_PDF.pdf §7.7 Packing And Gaskets (asbestos-free) + API 615 §6.4"},
@@ -98,7 +102,8 @@
       "GRE_BONSTRAND":{"value": "Flexible graphite, asbestos-free", "source": "PMS_PDF.pdf §7.7"},
       "CPVC":         {"value": "Flexible graphite, asbestos-free", "source": "PMS_PDF.pdf §7.7"},
       "TUBING_SS":    {"value": "Flexible graphite, asbestos-free", "source": "PMS_PDF.pdf §7.7"},
-      "TUBING_6MO":   {"value": "Flexible graphite, asbestos-free", "source": "PMS_PDF.pdf §7.7"}
+      "TUBING_6MO":   {"value": "Flexible graphite, asbestos-free", "source": "PMS_PDF.pdf §7.7"},
+      "TITANIUM":     {"value": "Flexible graphite, asbestos-free",     "source": "PMS_PDF.pdf §7.7 (Titanium class B70 — asbestos-free packing)"}
     },
     "bolt_material": {
       "CS":           {"value": "ASTM A 193 Gr. B7M",                                     "source": "PMS_PDF.pdf §7.6 Bolting (CS standard)"},
@@ -117,7 +122,8 @@
       "GRE_BONSTRAND":{"value": "ASTM A 193 Gr. B7M",                                     "source": "PMS_PDF.pdf §7.6"},
       "CPVC":         {"value": "ASTM A 193 Gr. B7 HDG per ASTM A153",                    "source": "PMS_PDF.pdf §7.6 (HDG for CPVC)"},
       "TUBING_SS":    {"value": "ASTM A 320 Gr. L7M",                                     "source": "PMS_PDF.pdf §7.6"},
-      "TUBING_6MO":   {"value": "ASTM A 320 Gr. L7M",                                     "source": "PMS_PDF.pdf §7.6"}
+      "TUBING_6MO":   {"value": "ASTM A 320 Gr. L7M",                                     "source": "PMS_PDF.pdf §7.6"},
+      "TITANIUM":     {"value": "ASTM A 193 Gr. B7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm", "source": "PMS_PDF.pdf §7.6 (B70 Titanium class bolting — galvanic isolation coating per project PMS)"}
     },
     "pressure_class": {
       "A": {"value": "ASME B16.34 Class 150",                  "source": "PMS_PDF.pdf §6.1 (pressure class letter A — Class 150)"},
@@ -204,7 +210,8 @@
       "GRE_BONSTRAND":{"value": "ASTM A 194 Gr. 2HM",                                                                "source": "PMS_PDF.pdf §7.6"},
       "CPVC":         {"value": "ASTM A 194 Gr. 2H HDG per ASTM A153, with 3.2 mm steel + CPVC washer on both sides","source": "PMS_PDF.pdf §7.6 (HDG + insulator for CPVC)"},
       "TUBING_SS":    {"value": "ASTM A 194 Gr. 7ML",                                                                "source": "PMS_PDF.pdf §7.6"},
-      "TUBING_6MO":   {"value": "ASTM A 194 Gr. 7ML",                                                                "source": "PMS_PDF.pdf §7.6"}
+      "TUBING_6MO":   {"value": "ASTM A 194 Gr. 7ML",                                                                "source": "PMS_PDF.pdf §7.6"},
+      "TITANIUM":     {"value": "ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm", "source": "PMS_PDF.pdf §7.6 (B70 Titanium class nuts — galvanic isolation coating per project PMS)"}
     }
   }
 }

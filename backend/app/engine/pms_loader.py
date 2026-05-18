@@ -83,6 +83,40 @@ class PmsSpec:
     materials: PmsMaterials | None = None
 
 
+_MATERIAL_BODY_KEYWORDS = [
+    ("titanium", "ASTM A105N RF with 3mm Titanium weld deposit (≤ 1.5\"), ASTM A105N with 3mm Titanium weld deposit / ASTM B265 Gr. 2 (2\" and above) per ASME B16.34 Group 4.2"),
+    ("super duplex", "SDSS - UNS S32750, Forged - ASTM A182 F53 (1.5\" and below), Cast - ASTM A995 5A UNS J93404 (2\" and above)"),
+    ("sdss", "SDSS - UNS S32750, Forged - ASTM A182 F53 (1.5\" and below), Cast - ASTM A995 5A UNS J93404 (2\" and above)"),
+    ("duplex", "DSS - UNS S32205, Forged - ASTM A182 F60 (1.5\" and below), Cast - A995 4A UNS J92205 (2\" & Above)"),
+    ("dss", "DSS - UNS S32205, Forged - ASTM A182 F60 (1.5\" and below), Cast - A995 4A UNS J92205 (2\" & Above)"),
+    ("316", "ASTM A182 F316L (1.5\" and below), A351 CF3M (2\" and above)"),
+    ("stainless", "ASTM A182 F316L (1.5\" and below), A351 CF3M (2\" and above)"),
+    ("cu-ni", "ASTM B148 C95800"),
+    ("copper nickel", "ASTM B148 C95800"),
+    ("ltcs", "ASTM A350 LF2 (1.5\" & below), ASTM A352 LCC (2\" & Above)"),
+    ("carbon", "ASTM A105N (1.5\" and below), ASTM A105N/ASTM A216 WCB (2\" & Above)"),
+]
+
+
+def _synthesize_materials_backend(code: str, hdr: dict, bg_raw) -> "PmsMaterials | None":
+    mat_desc = (hdr.get("material_description") or "").lower()
+    bg = (bg_raw or {}) if isinstance(bg_raw, dict) else {}
+    body_mat = None
+    for keyword, val in _MATERIAL_BODY_KEYWORDS:
+        if keyword in mat_desc:
+            body_mat = val
+            break
+    if mat_desc.strip() in {"cs", "c.s."}:
+        body_mat = "ASTM A105N (1.5\" and below), ASTM A105N/ASTM A216 WCB (2\" & Above)"
+    if not body_mat:
+        return None
+    return PmsMaterials(
+        spec_code=code,
+        body_material=body_mat,
+        gland_packing=bg.get("gasket") or bg.get("gasket_spec") or None,
+    )
+
+
 class PmsLoader:
     """Singleton loader for PMS extracted data."""
 
@@ -174,6 +208,8 @@ class PmsLoader:
                 lever_handwheel=mat.get("lever_handwheel"),
                 asme_b1634_group=mat.get("asme_b1634_group"),
             )
+        else:
+            materials = _synthesize_materials_backend(code, hdr, bg_raw)
 
         return PmsSpec(
             spec_code=code,

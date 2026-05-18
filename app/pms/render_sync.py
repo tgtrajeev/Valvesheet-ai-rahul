@@ -11,8 +11,10 @@ After sync, the existing PmsLoader + rule engine + reference tables produce
 correct valvesheets for the newly added piping classes — no rule changes.
 
 Env vars (loaded from .env via dotenv):
-  PMS_GENERATOR_DATABASE_URL
-  VALVE_AGENT_DATABASE_URL
+  PMS_GENERATOR_DATABASE_URL — PMS Generator Render Postgres (read ``pms_cache``).
+  VALVE_AGENT_DATABASE_URL — optional; if unset, ``DATABASE_URL`` or
+    ``Settings.database_url`` is used so ``pms_sheets`` upserts hit the same DB
+    as the running agent (typical single-Postgres deployments).
 """
 from __future__ import annotations
 
@@ -33,18 +35,62 @@ logger = logging.getLogger(__name__)
 
 # ── DB URLs ────────────────────────────────────────────────────────────────
 
-def _generator_url() -> str:
-    url = os.environ.get("PMS_GENERATOR_DATABASE_URL")
+def _psycopg2_conn_uri(raw: str) -> str:
+    """Normalize SQLAlchemy/async DSNs to a libpq form psycopg2 accepts."""
+    url = (raw or "").strip()
     if not url:
-        raise RuntimeError("PMS_GENERATOR_DATABASE_URL is not set in .env")
+        return ""
+    url = url.replace("postgresql+asyncpg://", "postgresql://")
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
     return url
+
+
+def _generator_url() -> str:
+    load_dotenv()
+    candidates: list[str] = []
+    env_g = os.environ.get("PMS_GENERATOR_DATABASE_URL")
+    if env_g:
+        candidates.append(env_g)
+    try:
+        from ..config import settings
+
+        if getattr(settings, "pms_generator_database_url", ""):
+            candidates.append(settings.pms_generator_database_url)
+    except Exception:
+        pass
+    for raw in candidates:
+        u = _psycopg2_conn_uri(raw)
+        if u:
+            return u
+    raise RuntimeError("PMS_GENERATOR_DATABASE_URL is not set in .env")
 
 
 def _valve_agent_url() -> str:
-    url = os.environ.get("VALVE_AGENT_DATABASE_URL")
-    if not url:
-        raise RuntimeError("VALVE_AGENT_DATABASE_URL is not set in .env")
-    return url
+    """DSN for ``pms_sheets`` upserts (psycopg2). Uses agent DB by default."""
+    load_dotenv()
+    candidates: list[str] = []
+    for key in ("VALVE_AGENT_DATABASE_URL", "DATABASE_URL"):
+        v = os.environ.get(key)
+        if v:
+            candidates.append(v)
+    try:
+        from ..config import settings
+
+        if getattr(settings, "valve_agent_database_url", ""):
+            candidates.append(settings.valve_agent_database_url)
+        if getattr(settings, "database_url", ""):
+            candidates.append(settings.database_url)
+    except Exception:
+        pass
+    for raw in candidates:
+        u = _psycopg2_conn_uri(raw)
+        if u:
+            return u
+    raise RuntimeError(
+        "No PostgreSQL URL for pms_sheets sync. Set VALVE_AGENT_DATABASE_URL or "
+        "DATABASE_URL in .env (both may point at the same database as the agent)."
+    )
 
 
 # ── Translator: pms_cache.response_json → pms_extracted.json shape ────────
@@ -244,6 +290,73 @@ def _build_index_row(pressure_temperature: dict, hydrotest_pressure: str | float
     }
 
 
+def _build_materials_section(pc: str, material_description: str, bng: dict) -> Optional[dict]:
+    """Build the 'materials' section from PMS header + bolting_gaskets at sync time.
+
+    This ensures that when a PMS class is synced from the PMS Generator, the
+    resolved material specs are stored directly in the pms_extracted.json /
+    pms_sheets DB row. The rule engine then reads from spec.materials (which
+    IS populated) and never falls back to generic reference-table rows.
+
+    Body material is resolved using the same keyword mapping as the rule engine.
+    Bolt / nut specs come verbatim from the PMS bolting_gaskets section —
+    these are project-authoritative values.
+    """
+    bng = bng or {}
+    stud_bolt = bng.get("stud_bolts") or bng.get("stud_bolt_spec") or None
+    hex_nut   = bng.get("hex_nuts")   or bng.get("hex_nut_spec")   or None
+    gasket    = bng.get("gasket")     or bng.get("gasket_spec")    or None
+
+    # Resolve body material from material_description text
+    body_mat = _resolve_body_material_text(material_description)
+
+    if not any([body_mat, stud_bolt, hex_nut, gasket]):
+        return None
+
+    return {
+        "spec_code":      pc,
+        "body_material":  body_mat,
+        # bolt/nut stored directly — the rule engine maps these to bolt_material / nut_material
+        "stud_bolt_spec": stud_bolt,
+        "hex_nut_spec":   hex_nut,
+        "gasket_spec":    gasket,
+    }
+
+
+# Material-description → body-material text mapping (mirrors rule_engine logic)
+_MATERIAL_BODY_MAP = {
+    "titanium": "ASTM A105N RF with 3mm Titanium weld deposit (≤ 1.5\"), ASTM A105N with 3mm Titanium weld deposit / ASTM B265 Gr. 2 (2\" and above) per ASME B16.34 Group 4.2",
+    "super duplex": "SDSS - UNS S32750, Forged - ASTM A182 F53 (1.5\" and below), Cast - ASTM A995 5A UNS J93404 (2\" and above)",
+    "sdss": "SDSS - UNS S32750, Forged - ASTM A182 F53 (1.5\" and below), Cast - ASTM A995 5A UNS J93404 (2\" and above)",
+    "duplex": "DSS - UNS S32205, Forged - ASTM A182 F60 (1.5\" and below), Cast - A995 4A UNS J92205 (2\" & Above)",
+    "dss": "DSS - UNS S32205, Forged - ASTM A182 F60 (1.5\" and below), Cast - A995 4A UNS J92205 (2\" & Above)",
+    "316": "ASTM A182 F316L (1.5\" and below), A351 CF3M (2\" and above)",
+    "stainless": "ASTM A182 F316L (1.5\" and below), A351 CF3M (2\" and above)",
+    "cu-ni": "ASTM B148 C95800",
+    "copper nickel": "ASTM B148 C95800",
+    "90/10": "ASTM B148 C95800",
+    "carbon": "ASTM A105N (1.5\" and below), ASTM A105N/ASTM A216 WCB (2\" & Above)",
+    "ltcs": "ASTM A350 LF2 (1.5\" & below), ASTM A352 LCC (2\" & Above)",
+    "low temperature carbon": "ASTM A350 LF2 (1.5\" & below), ASTM A352 LCC (2\" & Above)",
+}
+
+
+def _resolve_body_material_text(description: str) -> Optional[str]:
+    """Return the authoritative body material ASTM grade string for a given
+    material_description from the PMS header.
+    """
+    if not description:
+        return None
+    text = description.lower()
+    for keyword, body in _MATERIAL_BODY_MAP.items():
+        if keyword in text:
+            return body
+    # Plain CS shorthand
+    if text.strip() in {"cs", "c.s.", "carbon steel"}:
+        return "ASTM A105N (1.5\" and below), ASTM A105N/ASTM A216 WCB (2\" & Above)"
+    return None
+
+
 def transform(piping_class: str, response_json: dict) -> dict:
     """Convert one ``pms_cache`` row to the chatbot's `pms_extracted.json` shape."""
     pc = (piping_class or "").upper().strip()
@@ -277,6 +390,13 @@ def transform(piping_class: str, response_json: dict) -> dict:
         "gasket_spec":    bng.get("gasket") or "",
     } if bng else None
 
+    # ── Bake in the resolved materials section at sync time ──────────────────
+    # Store the actual material specs directly in the JSON so the rule engine
+    # reads them as first-class data and never falls back to generic tables.
+    # Body material is derived from material_description; bolt/nut from the
+    # PMS bolting_gaskets section which IS authoritative (project-specific).
+    materials = _build_materials_section(pc, header["material_description"], bng)
+
     pipe_schedule = _build_pipe_schedule(rj.get("pipe_data") or [], pc, header["material_description"])
     flanges       = _build_flanges(rj.get("flange") or {}, rj.get("pipe_data") or [], pc)
     pt_ratings    = _build_pt_ratings(pt, pc)
@@ -296,6 +416,7 @@ def transform(piping_class: str, response_json: dict) -> dict:
         "pipe_schedule":     pipe_schedule,
         "flanges":           flanges,
         "bolting_gaskets":   bolting_gaskets,
+        "materials":         materials,
         "valve_assignments": valve_assigns,
         "nps_sizes":         nps_sizes,
         "index_row":         index_row,
@@ -381,10 +502,21 @@ def write_to_valve_agent_db(rows: list[tuple[str, dict]], *, project_id: str = "
     return n
 
 
-def write_to_local_json(rows: list[tuple[str, dict]],
-                        path: str = "app/data/pms_extracted.json") -> int:
+def _default_pms_extracted_path() -> Path:
+    """Absolute path to the agent's ``pms_extracted.json`` (not cwd-relative)."""
+    try:
+        from ..config import settings
+
+        return settings.data_dir / "pms_extracted.json"
+    except Exception:
+        return Path(__file__).resolve().parents[1] / "data" / "pms_extracted.json"
+
+
+def write_to_local_json(
+    rows: list[tuple[str, dict]], path: str | None = None
+) -> int:
     """Merge transformed rows into the chatbot's local ``pms_extracted.json``."""
-    p = Path(path)
+    p = Path(path) if path else _default_pms_extracted_path()
     existing: dict = {}
     if p.exists():
         existing = json.loads(p.read_text(encoding="utf-8"))

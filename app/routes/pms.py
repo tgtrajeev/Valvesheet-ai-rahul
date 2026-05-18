@@ -559,11 +559,28 @@ async def sync_from_generator(spec_code: str):
     from ..engine.pms_loader import refresh_pms_loader
     from ..engine.knowledge import get_knowledge_base
 
+    db_write_failed: bool = False
     try:
+        # Attempt full sync: fetch from PMS Generator DB + write to Valve Agent DB.
         data = sync_one(pc)
     except RuntimeError as exc:
-        # Env var missing — PMS_GENERATOR_DATABASE_URL or VALVE_AGENT_DATABASE_URL.
-        raise HTTPException(503, str(exc))
+        err_msg = str(exc)
+        if "VALVE_AGENT_DATABASE_URL" in err_msg or "No PostgreSQL URL for pms_sheets" in err_msg:
+            # VALVE_AGENT_DATABASE_URL missing — retry with remote write disabled.
+            # The data will be persisted via store.save_pms_to_db (app DB) below.
+            logger.warning(
+                "VALVE_AGENT_DATABASE_URL not set; falling back to local-only sync for %s", pc
+            )
+            try:
+                data = sync_one(pc, write_remote=False)
+                db_write_failed = True
+            except RuntimeError as exc2:
+                raise HTTPException(503, str(exc2))
+            except Exception as exc2:
+                logger.exception("sync-from-generator (local fallback) failed for %s", pc)
+                raise HTTPException(502, f"Sync failed: {exc2}")
+        else:
+            raise HTTPException(503, err_msg)
     except Exception as exc:  # pragma: no cover — surface DB / network failures
         logger.exception("sync-from-generator failed for %s", pc)
         raise HTTPException(502, f"Sync failed: {exc}")
@@ -580,6 +597,23 @@ async def sync_from_generator(spec_code: str):
         _json.dumps(data, indent=2, ensure_ascii=False, default=str),
         pc,
     )
+
+    # If the remote DB write was skipped, persist via the app's own DB store so
+    # the synced data survives a server restart.
+    if db_write_failed:
+        try:
+            piping_class = _class_from_raw_payload(pc, data)
+            await store.save_pms_to_db(
+                project_id="render-sync",
+                project_name="Render PMS Generator sync",
+                piping_classes={pc: piping_class},
+                source="render",
+                source_file=None,
+                status="synced",
+            )
+            logger.info("Persisted PMS %s to app DB via store fallback.", pc)
+        except Exception as exc:
+            logger.warning("store.save_pms_to_db fallback failed for %s: %s", pc, exc)
 
     refresh_pms_loader()
     evicted = get_knowledge_base().evict_piping_class(pc)

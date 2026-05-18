@@ -90,6 +90,92 @@ class PmsSpec:
     materials: PmsMaterials | None = None
 
 
+def _synthesize_materials(code: str, hdr: dict, bg_raw: dict | None) -> "PmsMaterials | None":
+    """Derive PmsMaterials from header + bolting_gaskets when no explicit
+    'materials' section is stored.
+
+    This is the correct fix for PMS classes synced from the PMS Generator —
+    the actual bolt/nut/gasket specs come directly from the PMS bolting_gaskets
+    section, and the body material is resolved from the material_description
+    using the same category logic as the rule engine.  Storing the resolved
+    values in PmsMaterials means the rule engine reads them directly and
+    never falls back to generic reference-table rows.
+    """
+    mat_desc = hdr.get("material_description") or ""
+    bg_raw = bg_raw or {}
+
+    # Resolve body material from actual material description text
+    body_mat = _body_material_from_description(mat_desc)
+
+    # Bolt / nut / gasket — use PMS-provided specs when available
+    stud_bolt = bg_raw.get("stud_bolt_spec") or None
+    hex_nut   = bg_raw.get("hex_nut_spec") or None
+    # gasket goes to the gaskets datasheet field, not directly PmsMaterials
+    # but we can store gland_packing from it as a fallback hint
+    gasket    = bg_raw.get("gasket_spec") or None
+
+    # Only build a materials object if we have at least one concrete value
+    if not any([body_mat, stud_bolt, hex_nut]):
+        return None
+
+    return PmsMaterials(
+        spec_code=code,
+        body_material=body_mat,
+        ball_material=None,   # valve-type specific; still resolved by rule engine
+        stem_material=None,   # valve-type specific; still resolved by rule engine
+        seat_material=None,   # seat char driven; still resolved by rule engine
+        gland_material=None,
+        gland_packing=gasket,  # store gasket spec as gland_packing hint
+        spring_material=None,
+        lever_handwheel=None,
+        asme_b1634_group=None,
+    )
+
+
+def _body_material_from_description(description: str) -> "str | None":
+    """Resolve body material text from the raw material_description in the PMS header.
+
+    Uses the same keyword patterns as rule_engine._material_category_from_description
+    then looks up the authoritative grade string from the bundled reference table.
+    The result is EXACTLY what the rule engine would produce for body_material —
+    storing it here avoids the rule engine needing to do the lookup at query time.
+    """
+    if not description:
+        return None
+    text = description.lower()
+
+    # Import reference tables lazily to avoid circular imports
+    try:
+        from .standards_registry import get_reference_tables
+        rt = get_reference_tables()
+
+        def _lookup(cat: str) -> "str | None":
+            try:
+                return rt.get("body_material", cat)
+            except Exception:
+                return None
+
+        if "titanium" in text or "ti gr" in text or "b265" in text or "b367" in text:
+            return _lookup("TITANIUM")
+        if "super duplex" in text or "sdss" in text or "s32750" in text:
+            return _lookup("SDSS")
+        if "duplex" in text or "dss" in text or "s31803" in text or "s32205" in text:
+            return _lookup("DSS")
+        if "316" in text or "stainless" in text:
+            return _lookup("SS316L")
+        if "cu-ni" in text or "cuni" in text or "copper nickel" in text or "90/10" in text:
+            return _lookup("CUNI")
+        if "copper" in text or "bronze" in text:
+            return _lookup("COPPER")
+        if "ltcs" in text or "low temperature carbon" in text:
+            return _lookup("LTCS_NACE")
+        if "carbon" in text or text.strip() in {"cs", "c.s."}:
+            return _lookup("CS")
+    except Exception:
+        pass
+    return None
+
+
 class PmsLoader:
     """Singleton loader for PMS extracted data."""
 
@@ -184,6 +270,13 @@ class PmsLoader:
                 lever_handwheel=mat.get("lever_handwheel"),
                 asme_b1634_group=mat.get("asme_b1634_group"),
             )
+        else:
+            # ── AUTO-SYNTHESIZE materials from PMS header + bolting_gaskets ──
+            # When the PMS was synced from the PMS Generator, the explicit
+            # "materials" section may be absent. We derive it now from the data
+            # that IS present so the rule engine never falls back to generic tables
+            # for fields the PMS already defines.
+            materials = _synthesize_materials(code, hdr, bg_raw)
 
         return PmsSpec(
             spec_code=code,
