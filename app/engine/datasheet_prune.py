@@ -31,7 +31,8 @@ _TYPED_SECTION_KEYS: frozenset[str] = frozenset({
     "disc_material",
     "shaft_material",
     "stem_material",
-    "trim_material",
+    # trim_material is generic — kept whenever the override layer sets it
+    # (CH/DB/GL/GA/NE all surface it from _materials_extra). Not prunable.
     "needle_material",
     "minimum_bore",
     "seat_material",
