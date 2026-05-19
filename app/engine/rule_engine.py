@@ -1811,23 +1811,18 @@ def generate_datasheet(
         _gvds = None
     _vds_rec = _gvds.get(decoded.display_vds) if _gvds else None
     if _vds_rec:
-        # Flat fields that map directly to engine output keys.
-        # NOTE: class-level fields are intentionally NOT in this list. They are
-        # derived per request from the PMS class header / index_row / valve_
-        # assignments so user edits to the PMS class sync reflect in the agent
-        # output. Excluded:
-        #   size_range            ← valve_assignments[].nps_min/nps_max
-        #   pressure_class        ← header.valve_rating_label
-        #   design_pressure       ← header/index_row.design_pressure_barg
-        #   corrosion_allowance   ← header.corrosion_allowance
-        #   sour_service          ← header.nace_flag
-        #   end_connections       ← flanges[].flange_face + class rating
-        #   hydrotest_shell/closure ← header/index_row.hydrotest_pressure_barg
-        # The appendix retains authority over material/test/marking fields that
-        # are not derivable from class-level PMS data.
+        # Flat fields that map directly to engine output keys. For VDS codes
+        # with an appendix entry, every populated appendix field wins over the
+        # sync-derived value — this includes class-level fields (size_range,
+        # pressure_class, design_pressure, etc.) sourced from the six A0
+        # datasheet workbooks. New codes coming from PMS Generator have no
+        # appendix entry and continue to flow through the sync path unchanged.
         _direct = (
-            "service", "valve_type",
+            "service", "valve_type", "piping_class",
             "valve_standard",
+            "size_range", "pressure_class", "design_pressure",
+            "corrosion_allowance", "sour_service", "end_connections",
+            "hydrotest_shell", "hydrotest_closure",
             "body_material", "ball_material", "disc_material",
             "wedge_material", "needle_material", "seat_material",
             "seal_material", "stem_material", "shaft_material",

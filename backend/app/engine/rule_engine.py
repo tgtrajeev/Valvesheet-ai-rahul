@@ -1837,14 +1837,17 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         _gvds = None
     _vds_rec = _gvds.get(decoded.display_vds) if _gvds else None
     if _vds_rec:
-        # Class-level fields (size_range, pressure_class, design_pressure,
-        # corrosion_allowance, sour_service, end_connections, hydrotest_*)
-        # come from PMS class data, not the appendix — user edits to PMS sync
-        # must reflect immediately. The appendix retains authority only for
-        # material/test/marking fields not derivable from class-level PMS.
+        # For VDS codes with an appendix entry, every populated appendix field
+        # wins over the sync-derived value — this includes class-level fields
+        # (size_range, pressure_class, design_pressure, etc.) sourced from the
+        # six A0 datasheet workbooks. New codes coming from PMS Generator have
+        # no appendix entry and continue to flow through the sync path.
         _direct = (
-            "service", "valve_type",
+            "service", "valve_type", "piping_class",
             "valve_standard",
+            "size_range", "pressure_class", "design_pressure",
+            "corrosion_allowance", "sour_service", "end_connections",
+            "hydrotest_shell", "hydrotest_closure",
             "body_material", "ball_material", "disc_material",
             "wedge_material", "needle_material", "seat_material",
             "seal_material", "stem_material", "shaft_material",
