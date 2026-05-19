@@ -5987,6 +5987,13 @@
       "hex_nut_spec": "ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
       "gasket_spec": "ASME B 16.20, 4.5mm, SS316/SS316L Spiral Wound with Flexible Graphite (F.G.) filler"
     },
+    "materials": {
+      "spec_code": "A2N",
+      "body_material": null,
+      "stud_bolt_spec": "ASTM A 193 Gr. B7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "hex_nut_spec": "ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "gasket_spec": "ASME B 16.20, 4.5mm, SS316/SS316L Spiral Wound with Flexible Graphite (F.G.) filler"
+    },
     "valve_assignments": [
       {
         "spec_code": "A2N",
@@ -18056,6 +18063,13 @@
     ],
     "bolting_gaskets": {
       "spec_code": "A5",
+      "stud_bolt_spec": "ASTM A 193 Gr. B7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "hex_nut_spec": "ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+      "gasket_spec": "3mm thick flat ring of neoprene/ EPDM rubber as ASME B 16.21"
+    },
+    "materials": {
+      "spec_code": "A5",
+      "body_material": null,
       "stud_bolt_spec": "ASTM A 193 Gr. B7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
       "hex_nut_spec": "ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
       "gasket_spec": "3mm thick flat ring of neoprene/ EPDM rubber as ASME B 16.21"

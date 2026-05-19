@@ -1819,7 +1819,7 @@ def generate_datasheet(
         # appendix entry and continue to flow through the sync path unchanged.
         _direct = (
             "service", "valve_type", "piping_class",
-            "valve_standard",
+            "valve_standard", "operation",
             "size_range", "pressure_class", "design_pressure",
             "corrosion_allowance", "sour_service", "end_connections",
             "hydrotest_shell", "hydrotest_closure",
@@ -1833,8 +1833,18 @@ def generate_datasheet(
             "material_certification", "fire_rating", "finish",
         )
         for _k in _direct:
-            _v = _vds_rec.get(_k)
-            if _v:
+            if _k not in _vds_rec:
+                continue
+            _v = _vds_rec[_k]
+            if _v is None:
+                # missing in appendix — fall through to sync-derived value
+                continue
+            if _v == "":
+                # explicit empty in appendix — hide this row (e.g. needle T80
+                # pressure class is blank on the xlsm A0 sheet)
+                data.pop(_k, None)
+                _pms_vds_overrides[_k] = ""
+            else:
                 data[_k] = _v
                 _pms_vds_overrides[_k] = _v
         # Renamed fields
@@ -1844,6 +1854,19 @@ def generate_datasheet(
         if _vds_rec.get("face_to_face_dimension"):
             data["face_to_face"] = _vds_rec["face_to_face_dimension"]
             _pms_vds_overrides["face_to_face"] = _vds_rec["face_to_face_dimension"]
+
+        # Promote nested _materials_extra into top-level engine keys. The
+        # appendix stores cover_material, trim_material, hinge_pin under this
+        # sibling dict; they belong in the material section of the datasheet.
+        # Write both the canonical and "material_*"-prefixed key — frontend
+        # field-order maps use either form depending on valve type.
+        _mat_extra = _vds_rec.get("_materials_extra") or {}
+        for _ek in ("cover_material", "trim_material", "hinge_pin_material"):
+            _v = _mat_extra.get(_ek) or _mat_extra.get(_ek.replace("_material", ""))
+            if _v and _v != "-":
+                data[_ek] = _v
+                data[f"material_{_ek}"] = _v
+                _pms_vds_overrides[_ek] = _v
 
         # ── PMS-mirroring for material rows ────────────────────────────────
         # The PMS appendix sheet for each VDS lists EXACTLY the material rows
