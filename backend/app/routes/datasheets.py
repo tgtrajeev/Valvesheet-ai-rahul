@@ -65,11 +65,11 @@ async def get_datasheet(
                     "stale VDS index snapshots are not returned."
                 ),
             ) from exc
-        data = filter_card_data(
-            _inject_footer_notes(code, data),
+        data = _inject_footer_notes(code, filter_card_data(
+            data,
             for_chat_ui=chat_ui,
             vds_code_for_mask=code,
-        )
+        ))
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
@@ -91,11 +91,11 @@ async def get_datasheet(
     except Exception:
         data = None
     if data is not None:
-        data = filter_card_data(
-            _inject_footer_notes(code, data),
+        data = _inject_footer_notes(code, filter_card_data(
+            data,
             for_chat_ui=chat_ui,
             vds_code_for_mask=code,
-        )
+        ))
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
@@ -141,11 +141,11 @@ async def get_datasheet(
         except Exception:
             pass
 
-    flat_data = filter_card_data(
+    flat_data = _inject_footer_notes(code, filter_card_data(
         payload,
         for_chat_ui=chat_ui,
         vds_code_for_mask=code,
-    )
+    ))
     total = len(flat_data)
     filled = sum(1 for v in flat_data.values() if v and v != "-")
     completion = round((filled / total * 100) if total else 0, 1)
@@ -185,11 +185,11 @@ async def generate_batch(vds_codes: list[str]):
                     "status": "error",
                 })
                 continue
-            data = filter_card_data(
-                _inject_footer_notes(code, data),
+            data = _inject_footer_notes(code, filter_card_data(
+                data,
                 for_chat_ui=False,
                 vds_code_for_mask=code,
-            )
+            ))
             total = len(data)
             filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
             completion = round((filled / total * 100) if total else 0, 1)
@@ -217,11 +217,11 @@ async def generate_batch(vds_codes: list[str]):
                     "status": "error",
                 })
                 continue
-            data = filter_card_data(
-                _inject_footer_notes(code, data),
+            data = _inject_footer_notes(code, filter_card_data(
+                data,
                 for_chat_ui=False,
                 vds_code_for_mask=code,
-            )
+            ))
             total = len(data)
             filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
             completion = round((filled / total * 100) if total else 0, 1)
