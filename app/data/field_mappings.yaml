@@ -510,3 +510,9 @@ sections:
         source: CALCULATED
         is_required: false
         description: "PMS validation notes — USE GATE VALVE, wafer restrictions, soft seat limit, NACE, Low Temp, bolting grades per FPSO Albacora PMS Rev C1 Part 7"
+
+      datasheet_notes:
+        display_name: "Notes"
+        source: CALCULATED
+        is_required: false
+        description: "Standard footer notes block — hydrostatic test, forging, bolting, NACE compliance"
