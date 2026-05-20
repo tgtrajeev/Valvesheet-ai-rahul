@@ -11,8 +11,11 @@ a complete datasheet from PMS data + engineering rules — no hardcoded lookup n
 """
 
 import json
+import logging
 import httpx
 import yaml
+
+logger = logging.getLogger(__name__)
 
 from ..config import settings
 from ..engine.knowledge import get_knowledge_base, PRESSURE_CLASS_MAP, MATERIAL_DESCRIPTIONS
@@ -575,8 +578,8 @@ async def _handle_generate(input_data: dict) -> dict:
                 data["datasheet_notes"] = footer_notes_as_text(
                     _decoded_for_engine.valve_type.value, _decoded_for_engine.is_nace
                 )
-            except Exception:
-                pass
+            except Exception as _notes_err:
+                logger.error("notes injection failed for %s: %s", vds_code, _notes_err)
         sources = filter_card_metadata(sources, data)
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
@@ -682,8 +685,8 @@ async def _handle_generate(input_data: dict) -> dict:
             data["datasheet_notes"] = footer_notes_as_text(
                 decoded.valve_type.value, decoded.is_nace
             )
-        except Exception:
-            pass
+        except Exception as _notes_err:
+            logger.error("notes injection failed for %s: %s", vds_code, _notes_err)
     sources = filter_card_metadata(sources, data)
     total = len(data)
     filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
