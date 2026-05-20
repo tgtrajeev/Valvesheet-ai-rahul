@@ -1811,23 +1811,18 @@ def generate_datasheet(
         _gvds = None
     _vds_rec = _gvds.get(decoded.display_vds) if _gvds else None
     if _vds_rec:
-        # Flat fields that map directly to engine output keys.
-        # NOTE: class-level fields are intentionally NOT in this list. They are
-        # derived per request from the PMS class header / index_row / valve_
-        # assignments so user edits to the PMS class sync reflect in the agent
-        # output. Excluded:
-        #   size_range            ← valve_assignments[].nps_min/nps_max
-        #   pressure_class        ← header.valve_rating_label
-        #   design_pressure       ← header/index_row.design_pressure_barg
-        #   corrosion_allowance   ← header.corrosion_allowance
-        #   sour_service          ← header.nace_flag
-        #   end_connections       ← flanges[].flange_face + class rating
-        #   hydrotest_shell/closure ← header/index_row.hydrotest_pressure_barg
-        # The appendix retains authority over material/test/marking fields that
-        # are not derivable from class-level PMS data.
+        # Flat fields that map directly to engine output keys. For VDS codes
+        # with an appendix entry, every populated appendix field wins over the
+        # sync-derived value — this includes class-level fields (size_range,
+        # pressure_class, design_pressure, etc.) sourced from the six A0
+        # datasheet workbooks. New codes coming from PMS Generator have no
+        # appendix entry and continue to flow through the sync path unchanged.
         _direct = (
-            "service", "valve_type",
-            "valve_standard",
+            "service", "valve_type", "piping_class",
+            "valve_standard", "operation",
+            "size_range", "pressure_class", "design_pressure",
+            "corrosion_allowance", "sour_service", "end_connections",
+            "hydrotest_shell", "hydrotest_closure",
             "body_material", "ball_material", "disc_material",
             "wedge_material", "needle_material", "seat_material",
             "seal_material", "stem_material", "shaft_material",
@@ -1838,8 +1833,18 @@ def generate_datasheet(
             "material_certification", "fire_rating", "finish",
         )
         for _k in _direct:
-            _v = _vds_rec.get(_k)
-            if _v:
+            if _k not in _vds_rec:
+                continue
+            _v = _vds_rec[_k]
+            if _v is None:
+                # missing in appendix — fall through to sync-derived value
+                continue
+            if _v == "":
+                # explicit empty in appendix — hide this row (e.g. needle T80
+                # pressure class is blank on the xlsm A0 sheet)
+                data.pop(_k, None)
+                _pms_vds_overrides[_k] = ""
+            else:
                 data[_k] = _v
                 _pms_vds_overrides[_k] = _v
         # Renamed fields
@@ -1849,6 +1854,19 @@ def generate_datasheet(
         if _vds_rec.get("face_to_face_dimension"):
             data["face_to_face"] = _vds_rec["face_to_face_dimension"]
             _pms_vds_overrides["face_to_face"] = _vds_rec["face_to_face_dimension"]
+
+        # Promote nested _materials_extra into top-level engine keys. The
+        # appendix stores cover_material, trim_material, hinge_pin under this
+        # sibling dict; they belong in the material section of the datasheet.
+        # Write both the canonical and "material_*"-prefixed key — frontend
+        # field-order maps use either form depending on valve type.
+        _mat_extra = _vds_rec.get("_materials_extra") or {}
+        for _ek in ("cover_material", "trim_material", "hinge_pin_material"):
+            _v = _mat_extra.get(_ek) or _mat_extra.get(_ek.replace("_material", ""))
+            if _v and _v != "-":
+                data[_ek] = _v
+                data[f"material_{_ek}"] = _v
+                _pms_vds_overrides[_ek] = _v
 
         # ── PMS-mirroring for material rows ────────────────────────────────
         # The PMS appendix sheet for each VDS lists EXACTLY the material rows

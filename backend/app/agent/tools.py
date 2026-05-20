@@ -11,8 +11,11 @@ a complete datasheet from PMS data + engineering rules — no hardcoded lookup n
 """
 
 import json
+import logging
 import httpx
 import yaml
+
+logger = logging.getLogger(__name__)
 
 from ..config import settings
 from ..engine.knowledge import get_knowledge_base, PRESSURE_CLASS_MAP, MATERIAL_DESCRIPTIONS
@@ -343,6 +346,20 @@ TOOL_DEFINITIONS = [
 _current_project_id: str | None = None
 
 
+def _project_label(override: str | None) -> str:
+    """Return 'Name (project_id)' when a project session is active, else the override or default."""
+    base = override or "FPSO P-82 Albacora Leste"
+    if _current_project_id:
+        try:
+            pms = pms_store.load_pms(_current_project_id)
+            if pms:
+                base = pms.metadata.name
+        except Exception:
+            pass
+        return f"{base} ({_current_project_id})"
+    return base
+
+
 async def execute_tool(name: str, input_data: dict, project_id: str | None = None) -> dict:
     """Dispatch a tool call to the appropriate handler."""
     global _current_project_id
@@ -498,17 +515,6 @@ async def _handle_generate(input_data: dict) -> dict:
                 data[field_key] = val.strip()
                 applied_overrides[field_key] = {"from": old_val, "to": val.strip()}
 
-        if not data.get("datasheet_notes"):
-            try:
-                from ..engine.rule_engine import footer_notes_as_text
-
-                data["datasheet_notes"] = footer_notes_as_text(
-                    _decoded_for_engine.valve_type.value,
-                    _decoded_for_engine.is_nace,
-                )
-            except Exception:
-                pass
-
         piping_class = data.get("piping_class", "")
         sources = get_pms_field_sources(piping_class, data) if piping_class else get_field_sources(data)
 
@@ -566,6 +572,14 @@ async def _handle_generate(input_data: dict) -> dict:
         all_errors = phase_errors + list(override_check.get("errors") or [])
         all_warnings = list(seat_warnings) + phase_warnings + list(override_check.get("warnings") or [])
         data = filter_card_data(data, for_chat_ui=True, vds_code_for_mask=vds_code)
+        if not data.get("datasheet_notes"):
+            try:
+                from ..engine.rule_engine import footer_notes_as_text
+                data["datasheet_notes"] = footer_notes_as_text(
+                    _decoded_for_engine.valve_type.value, _decoded_for_engine.is_nace
+                )
+            except Exception as _notes_err:
+                logger.error("notes injection failed for %s: %s", vds_code, _notes_err)
         sources = filter_card_metadata(sources, data)
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
@@ -576,6 +590,9 @@ async def _handle_generate(input_data: dict) -> dict:
             "field_sources": sources,
             "source": "vds_index",
             "completion_pct": completion,
+            "project_name": _project_label(overrides.get("project_name")),
+            "doc_number": "40801-SPE-80000-PP-SP-0001",
+            "revision": overrides.get("revision") or None,
             "validation": {
                 "is_valid": not all_errors,
                 "source": "known_spec",
@@ -662,6 +679,14 @@ async def _handle_generate(input_data: dict) -> dict:
     all_notes = (validation.notes or []) + (phase2.notes or [])
     all_errors = list(phase2.errors or []) + list(override_check.get("errors") or [])
     data = filter_card_data(data, for_chat_ui=True, vds_code_for_mask=vds_code)
+    if not data.get("datasheet_notes"):
+        try:
+            from ..engine.rule_engine import footer_notes_as_text
+            data["datasheet_notes"] = footer_notes_as_text(
+                decoded.valve_type.value, decoded.is_nace
+            )
+        except Exception as _notes_err:
+            logger.error("notes injection failed for %s: %s", vds_code, _notes_err)
     sources = filter_card_metadata(sources, data)
     total = len(data)
     filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
@@ -672,6 +697,9 @@ async def _handle_generate(input_data: dict) -> dict:
         "field_sources": sources,
         "source": "rule_engine",
         "completion_pct": completion,
+        "project_name": overrides.get("project_name") or "FPSO P-82 Albacora Leste",
+        "doc_number": "40801-SPE-80000-PP-SP-0001",
+        "revision": overrides.get("revision") or "A0",
         "validation": {
             "is_valid": not all_errors,
             "errors": all_errors,

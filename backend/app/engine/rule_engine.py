@@ -1837,14 +1837,17 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
         _gvds = None
     _vds_rec = _gvds.get(decoded.display_vds) if _gvds else None
     if _vds_rec:
-        # Class-level fields (size_range, pressure_class, design_pressure,
-        # corrosion_allowance, sour_service, end_connections, hydrotest_*)
-        # come from PMS class data, not the appendix — user edits to PMS sync
-        # must reflect immediately. The appendix retains authority only for
-        # material/test/marking fields not derivable from class-level PMS.
+        # For VDS codes with an appendix entry, every populated appendix field
+        # wins over the sync-derived value — this includes class-level fields
+        # (size_range, pressure_class, design_pressure, etc.) sourced from the
+        # six A0 datasheet workbooks. New codes coming from PMS Generator have
+        # no appendix entry and continue to flow through the sync path.
         _direct = (
-            "service", "valve_type",
-            "valve_standard",
+            "service", "valve_type", "piping_class",
+            "valve_standard", "operation",
+            "size_range", "pressure_class", "design_pressure",
+            "corrosion_allowance", "sour_service", "end_connections",
+            "hydrotest_shell", "hydrotest_closure",
             "body_material", "ball_material", "disc_material",
             "wedge_material", "needle_material", "seat_material",
             "seal_material", "stem_material", "shaft_material",
@@ -1855,13 +1858,30 @@ def generate_datasheet(decoded: DecodedVDS, size_inches: float | None = None) ->
             "material_certification", "fire_rating", "finish",
         )
         for _k in _direct:
-            _v = _vds_rec.get(_k)
-            if _v:
+            if _k not in _vds_rec:
+                continue
+            _v = _vds_rec[_k]
+            if _v is None:
+                continue
+            if _v == "":
+                data.pop(_k, None)
+            else:
                 data[_k] = _v
         if _vds_rec.get("spring"):
             data["spring_material"] = _vds_rec["spring"]
         if _vds_rec.get("face_to_face_dimension"):
             data["face_to_face"] = _vds_rec["face_to_face_dimension"]
+
+        # Promote nested _materials_extra into top-level engine keys (cover/
+        # trim/hinge_pin live in this sibling dict in the appendix). Write
+        # both canonical and "material_*"-prefixed key — frontend field-order
+        # maps use either form depending on valve type.
+        _mat_extra = _vds_rec.get("_materials_extra") or {}
+        for _ek in ("cover_material", "trim_material", "hinge_pin_material"):
+            _v = _mat_extra.get(_ek) or _mat_extra.get(_ek.replace("_material", ""))
+            if _v and _v != "-":
+                data[_ek] = _v
+                data[f"material_{_ek}"] = _v
 
         # PMS-mirroring for material rows: drop rule-template material fields
         # PMS did not list for this VDS (mirrors the construction block below).
