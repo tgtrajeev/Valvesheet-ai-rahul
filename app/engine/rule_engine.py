@@ -465,7 +465,7 @@ CONSTRUCTION = {
         "packing_construction": "Bolted gland, Live-load packing, Renewable packing rings",
         "wedge_construction": "Solid wedge, One piece",
         "locks": "Valve lockable using padlock - Full Open, Fully Closed",
-        "operation": 'Hand wheel, Non-rising (Gear for 14" and above, Fully enclosed, dust proof ), with Position Indicator',
+        "operation": 'Hand wheel, Non-rising (Gear for 14" and above, Fully enclosed, dust proof), with Position Indicator',
     },
     "GL": {
         "body_construction": "Bolted bonnet, Integral Flanged End",
@@ -473,7 +473,7 @@ CONSTRUCTION = {
         "back_seat_construction": "Renewable back seat",
         "packing_construction": "Bolted gland, Live-load packing, Renewable packing rings",
         "disc_construction": "Ball / Plug Hard Faced",
-        "operation": 'Hand wheel, Non-rising (Gear for 10" and above, Fully enclosed, dust proof ), with Position Indicator',
+        "operation": 'Hand wheel, non-rising (Gear for 8" and above, Fully enclosed, dust proof), with Position Indicator',
     },
     "CH_P": {
         "body_construction": "Integral Flanged, Bolted Cover",
@@ -1158,13 +1158,13 @@ def _resolve_operation(vt: str, size_inches: float | None, pressure_class: int) 
 
     if vt == "GA":
         if size_inches is not None and gear_min is not None and size_inches >= gear_min:
-            return f'Gear operated c/w Handwheel ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
-        return 'Handwheel, Non-rising (Gear for 14" and above, Fully enclosed, dust proof), with Position Indicator'
+            return f'Gear operated c/w Hand wheel ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
+        return f'Hand wheel, Non-rising (Gear for {gear_min}" and above, Fully enclosed, dust proof), with Position Indicator'
 
     if vt == "GL":
         if size_inches is not None and gear_min is not None and size_inches >= gear_min:
-            return f'Gear operated c/w Handwheel ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
-        return 'Handwheel, Non-rising (Gear for 10" and above, Fully enclosed, dust proof), with Position Indicator'
+            return f'Gear operated c/w Hand wheel ({size_inches}" >= {gear_min}" threshold), Fully enclosed, dust proof, with Position Indicator'
+        return f'Hand wheel, non-rising (Gear for {gear_min}" and above, Fully enclosed, dust proof), with Position Indicator'
 
     if vt == "DB":
         return "Lever (Ball) / T-Bar (Needle), with Position Indicator"
@@ -1404,6 +1404,9 @@ def generate_datasheet(
     else:
         data["sour_service"] = "-"
         data["nace_compliant"] = "No"
+
+    if vt == "GA" and is_nace:
+        data["sour_service"] = "NACE MR0175 /ISO 15156-1/2/3, SSC Region 3, Non-exposed, internal only"
 
     if is_lt:
         data["low_temperature"] = "Yes - Impact tested"
@@ -1755,8 +1758,10 @@ def generate_datasheet(
         data["impact_test"] = "Charpy V-notch impact test per ASME B31.3 / ASME B16.34"
     if cat in ("SS316L", "SS316L_NACE", "DSS", "SDSS", "SDSS_NACE", "CUNI"):
         data["pmi"] = "Required \u2014 Positive Material Identification per project document, random PMI per mill cert"
-    if vt not in ("CH", "BF") and "locks" not in data:
+    if vt not in ("CH", "BF", "GL") and "locks" not in data:
         data["locks"] = "Valve lockable using padlock - Full Open, Fully Closed"
+    if vt == "GL":
+        data.pop("locks", None)
     if vt in ("BL", "BS", "BF", "DB"):
         data["position_indicator"] = "Visual position indicator required"
     data["extended_stem"] = _resolve_extended_stem(size_inches)
@@ -1893,6 +1898,8 @@ def generate_datasheet(
         }
         if any(_vds_rec.get(_pk) for _pk in _material_pms_to_engine):
             _mat_kept = {_ek for _pk, _ek in _material_pms_to_engine.items() if _vds_rec.get(_pk)}
+            if vt == "GL":
+                _mat_kept.add("back_seat_material")
             for _ek in set(_material_pms_to_engine.values()):
                 if _ek not in _mat_kept:
                     data.pop(_ek, None)

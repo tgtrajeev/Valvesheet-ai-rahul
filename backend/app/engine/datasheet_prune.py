@@ -135,7 +135,6 @@ def _allowed_typed_keys(
             "seal_material_note", "resilient_seat_note",
             "hardness_requirement",
             "flange_face_note", "body_form",
-            "locks",
             *_stem_construction,
             *_stem_trim_pack_lever,
         })
