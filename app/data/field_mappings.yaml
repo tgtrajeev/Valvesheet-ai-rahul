@@ -274,6 +274,18 @@ sections:
         is_required: false
         description: "Disc material from VDS Index (Butterfly/Check/Globe valves)"
 
+      cover_material:
+        display_name: "Cover Material"
+        source: CALCULATED
+        is_required: false
+        description: "Cover material (Check valves; CS classes use Forged - ASTM A105N)"
+
+      material_cover_material:
+        display_name: "Cover Material"
+        source: CALCULATED
+        is_required: false
+        description: "Cover material — prefixed alias consumed by frontend MATERIAL_ORDER_BY_TYPE.check"
+
       wedge_material:
         display_name: "Wedge Material"
         source: VDS_INDEX

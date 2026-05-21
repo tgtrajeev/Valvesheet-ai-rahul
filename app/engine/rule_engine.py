@@ -1585,6 +1585,9 @@ def generate_datasheet(
         data["seal_material"] = _rt.get("seal_material_gate", seat)
         if design == "S":
             data["hinge_pin_material"] = _rt.get("stem_material", cat)
+        if cat in ("CS", "CS_NACE"):
+            data["cover_material"] = "Forged - ASTM A105N"
+            data["material_cover_material"] = "Forged - ASTM A105N"
     elif vt == "BF":
         # BF datasheet uses **Shaft Material** (field `shaft_material`); PMS `stem_material`
         # for the class is the shaft/disc trim grade for this layout.
@@ -1604,6 +1607,7 @@ def generate_datasheet(
         data["needle_material"] = _rt.get("stem_material", cat)
         data["seat_material"] = _rt.get("seat_material", seat)
         data["minimum_bore"] = "10 mm (instrument connections)"
+        data["trim_material"] = data.get("stem_material", "")
 
     # Butterfly: the PMS appendix has BOTH Stem Material and Shaft Material rows
     # (typically same value). Keep both; only spring isn't on the BF grid.

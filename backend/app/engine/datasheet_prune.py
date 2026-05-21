@@ -144,6 +144,7 @@ def _allowed_typed_keys(
             "disc_material", "seat_material", "seal_material", "seat_construction",
             "disc_construction",
             "flange_face_note", "body_form", "spring_material",
+            "cover_material",
         }
         if d == "S":
             keys.add("hinge_pin_material")
