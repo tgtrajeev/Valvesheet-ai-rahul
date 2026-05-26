@@ -467,6 +467,58 @@ def fetch_one_from_generator(piping_class: str) -> Optional[dict]:
     return row[0] if row else None
 
 
+def fetch_one_from_saved_pms(piping_class: str) -> Optional[dict]:
+    """Return the ``payload`` JSON from ``saved_pms`` for a piping class, or None.
+
+    The PMS Generator stores custom/new specs in ``saved_pms`` (not ``pms_cache``).
+    The ``payload`` column is a JSONB blob in ``PmsGeneratorInput`` format —
+    already structured with ``code_factors``, ``design_conditions``, etc.
+
+    Tries both exact match and case-insensitive match on the piping_class column.
+    """
+    pc = (piping_class or "").strip()
+    if not pc:
+        return None
+    conn = psycopg2.connect(_generator_url(), connect_timeout=15)
+    try:
+        with conn.cursor() as cur:
+            # Try exact match first (saved_pms stores "New-spec-[A1]" as-is)
+            cur.execute(
+                """
+                SELECT payload FROM saved_pms
+                WHERE piping_class = %s AND payload IS NOT NULL
+                ORDER BY updated_at DESC NULLS LAST
+                LIMIT 1
+                """,
+                (pc,),
+            )
+            row = cur.fetchone()
+            if not row:
+                # Try case-insensitive match
+                cur.execute(
+                    """
+                    SELECT payload FROM saved_pms
+                    WHERE UPPER(piping_class) = UPPER(%s) AND payload IS NOT NULL
+                    ORDER BY updated_at DESC NULLS LAST
+                    LIMIT 1
+                    """,
+                    (pc,),
+                )
+                row = cur.fetchone()
+    finally:
+        conn.close()
+    if row and row[0]:
+        payload = row[0]
+        # psycopg2 auto-parses JSONB → dict, but handle string just in case
+        if isinstance(payload, str):
+            try:
+                return json.loads(payload)
+            except (json.JSONDecodeError, ValueError):
+                return None
+        return payload
+    return None
+
+
 def write_to_valve_agent_db(rows: list[tuple[str, dict]], *, project_id: str = "render-sync",
                             project_name: str = "Render PMS Generator sync") -> int:
     """Upsert transformed rows into ``valve_agent.public.pms_sheets``.

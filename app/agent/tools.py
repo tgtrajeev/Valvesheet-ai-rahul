@@ -33,6 +33,18 @@ from ..engine.card_filter import filter_card_data, filter_card_metadata
 from ..pms import store as pms_store
 from ..pms.query import query as pms_generic_query
 
+# ── v2 pipeline imports (PMS Generator custom classes) ──────────────────────
+from ..engine.generate_v2 import generate_datasheet_v2
+from ..engine.pms_context import PmsContext
+from ..routes.datasheets_v2 import (
+    _load_context_by_class,
+    _normalise_class_code,
+    auto_sync_from_generator,
+)
+
+# ── Dynamic project document codes (VDS-01) ─────────────────────────────────
+from ..engine.project_codes import get_pms_doc, get_project_label
+
 # ── Tool definitions (JSON schema for Claude) ────────────────────────────────
 
 TOOL_DEFINITIONS = [
@@ -407,6 +419,53 @@ async def _handle_find_valves(input_data: dict) -> dict:
             except Exception:
                 pass
 
+        # ── v2 fallback: check PMS Generator custom classes ──
+        if not results and piping_class:
+            try:
+                _v2_ctx = _load_context_by_class(piping_class)
+                # Auto-pull from PMS Generator DB if not in local v2 store
+                if _v2_ctx is None:
+                    _v2_ctx = auto_sync_from_generator(piping_class)
+                if _v2_ctx is not None:
+                    _v2_codes = _v2_ctx.get_vds_codes()
+                    _vt_filter = (input_data.get("valve_type") or "").lower()
+                    _VT_MAP = {
+                        "ball": "BL", "gate": "GA", "globe": "GL",
+                        "check": "CH", "butterfly": "BF", "needle": "NE",
+                        "dbb": "DB", "double block": "DB",
+                    }
+                    _vt_code = _VT_MAP.get(_vt_filter, "")
+                    _v2_results = []
+                    for code in _v2_codes:
+                        if _vt_code and not code.upper().startswith(_vt_code):
+                            continue
+                        try:
+                            from ..engine.vds_decoder import decode_vds as _v2d
+                            dec = _v2d(code)
+                            _v2_results.append({
+                                "vds_code": code,
+                                "valve_type": dec.valve_type.value,
+                                "piping_class": dec.piping_class,
+                                "pressure_class": _v2_ctx.get_pressure_class_display(),
+                                "size_range": _v2_ctx.get_size_range_for_vds(code) or '1/2" - 24"',
+                                "body_material": _v2_ctx.get_body_material_pms() or "",
+                                "end_connections": dec.end_connection.value if dec.end_connection else "",
+                                "service": _v2_ctx.get_service() or "",
+                                "sour_service": "NACE MR0175" if _v2_ctx.is_nace() else "No",
+                                "source": "v2_pms_generator",
+                            })
+                        except Exception:
+                            _v2_results.append({"vds_code": code, "source": "v2_pms_generator"})
+                    if _v2_results:
+                        return {
+                            "count": len(_v2_results),
+                            "total_in_database": kb.total_specs,
+                            "results": _v2_results,
+                            "note": f"Results from v2 PMS Generator context for class '{_v2_ctx.get_class_code()}'",
+                        }
+            except Exception:
+                pass
+
         if not results:
             return {
                 "count": 0,
@@ -437,7 +496,19 @@ async def _handle_find_valves(input_data: dict) -> dict:
 async def _handle_piping_class_info(    input_data: dict) -> dict:
     """Get comprehensive piping class details."""
     kb = get_knowledge_base()
-    return kb.get_piping_class_info(input_data["piping_class"])
+    result = kb.get_piping_class_info(input_data["piping_class"])
+    # If knowledge base has no info, try v2 PmsContext
+    if isinstance(result, dict) and result.get("error"):
+        try:
+            _v2_ctx = _load_context_by_class(input_data["piping_class"])
+            # Auto-pull from PMS Generator DB if not in local v2 store
+            if _v2_ctx is None:
+                _v2_ctx = auto_sync_from_generator(input_data["piping_class"])
+            if _v2_ctx is not None:
+                return _format_v2_pms_response(input_data["piping_class"], _v2_ctx)
+        except Exception:
+            pass
+    return result
 
 
 def _finalize_generate_datasheet_response(result: dict) -> dict:
@@ -472,6 +543,101 @@ def _finalize_generate_datasheet_response(result: dict) -> dict:
             "Fix the issues in `validation.errors` and call generate_datasheet again."
         )
     return out
+
+
+async def _handle_generate_v2(
+    vds_code: str,
+    decoded,
+    ctx: PmsContext,
+    overrides: dict,
+) -> dict:
+    """Generate datasheet via v2 pipeline (PMS Generator custom classes).
+
+    Called as a fallback when the v1 pipeline (PmsLoader / VDS index) has no
+    data for the piping class but a v2 PmsContext does exist.
+    Response structure mirrors the v1 _handle_generate output exactly.
+    """
+    from ..engine import rule_citations as _rc
+
+    size_str = (
+        overrides.get("size")
+        or overrides.get("size_range")
+        or overrides.get("nominal_size")
+    )
+    size_val = parse_size_inches(size_str) if size_str else None
+
+    _project = overrides.get("project_name")
+
+    try:
+        data, provenance = generate_datasheet_v2(
+            decoded, ctx, size_inches=size_val, return_provenance=True,
+            project_name=_project,
+        )
+    except Exception as exc:
+        return {
+            "error": f"v2 datasheet generation failed: {str(exc)[:300]}",
+            "hint": "Check the PMS Generator JSON for this class (POST /api/v2/pms-context).",
+            "vds_code": vds_code,
+        }
+
+    # Apply user overrides
+    applied_overrides = {}
+    for key, val in overrides.items():
+        if val and val.strip():
+            field_key = _normalize_field_name(key)
+            old_val = str(data.get(field_key, "") or "")
+            new_val = _apply_format_preserving_override(field_key, old_val, val)
+            data[field_key] = new_val
+            applied_overrides[field_key] = {"from": old_val, "to": new_val}
+
+    # Seat vs design temperature — informational warning
+    seat_code = decoded.seat_type.value if decoded.seat_type else "M"
+    seat_warnings = check_seat_design_temperature(
+        data.get("design_pressure", ""), seat_code,
+    )
+
+    # Filter to card fields (same as v1)
+    data = filter_card_data(data, for_chat_ui=True, vds_code_for_mask=vds_code)
+
+    # Build field sources + filter
+    sources = get_field_sources(data)
+    sources.update(provenance)
+    sources = filter_card_metadata(sources, data)
+
+    total = len(data)
+    filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
+    completion = round((filled / total * 100) if total else 0, 1)
+
+    result = {
+        "vds_code": vds_code,
+        "data": data,
+        "field_sources": sources,
+        "field_sources_links": {},
+        "field_sources_quotes": {},
+        "field_source_values": {},
+        "field_justifications": {},
+        "source": "v2_pms_generator",
+        "completion_pct": completion,
+        "project_name": get_project_label(_project),
+        "doc_number": get_pms_doc(_project),
+        "revision": overrides.get("revision") or "A0",
+        "validation": {
+            "is_valid": True,
+            "errors": [],
+            "warnings": list(seat_warnings),
+            "notes": [],
+        },
+        # Internal metadata — do NOT surface pipeline/pms_context to the user
+        "pipeline": "v2",
+        "pms_context": {
+            "class_code": ctx.get_class_code(),
+            "base_class_code": ctx.get_base_class_code(),
+            "material_category": ctx.get_material_category(),
+        },
+    }
+    if applied_overrides:
+        result["applied_overrides"] = applied_overrides
+    return result
 
 
 async def _handle_generate(input_data: dict) -> dict:
@@ -673,6 +839,7 @@ async def _handle_generate(input_data: dict) -> dict:
         total = len(data)
         filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
         completion = round((filled / total * 100) if total else 0, 1)
+        _v1_project = overrides.get("project_name")
         result = {
             "vds_code": vds_code,
             "data": data,
@@ -683,6 +850,9 @@ async def _handle_generate(input_data: dict) -> dict:
             "field_justifications": justifications_local,
             "source": "vds_index",
             "completion_pct": completion,
+            "project_name": get_project_label(_v1_project),
+            "doc_number": get_pms_doc(_v1_project),
+            "revision": overrides.get("revision") or None,
             "validation": {
                 "is_valid": not all_errors,
                 "source": "known_spec",
@@ -712,6 +882,22 @@ async def _handle_generate(input_data: dict) -> dict:
                 # index only proves validity; values must still be generated
                 # from current PMS + rules.
                 return await _handle_generate(input_data)
+    except Exception:
+        pass
+
+    # ── Step 1c: Try v2 PMS context (custom classes from PMS Generator) ──
+    # If the class isn't in the v1 pipeline (PmsLoader / pms_extracted.json),
+    # check whether a v2 PmsContext was ingested via POST /api/v2/pms-context.
+    # This handles new/custom classes like Y1 that only exist in the v2 store.
+    try:
+        from ..engine.vds_decoder import decode_vds as _v2_decode
+        _v2_dec = _v2_decode(vds_code)
+        _v2_ctx = _load_context_by_class(_v2_dec.piping_class)
+        # If not in local v2 store, auto-pull from PMS Generator DB (zero-button sync)
+        if _v2_ctx is None:
+            _v2_ctx = auto_sync_from_generator(_v2_dec.piping_class)
+        if _v2_ctx is not None:
+            return await _handle_generate_v2(vds_code, _v2_dec, _v2_ctx, overrides)
     except Exception:
         pass
 
@@ -822,6 +1008,7 @@ async def _handle_generate(input_data: dict) -> dict:
     total = len(data)
     filled = sum(1 for v in data.values() if v and v != "-" and str(v).strip())
     completion = round((filled / total * 100) if total else 0, 1)
+    _re_project = overrides.get("project_name")
     result = {
         "vds_code": vds_code,
         "data": data,
@@ -832,6 +1019,9 @@ async def _handle_generate(input_data: dict) -> dict:
         "field_justifications": field_justifications,
         "source": "rule_engine",
         "completion_pct": completion,
+        "project_name": get_project_label(_re_project),
+        "doc_number": get_pms_doc(_re_project),
+        "revision": overrides.get("revision") or "A0",
         "validation": {
             "is_valid": not all_errors,
             "errors": all_errors,
@@ -1110,6 +1300,17 @@ async def _handle_query_pms(input_data: dict) -> dict:
         return {"error": "PMS data file not found. Ensure pms_extracted.json is in app/data/."}
 
     if not spec:
+        # ── v2 fallback: check PMS Generator custom classes ──
+        try:
+            _v2_ctx = _load_context_by_class(piping_class)
+            # Auto-pull from PMS Generator DB if not in local v2 store
+            if _v2_ctx is None:
+                _v2_ctx = auto_sync_from_generator(piping_class)
+            if _v2_ctx is not None:
+                return _format_v2_pms_response(piping_class, _v2_ctx)
+        except Exception:
+            pass
+
         available = pms.spec_codes[:20]
         hint_parts = [f"Available classes include: {', '.join(available)}..."]
         if _current_project_id:
@@ -1253,6 +1454,40 @@ def _format_project_pms_response(piping_class: str, pc, project_id: str) -> dict
     return result
 
 
+def _format_v2_pms_response(piping_class: str, ctx: PmsContext) -> dict:
+    """Format a v2 PmsContext into the same shape as query_pms output."""
+    shell_str, closure_str = ctx.get_hydrotest_display()
+    result: dict = {
+        "piping_class": piping_class,
+        "source": "v2_pms_generator",
+        "class_code": ctx.get_class_code(),
+        "base_class_code": ctx.get_base_class_code(),
+        "pressure_rating": ctx.get_pressure_class_display(),
+        "material_description": ctx.raw.code_factors.fitting_specs.family,
+        "material_category": ctx.get_material_category(),
+        "service": ctx.get_service(),
+        "nace_compliant": ctx.is_nace(),
+        "low_temperature": ctx.is_low_temp(),
+        "design_pressure": ctx.get_design_pressure_display(),
+        "hydrotest_shell": shell_str,
+        "hydrotest_closure": closure_str,
+        "stud_bolt_spec": ctx.get_bolts(),
+        "hex_nut_spec": ctx.get_nuts(),
+        "gasket_spec": ctx.get_gaskets(),
+        "body_material": ctx.get_body_material_pms(),
+        "flange_face": ctx.get_flange_face_code(),
+    }
+    # VDS codes
+    vds_codes = ctx.get_vds_codes()
+    if vds_codes:
+        result["vds_codes"] = vds_codes
+    # P-T breakpoints
+    pt_bps = ctx.get_pt_breakpoints()
+    if pt_bps:
+        result["pt_ratings"] = pt_bps[:8]
+    return result
+
+
 # ── Dynamic per-project PMS handlers ─────────────────────────────────────────
 
 async def _handle_list_projects(input_data: dict) -> dict:
@@ -1323,6 +1558,19 @@ async def _handle_compare(input_data: dict) -> dict:
     for code in codes:
         spec = kb.get(code)
         if not spec:
+            # Try v2 pipeline for custom classes before marking as missing
+            try:
+                _cd = _compare_decode(code)
+                _v2_ctx = _load_context_by_class(_cd.piping_class)
+                # Auto-pull from PMS Generator DB if not in local v2 store
+                if _v2_ctx is None:
+                    _v2_ctx = auto_sync_from_generator(_cd.piping_class)
+                if _v2_ctx is not None:
+                    _v2_data = generate_datasheet_v2(_cd, _v2_ctx)
+                    comparison[code] = {f: _v2_data.get(f, "-") for f in compare_fields}
+                    continue
+            except Exception:
+                pass
             missing.append(code)
             continue
         try:

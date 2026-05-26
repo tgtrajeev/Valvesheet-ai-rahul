@@ -618,7 +618,65 @@ async def sync_from_generator(spec_code: str):
     refresh_pms_loader()
     evicted = get_knowledge_base().evict_piping_class(pc)
 
-    return {
+    # ── v2 pipeline: also store as a PmsContext for the v2 generator ──
+    # This allows the Valvesheet AI chatbot to generate datasheets for
+    # custom classes (Y1, etc.) via the v2 pipeline automatically.
+    v2_context_id = None
+    v2_class_code = None
+    try:
+        from ..pms.render_sync import fetch_one_from_generator
+        from ..pms.response_to_v2 import try_parse_native, transform_to_v2
+        from ..routes.datasheets_v2 import _normalise_class_code, _contexts_dir
+        from ..engine.pms_context import PmsContext
+
+        raw_json = fetch_one_from_generator(pc)
+        if raw_json:
+            # Try new format first, then transform from old format
+            pms_input = try_parse_native(raw_json)
+            if pms_input is None:
+                pms_input = transform_to_v2(pc, raw_json)
+
+            # Set base_class_code for VDS code rewriting (A1→Y1)
+            from ..routes.datasheets_v2 import _REVERSE_LETTER_MAP
+            _norm = _normalise_class_code(pms_input.class_code or pc).upper()
+            if len(_norm) >= 2 and _norm[0] in _REVERSE_LETTER_MAP:
+                if pms_input.base_class_code is None:
+                    pms_input.base_class_code = f"{_REVERSE_LETTER_MAP[_norm[0]]}{_norm[1:]}"
+
+            ctx = PmsContext(pms_input)
+            v2_class_code = _normalise_class_code(ctx.get_class_code())
+
+            # Store v2 context (same logic as POST /api/v2/pms-context)
+            import uuid
+            context_id = None
+            for p in _contexts_dir().glob("*.json"):
+                try:
+                    existing = _json.loads(p.read_text(encoding="utf-8"))
+                    if existing.get("class_code", "").upper() == v2_class_code.upper():
+                        context_id = p.stem
+                        break
+                except Exception:
+                    continue
+            if context_id is None:
+                context_id = str(uuid.uuid4())[:8]
+
+            payload = {
+                "context_id": context_id,
+                "class_code": v2_class_code,
+                "label": f"PMS {v2_class_code} (auto-synced)",
+                "pms": pms_input.model_dump(),
+            }
+            ctx_path = _contexts_dir() / f"{context_id}.json"
+            ctx_path.write_text(
+                _json.dumps(payload, indent=2, ensure_ascii=False, default=str),
+                encoding="utf-8",
+            )
+            v2_context_id = context_id
+            logger.info("v2 PmsContext stored for %s (context_id=%s)", v2_class_code, context_id)
+    except Exception as v2_exc:
+        logger.warning("v2 PmsContext creation failed for %s: %s", pc, v2_exc)
+
+    result = {
         "ok": True,
         "spec_code": data["spec_code"],
         "valve_assignments": len(data.get("valve_assignments") or []),
@@ -628,3 +686,7 @@ async def sync_from_generator(spec_code: str):
         "vds_entries_evicted": evicted,
         "synced_at": datetime.now(timezone.utc).isoformat(),
     }
+    if v2_context_id:
+        result["v2_context_id"] = v2_context_id
+        result["v2_class_code"] = v2_class_code
+    return result

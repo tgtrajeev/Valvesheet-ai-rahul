@@ -1,0 +1,1158 @@
+{
+  "context_id": "0cbcaf9c",
+  "class_code": "Y1",
+  "label": "PMS Y1 (auto-synced from PMS Generator)",
+  "pms": {
+    "class_code": "Y1",
+    "letter": "A",
+    "digit": "1",
+    "suffix": "",
+    "trailing": "",
+    "service": "General",
+    "note": "Class A1 derived from §5.5 naming rules.",
+    "base_class_code": "A1",
+    "code_factors": {
+      "stress_table": {
+        "key": "CS",
+        "label": "Carbon Steel — A106 Gr B / A234 WPB / A333 Gr 6 / A516 Gr 70",
+        "stress_psi_by_temp_c": {
+          "38": 20000,
+          "93": 20000,
+          "149": 20000,
+          "204": 19900,
+          "260": 19000,
+          "316": 17900,
+          "343": 17300,
+          "371": 16700,
+          "399": 13900,
+          "427": 11400,
+          "454": 8700,
+          "482": 5900,
+          "510": 4000,
+          "538": 2500,
+          "566": 1600,
+          "593": 1000
+        },
+        "max_temp_c": 593,
+        "source_pdf_page": 197
+      },
+      "y_curve": {
+        "category": "ferritic_steels",
+        "label": "Ferritic steels",
+        "temperatures_c": [
+          482,
+          510,
+          538,
+          566,
+          593,
+          621,
+          649,
+          677
+        ],
+        "y_values": [
+          0.4,
+          0.5,
+          0.7,
+          0.7,
+          0.7,
+          0.7,
+          0.7,
+          0.7
+        ]
+      },
+      "cold_temp_c": 38.0,
+      "stress_at_cold": {
+        "stress_psi": 20000,
+        "stress_mpa": 137.9,
+        "table_used": "CS",
+        "table_label": "Carbon Steel — A106 Gr B / A234 WPB / A333 Gr 6 / A516 Gr 70",
+        "clamped": null,
+        "interpolated": false,
+        "source_pdf_page": 197
+      },
+      "fitting_specs": {
+        "family": "Carbon Steel",
+        "pipe": "ASTM A 106 Gr. B / API 5L Gr. B",
+        "fittings": "ASTM A 234 Gr. WPB",
+        "flange": "ASTM A 105N",
+        "valve_body": "ASTM A 216 Gr. WCB",
+        "branch_outlet": "MSS SP 97, ASTM A 105N"
+      },
+      "flange_extras": {
+        "face": {
+          "code": "RF",
+          "label": "Raised Face"
+        },
+        "type": {
+          "type": "Weld Neck per ASME B 16.5, Butt Welding ends per ASME B 16.25",
+          "compact": "WN Compact Flange (Norsok Standard L-005) — to be used for layout constraint",
+          "hub": "Seal Ring: ASTM A 105N; Hub and Blind Hub: ASTM A 105N; Clamp: AISI 4140; Bolt Material as below — to be used where ANSI or Compact Flange not suitable"
+        },
+        "bolting": {
+          "stud": "ASTM A 193 Gr. B7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50µm",
+          "hex_nut": "ASTM A 194 Gr. 2HM, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50µm"
+        },
+        "gasket": {
+          "type": "Spiral Wound",
+          "spec": "ASME B 16.20, 4.5 mm, SS316/SS316L Spiral Wound with Flexible Graphite (F.G.) filler"
+        },
+        "spectacle": {
+          "moc": "ASTM A 105N",
+          "small_bore": "ASME B 16.48",
+          "large_bore": "Spacer and blind as per ASME B 16.48 (Note 4)"
+        },
+        "valves": {
+          "rating": "150#, RF",
+          "body": "ASTM A 216 Gr. WCB",
+          "ball": {
+            "code": "BLRTA1R, BLFTA1R",
+            "desc": "Reduced bore (0.5\"–2\"); Reduced and Full bore (2.5\"–24\"), PTFE-seated, ASTM A 216 Gr. WCB body, Flanged RF"
+          },
+          "gate": {
+            "code": "GAYMA1R",
+            "desc": "Y-body, Metal-seated, Screw-and-Yoke, all sizes, ASTM A 216 Gr. WCB body, Flanged RF"
+          },
+          "globe": {
+            "code": "GLYMA1R",
+            "desc": "Y-body, Metal-seated, Screw-and-Yoke, sizes 0.5\"–8\", ASTM A 216 Gr. WCB body, Flanged RF"
+          },
+          "check": {
+            "code": "CHPMA1R, CHSMA1R, CHDMA1R",
+            "desc": "Piston check (0.5\"–3\"); Swing and Dual-plate check (4\"–24\"), ASTM A 216 Gr. WCB body, Flanged RF"
+          },
+          "butterfly": {
+            "code": "BFWTA1R, BFTPA1R",
+            "desc": "Wafer and Triple-Offset PTFE-seated (3\" and larger), ASTM A 216 Gr. WCB body, Flanged RF"
+          },
+          "needle": null,
+          "dbb": null
+        }
+      },
+      "branch_chart": {
+        "id": "chart-1",
+        "title": "CHART-1 (CS, LTCS, SS, DSS, SDSS)",
+        "subtitle": "Branch Table as per API RP 14E",
+        "applies_to": [
+          "CS",
+          "LTCS",
+          "SS316",
+          "SS316L",
+          "SS304",
+          "SS304L",
+          "DSS",
+          "SDSS",
+          "CS NACE",
+          "LTCS NACE",
+          "SS316L NACE",
+          "Titanium",
+          "6 MO Tubing",
+          "SS 316 Tubing",
+          "Epoxy-Lined CS",
+          "Copper"
+        ],
+        "legend": {
+          "T": "TEE",
+          "W": "WELDOLET"
+        },
+        "nps_axis": [
+          1,
+          1.5,
+          2,
+          3,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          30,
+          32
+        ],
+        "matrix": [
+          [
+            "T"
+          ],
+          [
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ],
+          [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "T",
+            "T",
+            "T",
+            "T"
+          ]
+        ],
+        "resolved_family": "Carbon Steel"
+      }
+    },
+    "design_conditions": {
+      "design_pressure_barg": 2.8,
+      "design_temp_c": 500.0,
+      "mdmt_c": -29.0,
+      "joint_type": "Seamless"
+    },
+    "effective_design_conditions": {
+      "design_pressure_barg": 2.8,
+      "design_temp_c": 500.0,
+      "mdmt_c": -29.0,
+      "joint_type": "Seamless"
+    },
+    "derived_conditions": {
+      "pressure": {
+        "design_barg": 2.8,
+        "design_psig": 40.61064,
+        "hydrotest_barg": 29.400000000000002,
+        "hydrotest_psig": 426.41172000000006,
+        "operating_estimate_barg": 2.2399999999999998,
+        "operating_estimate_psig": 32.488512
+      },
+      "temperature": {
+        "design_c": 500.0,
+        "design_f": 932.0,
+        "mdmt_c": -29.0,
+        "mdmt_f": -20.200000000000003,
+        "operating_estimate_c": 400.0,
+        "operating_estimate_f": 752.0
+      }
+    },
+    "pressure_temperature": {
+      "group": "1.1",
+      "cold_point": {
+        "pressure_barg": 19.6,
+        "temperature_c": 38.0
+      },
+      "hottest_point": {
+        "pressure_barg": 1.4,
+        "temperature_c": 538.0
+      },
+      "temperatures_c": [
+        38.0,
+        50.0,
+        100.0,
+        150.0,
+        200.0,
+        250.0,
+        300.0,
+        325.0,
+        350.0,
+        375.0,
+        400.0,
+        425.0,
+        450.0,
+        475.0,
+        500.0,
+        538.0
+      ],
+      "pressures_barg": [
+        19.6,
+        19.2,
+        17.7,
+        15.8,
+        13.8,
+        12.1,
+        10.2,
+        9.3,
+        8.4,
+        7.4,
+        6.5,
+        5.5,
+        4.6,
+        3.7,
+        2.8,
+        1.4
+      ],
+      "temp_labels": [
+        "-29 to 38",
+        "50",
+        "100",
+        "150",
+        "200",
+        "250",
+        "300",
+        "325",
+        "350",
+        "375",
+        "400",
+        "425",
+        "450",
+        "475",
+        "500",
+        "538"
+      ],
+      "hydrotest_barg": null,
+      "display_columns": {
+        "cap_c": 300.0,
+        "temp_labels": [
+          "-29 to 38",
+          "50",
+          "100",
+          "150",
+          "200",
+          "250",
+          "300"
+        ],
+        "temperatures_c": [
+          38.0,
+          50.0,
+          100.0,
+          150.0,
+          200.0,
+          250.0,
+          300.0
+        ],
+        "pressures_barg": [
+          19.6,
+          19.2,
+          17.7,
+          15.8,
+          13.8,
+          12.1,
+          10.2
+        ]
+      }
+    },
+    "adequacy": {
+      "adequate": true,
+      "design_pressure_barg": 2.8,
+      "design_temp_c": 500.0,
+      "rated_pressure_at_design_t_barg": 2.8
+    },
+    "wall_thickness": {
+      "rows": [
+        {
+          "nps": "0.5",
+          "nps_decimal": 0.5,
+          "od_mm": 21.3,
+          "t_mm": 0.09165767418459742,
+          "d_over_6": 3.5500000000000003,
+          "validity": "OK",
+          "tm_mm": 3.0916576741845976,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 3.5333230562109685,
+          "sch_display": "80",
+          "sel_thk_mm": 3.73,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 8.117733764507888,
+          "margin_pct": 189.91906301813884
+        },
+        {
+          "nps": "0.75",
+          "nps_decimal": 0.75,
+          "od_mm": 26.7,
+          "t_mm": 0.11489483102012915,
+          "d_over_6": 4.45,
+          "validity": "OK",
+          "tm_mm": 3.114894831020129,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 3.5598798068801476,
+          "sch_display": "80",
+          "sel_thk_mm": 3.91,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 10.375873711018892,
+          "margin_pct": 270.56691825067475
+        },
+        {
+          "nps": "1",
+          "nps_decimal": 1.0,
+          "od_mm": 33.4,
+          "t_mm": 0.14372611820495557,
+          "d_over_6": 5.566666666666666,
+          "validity": "OK",
+          "tm_mm": 3.1437261182049556,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 3.5928298493770923,
+          "sch_display": "80",
+          "sel_thk_mm": 4.55,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 19.569472058143486,
+          "margin_pct": 598.9097163622673
+        },
+        {
+          "nps": "1.5",
+          "nps_decimal": 1.5,
+          "od_mm": 48.3,
+          "t_mm": 0.2078434583622561,
+          "d_over_6": 8.049999999999999,
+          "validity": "OK",
+          "tm_mm": 3.207843458362256,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 3.6661068095568643,
+          "sch_display": "40",
+          "sel_thk_mm": 3.68,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 2.964458164050103,
+          "margin_pct": 5.873505858932252
+        },
+        {
+          "nps": "2",
+          "nps_decimal": 2.0,
+          "od_mm": 60.3,
+          "t_mm": 0.25948158466343774,
+          "d_over_6": 10.049999999999999,
+          "validity": "OK",
+          "tm_mm": 3.2594815846634377,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 3.725121811043929,
+          "sch_display": "40",
+          "sel_thk_mm": 3.91,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 4.556893570993993,
+          "margin_pct": 62.74619896407118
+        },
+        {
+          "nps": "3",
+          "nps_decimal": 3.0,
+          "od_mm": 88.9,
+          "t_mm": 0.3825524523479207,
+          "d_over_6": 14.816666666666668,
+          "validity": "OK",
+          "tm_mm": 3.3825524523479205,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 3.865774231254766,
+          "sch_display": "30",
+          "sel_thk_mm": 4.78,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 8.727559881585643,
+          "margin_pct": 211.6985671994873
+        },
+        {
+          "nps": "4",
+          "nps_decimal": 4.0,
+          "od_mm": 114.3,
+          "t_mm": 0.49185315301875515,
+          "d_over_6": 19.05,
+          "validity": "OK",
+          "tm_mm": 3.4918531530187553,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 3.9906893177357206,
+          "sch_display": "30",
+          "sel_thk_mm": 4.78,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 6.76946511086524,
+          "margin_pct": 141.76661110233002
+        },
+        {
+          "nps": "6",
+          "nps_decimal": 6.0,
+          "od_mm": 168.3,
+          "t_mm": 0.7242247213740726,
+          "d_over_6": 28.05,
+          "validity": "OK",
+          "tm_mm": 3.7242247213740725,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 4.256256824427512,
+          "sch_display": "40",
+          "sel_thk_mm": 7.11,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 12.627049245931685,
+          "margin_pct": 350.96604449756023
+        },
+        {
+          "nps": "8",
+          "nps_decimal": 8.0,
+          "od_mm": 219.1,
+          "t_mm": 0.9428261227157414,
+          "d_over_6": 36.516666666666666,
+          "validity": "OK",
+          "tm_mm": 3.9428261227157413,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 4.506086997389419,
+          "sch_display": "20",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 7.643526521002554,
+          "margin_pct": 172.9830900358055
+        },
+        {
+          "nps": "10",
+          "nps_decimal": 10.0,
+          "od_mm": 273.1,
+          "t_mm": 1.1751976910710589,
+          "d_over_6": 45.51666666666667,
+          "validity": "OK",
+          "tm_mm": 4.175197691071059,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 4.77165450408121,
+          "sch_display": "20",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 6.119046004012551,
+          "margin_pct": 118.53735728616255
+        },
+        {
+          "nps": "12",
+          "nps_decimal": 12.0,
+          "od_mm": 323.9,
+          "t_mm": 1.3937990924127277,
+          "d_over_6": 53.98333333333333,
+          "validity": "OK",
+          "tm_mm": 4.393799092412728,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 5.021484677043118,
+          "sch_display": "20",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 5.152324720336347,
+          "margin_pct": 84.01159715486955
+        },
+        {
+          "nps": "14",
+          "nps_decimal": 14.0,
+          "od_mm": 355.6,
+          "t_mm": 1.5302098093916827,
+          "d_over_6": 59.26666666666667,
+          "validity": "OK",
+          "tm_mm": 4.530209809391683,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 5.17738263930478,
+          "sch_display": "10",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 4.689962362887548,
+          "margin_pct": 67.49865581741244
+        },
+        {
+          "nps": "16",
+          "nps_decimal": 16.0,
+          "od_mm": 406.4,
+          "t_mm": 1.7488112107333516,
+          "d_over_6": 67.73333333333333,
+          "validity": "OK",
+          "tm_mm": 4.7488112107333516,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 5.427212812266688,
+          "sch_display": "10",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 4.100304845413615,
+          "margin_pct": 46.43945876477197
+        },
+        {
+          "nps": "18",
+          "nps_decimal": 18.0,
+          "od_mm": 457.0,
+          "t_mm": 1.9665519766366675,
+          "d_over_6": 76.16666666666667,
+          "validity": "OK",
+          "tm_mm": 4.9665519766366675,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 5.676059401870477,
+          "sch_display": "10",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 3.643962111931348,
+          "margin_pct": 30.141503997548146
+        },
+        {
+          "nps": "20",
+          "nps_decimal": 20.0,
+          "od_mm": 508.0,
+          "t_mm": 2.1860140134166897,
+          "d_over_6": 84.66666666666667,
+          "validity": "OK",
+          "tm_mm": 5.18601401341669,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 5.926873158190503,
+          "sch_display": "10",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 3.2764298052171474,
+          "margin_pct": 17.015350186326703
+        },
+        {
+          "nps": "22",
+          "nps_decimal": 22.0,
+          "od_mm": 559.0,
+          "t_mm": 2.4054760501967114,
+          "d_over_6": 93.16666666666667,
+          "validity": "OK",
+          "tm_mm": 5.405476050196711,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 6.177686914510526,
+          "sch_display": "10",
+          "sel_thk_mm": 6.35,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 2.976243969608979,
+          "margin_pct": 6.294427486034975
+        },
+        {
+          "nps": "24",
+          "nps_decimal": 24.0,
+          "od_mm": 610.0,
+          "t_mm": 2.6249380869767336,
+          "d_over_6": 101.66666666666667,
+          "validity": "OK",
+          "tm_mm": 5.624938086976734,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 6.4285006708305525,
+          "sch_display": "20",
+          "sel_thk_mm": 9.53,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 5.718298790726968,
+          "margin_pct": 104.22495681167744
+        },
+        {
+          "nps": "26",
+          "nps_decimal": 26.0,
+          "od_mm": 660.0,
+          "t_mm": 2.8400969465649903,
+          "d_over_6": 110.0,
+          "validity": "OK",
+          "tm_mm": 5.840096946564991,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 6.67439651035999,
+          "sch_display": "10",
+          "sel_thk_mm": 7.92,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 3.880434442735075,
+          "margin_pct": 38.58694438339555
+        },
+        {
+          "nps": "28",
+          "nps_decimal": 28.0,
+          "od_mm": 711.0,
+          "t_mm": 3.059558983345012,
+          "d_over_6": 118.5,
+          "validity": "OK",
+          "tm_mm": 6.059558983345012,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 6.925210266680013,
+          "sch_display": "10",
+          "sel_thk_mm": 7.92,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 3.60066836847688,
+          "margin_pct": 28.59529887417429
+        },
+        {
+          "nps": "30",
+          "nps_decimal": 30.0,
+          "od_mm": 762.0,
+          "t_mm": 3.2790210201250343,
+          "d_over_6": 127.0,
+          "validity": "OK",
+          "tm_mm": 6.279021020125034,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 7.176024023000039,
+          "sch_display": "10",
+          "sel_thk_mm": 7.92,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 3.3585298345192713,
+          "margin_pct": 19.947494089973983
+        },
+        {
+          "nps": "32",
+          "nps_decimal": 32.0,
+          "od_mm": 812.8,
+          "t_mm": 3.497622421466703,
+          "d_over_6": 135.46666666666667,
+          "validity": "OK",
+          "tm_mm": 6.497622421466703,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 7.425854195961946,
+          "sch_display": "10",
+          "sel_thk_mm": 7.92,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 3.147683807836627,
+          "margin_pct": 12.417278851308119
+        },
+        {
+          "nps": "36",
+          "nps_decimal": 36.0,
+          "od_mm": 914.4,
+          "t_mm": 3.934825224150041,
+          "d_over_6": 152.4,
+          "validity": "OK",
+          "tm_mm": 6.934825224150041,
+          "mill_tol": 0.125,
+          "calc_thk_mm": 7.925514541885761,
+          "sch_display": "STD",
+          "sel_thk_mm": 9.53,
+          "sel_thk_mm_display": null,
+          "sch_status": "OK",
+          "mawp_barg": 3.8044203425892995,
+          "margin_pct": 35.87215509247499
+        }
+      ],
+      "summary": {
+        "min_mawp_barg": 2.964458164050103,
+        "max_mawp_barg": 19.569472058143486,
+        "min_margin_pct": 5.873505858932252,
+        "hydrotest_barg": 29.400000000000002,
+        "total_nps_sizes": 22,
+        "mill_tolerance": 0.125,
+        "hydrotest_factor": 1.5,
+        "operating_factor": 0.8
+      },
+      "flags": [
+        {
+          "level": "warning",
+          "title": "Y Coefficient — Above Ferritic Baseline (482°C)",
+          "body": "Design temperature 500°C exceeds the 482°C ferritic baseline in B31.3 Table 304.1.1. Y rises in steps (0.4 → 0.5 at 510°C → 0.7 at 538°C). Verify the interpolation against your actual material spec."
+        },
+        {
+          "level": "mandatory",
+          "title": "Customized PMS — Engineering Review Required",
+          "body": "Design temperature 500°C is outside the standard 0–300 °C envelope. This PMS has been generated as a non-standard variant (class code prefixed with \"New-spec-\") and the wall-thickness calc uses your single design point only (no cold-end envelope check). Please consult a technical engineer to verify suitability for sustained service before issuing this report."
+        },
+        {
+          "level": "warning",
+          "title": "Carbon Steel — Above ASME B16.5 Prolonged-Service Limit (425 °C)",
+          "body": "Design temperature 500°C exceeds 425 °C — per ASME B16.5 Table 2-1.1 Note (1), prolonged use of Group 1.1 carbon steel above 425 °C is permissible but NOT recommended (carbide may convert to graphite). Specify a chromium-molybdenum alloy steel for continuous service."
+        },
+        {
+          "level": "note",
+          "title": "Operating Conditions — 80% Estimate",
+          "body": "The “Operating (est. 80%)” pressure / temperature on the Derived Design Conditions card is a rule-of-thumb estimate (0.8 × design). Replace with actual process operating point when available."
+        }
+      ],
+      "formula_example": {
+        "E": 1.0,
+        "W": 1.0,
+        "Y": 0.46,
+        "nps": "6",
+        "C_in": 0.11811023622047245,
+        "C_mm": 3.0,
+        "od_in": 6.625984251968505,
+        "od_mm": 168.3,
+        "tm_in": 0.1466230205265383,
+        "case_1": null,
+        "case_2": {
+          "S_psi": 4700,
+          "label": "Design Point @ 500.0°C",
+          "P_psig": 40.61064,
+          "governs": true,
+          "t_press_in": 0.028512784306065853
+        },
+        "Y_label": "Ferritic steels",
+        "T_req_in": 0.16756916631604377,
+        "T_req_mm": 4.256256824427512,
+        "available": true,
+        "t_press_in": 0.028512784306065853,
+        "governing_case": 2,
+        "mill_tolerance": 0.125
+      },
+      "unavailable": false,
+      "unavailable_reason": null
+    },
+    "materials_tab": {
+      "small_bore": {
+        "range": "NPS ½\" – 2\"",
+        "connection": "Butt Weld (SCH to match pipe), Seamless",
+        "schedule": "SCH 80",
+        "rows": [
+          {
+            "component": "Pipe",
+            "material": "ASTM A 106 Gr. B / API 5L Gr. B",
+            "schedule": "SCH 80",
+            "standard": "ASTM"
+          },
+          {
+            "component": "90° LR Elbow",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 80",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "45° Elbow",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 80",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Equal Tee",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 80",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Reducing Tee",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 80",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Concentric Reducer",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 80",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Eccentric Reducer",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 80",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Pipe Cap",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "ASME B 16.9",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Plug",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "—",
+            "standard": "Hex Head Plug, ASME B 16.11"
+          },
+          {
+            "component": "Weldolet",
+            "material": "MSS SP 97, ASTM A 105N",
+            "schedule": "—",
+            "standard": "MSS SP-97"
+          }
+        ]
+      },
+      "large_bore": {
+        "range": "NPS 2½\" – 36\"",
+        "connection": "Butt Weld (SCH to match pipe), Welded",
+        "schedule": "SCH 10",
+        "rows": [
+          {
+            "component": "Pipe",
+            "material": "ASTM A 106 Gr. B / API 5L Gr. B",
+            "schedule": "SCH 10",
+            "standard": "ASTM"
+          },
+          {
+            "component": "90° LR Elbow",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 10",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "45° Elbow",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 10",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Equal Tee",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 10",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Reducing Tee",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 10",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Concentric Reducer",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 10",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Eccentric Reducer",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "Sch 10",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Pipe Cap",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "ASME B 16.9",
+            "standard": "ASME B 16.9"
+          },
+          {
+            "component": "Plug",
+            "material": "ASTM A 234 Gr. WPB",
+            "schedule": "—",
+            "standard": "Hex Head Plug, ASME B 16.11"
+          },
+          {
+            "component": "Weldolet",
+            "material": "MSS SP 97, ASTM A 105N",
+            "schedule": "—",
+            "standard": "MSS SP-97"
+          }
+        ]
+      }
+    },
+    "project_notes": [
+      {
+        "id": 1,
+        "text": "PMS to be read in conjunction with Project Piping Design Basis, and Valve Material Specification."
+      },
+      {
+        "id": 2,
+        "text": "Weld Joint Factor for welded pipe shall be as per ASME B 31.3."
+      },
+      {
+        "id": 3,
+        "text": "Welded fittings shall be 100% radiographed."
+      },
+      {
+        "id": 4,
+        "text": "Spectacle blinds and spacer sizes and rating that are not available in ASME B 16.48 shall be as per manuf. standard. Design shall be submitted to Company for review and approval."
+      },
+      {
+        "id": 5,
+        "text": "Maximum temperature limit for all Soft Seat Ball Valve shall be 250°C."
+      },
+      {
+        "id": 6,
+        "text": "Wafer check valve to be avoided, unless the available space constraint does not allow normal check valve."
+      },
+      {
+        "id": 7,
+        "text": "Wafer type Butterfly Valve may be used only in water service and shall not be used in hydrocarbon service."
+      },
+      {
+        "id": 8,
+        "text": "Two jackscrew, 180 degree apart shall be provided in one of the flanges for all orifice flange and specified spectacle blind assemblies."
+      }
+    ],
+    "design_conditions_inputs": [
+      {
+        "min": 0,
+        "step": 0.1,
+        "type": "number",
+        "field": "design_pressure_barg",
+        "label": "Design P (barg)",
+        "col_span": 1,
+        "required": true,
+        "sync_partner": "design_temp_c",
+        "footnote_text": null
+      },
+      {
+        "step": 1,
+        "type": "number",
+        "field": "design_temp_c",
+        "label": "Design T (°C)",
+        "col_span": 1,
+        "required": true,
+        "sync_partner": "design_pressure_barg",
+        "footnote_text": "= 932.0 °F"
+      },
+      {
+        "type": "select",
+        "field": "joint_type",
+        "label": "Joint Type",
+        "options": [
+          {
+            "label": "Seamless (E = 1.0)",
+            "value": "Seamless"
+          },
+          {
+            "label": "EFW, 100% RT (E = 1.0)",
+            "value": "EFW, 100% RT"
+          },
+          {
+            "label": "ERW (E = 0.85)",
+            "value": "ERW"
+          },
+          {
+            "label": "EFW (E = 0.85)",
+            "value": "EFW"
+          }
+        ],
+        "col_span": 2,
+        "required": false,
+        "footnote_text": "ASME B31.3 Table A-1B"
+      }
+    ]
+  }
+}
