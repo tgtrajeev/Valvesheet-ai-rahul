@@ -576,6 +576,61 @@ class PmsContext:
         note = getattr(self._pms, "note", None)
         return note if note and str(note).strip() else None
 
+    # ── Valve material overrides (PMS-first cascade) ────────────────────
+
+    def get_material_override(self, field: str) -> str | None:
+        """Return a PMS-specified material grade for *field*, or None.
+
+        When the PMS Generator provides explicit valve material grades (e.g.
+        a non-standard stem material), they take priority over the VMS
+        reference-table default.  If ``valve_material_overrides`` is absent
+        or the specific field is not set, returns None so the caller falls
+        back to the reference table.
+        """
+        overrides = getattr(self._pms, "valve_material_overrides", None)
+        if overrides is None:
+            return None
+        val = getattr(overrides, field, None)
+        if val and str(val).strip():
+            return str(val).strip()
+        return None
+
+    def get_all_material_overrides(self) -> dict[str, str]:
+        """Return all non-None material overrides as a flat dict.
+
+        Useful for provenance tracking — any field in this dict was sourced
+        from the PMS rather than the reference table.
+        """
+        overrides = getattr(self._pms, "valve_material_overrides", None)
+        if overrides is None:
+            return {}
+        result: dict[str, str] = {}
+        for field_name in (
+            "stem_material", "ball_material", "seat_material", "seal_material",
+            "gland_material", "gland_packing", "disc_material", "wedge_material",
+            "shaft_material", "needle_material", "back_seat_material",
+            "bonnet_material", "spring_material", "lever_handwheel",
+            "trim_material", "hinge_pin_material", "cover_material",
+        ):
+            val = getattr(overrides, field_name, None)
+            if val and str(val).strip():
+                result[field_name] = str(val).strip()
+        return result
+
+    # ── Project code (for document numbering) ───────────────────────────
+
+    def get_project_code(self) -> str | None:
+        """Return the project code from PMS payload, or None.
+
+        When present, this replaces the first segment of all document
+        numbers (e.g. "40801" → "FPSO-006").  None means "use the
+        default from the project_codes.py registry."
+        """
+        val = getattr(self._pms, "project_code", None)
+        if val and str(val).strip():
+            return str(val).strip()
+        return None
+
     # ── Wall thickness (informational) ────────────────────────────────────
 
     def get_wall_thickness_summary(self) -> dict | None:

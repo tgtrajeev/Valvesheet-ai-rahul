@@ -43,7 +43,7 @@ from ..routes.datasheets_v2 import (
 )
 
 # ── Dynamic project document codes (VDS-01) ─────────────────────────────────
-from ..engine.project_codes import get_pms_doc, get_project_label
+from ..engine.project_codes import get_pms_doc, get_project_label, _PMS_TEMPLATE
 
 # ── Tool definitions (JSON schema for Claude) ────────────────────────────────
 
@@ -422,10 +422,10 @@ async def _handle_find_valves(input_data: dict) -> dict:
         # ── v2 fallback: check PMS Generator custom classes ──
         if not results and piping_class:
             try:
-                _v2_ctx = _load_context_by_class(piping_class)
-                # Auto-pull from PMS Generator DB if not in local v2 store
+                # Always try fresh DB sync first; local cache is fallback
+                _v2_ctx = auto_sync_from_generator(piping_class)
                 if _v2_ctx is None:
-                    _v2_ctx = auto_sync_from_generator(piping_class)
+                    _v2_ctx = _load_context_by_class(piping_class)
                 if _v2_ctx is not None:
                     _v2_codes = _v2_ctx.get_vds_codes()
                     _vt_filter = (input_data.get("valve_type") or "").lower()
@@ -500,10 +500,10 @@ async def _handle_piping_class_info(    input_data: dict) -> dict:
     # If knowledge base has no info, try v2 PmsContext
     if isinstance(result, dict) and result.get("error"):
         try:
-            _v2_ctx = _load_context_by_class(input_data["piping_class"])
-            # Auto-pull from PMS Generator DB if not in local v2 store
+            # Always try fresh DB sync first; local cache is fallback
+            _v2_ctx = auto_sync_from_generator(input_data["piping_class"])
             if _v2_ctx is None:
-                _v2_ctx = auto_sync_from_generator(input_data["piping_class"])
+                _v2_ctx = _load_context_by_class(input_data["piping_class"])
             if _v2_ctx is not None:
                 return _format_v2_pms_response(input_data["piping_class"], _v2_ctx)
         except Exception:
@@ -568,6 +568,13 @@ async def _handle_generate_v2(
 
     _project = overrides.get("project_name")
 
+    # Resolve document number: PMS project_code wins → else registry lookup
+    _pms_project_code = ctx.get_project_code()  # e.g. "FPSO-006" from PMS DB
+    if _pms_project_code:
+        _doc_number = _PMS_TEMPLATE.format(code=_pms_project_code)
+    else:
+        _doc_number = get_pms_doc(_project)
+
     try:
         data, provenance = generate_datasheet_v2(
             decoded, ctx, size_inches=size_val, return_provenance=True,
@@ -619,7 +626,7 @@ async def _handle_generate_v2(
         "source": "v2_pms_generator",
         "completion_pct": completion,
         "project_name": get_project_label(_project),
-        "doc_number": get_pms_doc(_project),
+        "doc_number": _doc_number,
         "revision": overrides.get("revision") or "A0",
         "validation": {
             "is_valid": True,
@@ -892,10 +899,10 @@ async def _handle_generate(input_data: dict) -> dict:
     try:
         from ..engine.vds_decoder import decode_vds as _v2_decode
         _v2_dec = _v2_decode(vds_code)
-        _v2_ctx = _load_context_by_class(_v2_dec.piping_class)
-        # If not in local v2 store, auto-pull from PMS Generator DB (zero-button sync)
+        # Always try fresh DB sync first; local cache is fallback
+        _v2_ctx = auto_sync_from_generator(_v2_dec.piping_class)
         if _v2_ctx is None:
-            _v2_ctx = auto_sync_from_generator(_v2_dec.piping_class)
+            _v2_ctx = _load_context_by_class(_v2_dec.piping_class)
         if _v2_ctx is not None:
             return await _handle_generate_v2(vds_code, _v2_dec, _v2_ctx, overrides)
     except Exception:
@@ -1302,10 +1309,10 @@ async def _handle_query_pms(input_data: dict) -> dict:
     if not spec:
         # ── v2 fallback: check PMS Generator custom classes ──
         try:
-            _v2_ctx = _load_context_by_class(piping_class)
-            # Auto-pull from PMS Generator DB if not in local v2 store
+            # Always try fresh DB sync first; local cache is fallback
+            _v2_ctx = auto_sync_from_generator(piping_class)
             if _v2_ctx is None:
-                _v2_ctx = auto_sync_from_generator(piping_class)
+                _v2_ctx = _load_context_by_class(piping_class)
             if _v2_ctx is not None:
                 return _format_v2_pms_response(piping_class, _v2_ctx)
         except Exception:
@@ -1561,10 +1568,10 @@ async def _handle_compare(input_data: dict) -> dict:
             # Try v2 pipeline for custom classes before marking as missing
             try:
                 _cd = _compare_decode(code)
-                _v2_ctx = _load_context_by_class(_cd.piping_class)
-                # Auto-pull from PMS Generator DB if not in local v2 store
+                # Always try fresh DB sync first; local cache is fallback
+                _v2_ctx = auto_sync_from_generator(_cd.piping_class)
                 if _v2_ctx is None:
-                    _v2_ctx = auto_sync_from_generator(_cd.piping_class)
+                    _v2_ctx = _load_context_by_class(_cd.piping_class)
                 if _v2_ctx is not None:
                     _v2_data = generate_datasheet_v2(_cd, _v2_ctx)
                     comparison[code] = {f: _v2_data.get(f, "-") for f in compare_fields}

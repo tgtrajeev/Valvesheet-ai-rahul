@@ -61,7 +61,7 @@ from .pms_datasheet_loader import get_reference_tables
 from .datasheet_prune import prune_datasheet_by_valve_type
 from . import rule_citations
 
-from .project_codes import get_pms_doc, get_coating_doc
+from .project_codes import get_pms_doc, get_coating_doc, _PMS_TEMPLATE
 
 
 # ── v2 footer-notes (dynamic PMS doc number, not from frozen rule_engine) ────
@@ -344,8 +344,18 @@ def generate_datasheet_v2(
         )
 
     # ────────────────────────────────────────────────────────────────────────
-    # MATERIALS (PmsContext body material → reference tables fallback)
+    # MATERIALS — PMS-first cascade
+    #
+    # Pattern: ctx.get_material_override("field") or <reference table default>
+    # When the PMS Generator specifies an explicit material grade, it wins.
+    # Otherwise, the VMS reference table for the material category is used.
+    # Derived fields (wedge = body + "Hard faced", disc = stem + "Hard faced",
+    # back_seat = stem + "Stellite") read from data[] after the primary
+    # field is set, so they cascade automatically.
     # ────────────────────────────────────────────────────────────────────────
+    _mo = ctx.get_material_override  # shorthand
+
+    # Body
     body_mat = ctx.get_body_material_pms() or _rt.get("body_material", cat)
     if vt == "BF" and cat in ("SS316L", "SS316L_NACE") and not ctx.get_body_material_pms():
         body_mat = _BF_BODY_SS316L
@@ -356,26 +366,33 @@ def generate_datasheet_v2(
             body_mat = forged_parts[0]
     data["body_material"] = body_mat
 
+    # Stem — feed PMS override through _stem_trim_row's pms_stem param
+    # so grade-normalization (F316→F316L for NACE) is preserved
+    _pms_stem = _mo("stem_material")
     data["stem_material"] = _stem_trim_row(
-        cat, None, is_nace=is_nace, is_lt=is_lt,
+        cat, _pms_stem, is_nace=is_nace, is_lt=is_lt,
     )
-    data["gland_material"] = _rt.get("gland_material", cat)
-    data["gland_packing"] = _rt.get("gland_packing", cat)
-    data["lever_handwheel"] = "Solid ASTM A47 HDG/ ASTM A220 HDG/ SS316"
+
+    # Gland, packing, lever
+    data["gland_material"] = _mo("gland_material") or _rt.get("gland_material", cat)
+    data["gland_packing"] = _mo("gland_packing") or _rt.get("gland_packing", cat)
+    data["lever_handwheel"] = (
+        _mo("lever_handwheel") or "Solid ASTM A47 HDG/ ASTM A220 HDG/ SS316"
+    )
 
     # Spring row
     if vt == "BF":
         pass
     elif vt in ("BL", "BS", "CH", "GL"):
-        data["spring_material"] = "Inconel 750"
+        data["spring_material"] = _mo("spring_material") or "Inconel 750"
     # NE/DB don't get spring_material
 
     # Valve-type-specific material rows
     if vt in ("BL", "BS", "DB"):
-        data["ball_material"] = _rt.get("ball_material", cat)
-        data["seat_material"] = _rt.get("seat_material", seat)
+        data["ball_material"] = _mo("ball_material") or _rt.get("ball_material", cat)
+        data["seat_material"] = _mo("seat_material") or _rt.get("seat_material", seat)
         if vt in ("BL", "BS"):
-            data["seal_material"] = _rt.get("seal_material_ball", seat)
+            data["seal_material"] = _mo("seal_material") or _rt.get("seal_material_ball", seat)
         if vt != "DB":
             data["seat_construction"] = _rt.get("seat_construction_by_seat", seat)
         if seat == "M" and vt in ("BL", "BS"):
@@ -390,49 +407,65 @@ def generate_datasheet_v2(
                 "Stellite 6 by deposition, min 1.6 mm finished thickness"
             )
     elif vt == "GA":
-        data["wedge_material"] = _rt.get("body_material", cat) + ", Hard faced"
-        data["seat_material"] = _rt.get("seat_material", seat)
-        data["seal_material"] = _rt.get("seal_material_gate", seat)
+        # wedge = body + hard faced (derived) — but allow direct PMS override
+        data["wedge_material"] = (
+            _mo("wedge_material")
+            or _rt.get("body_material", cat) + ", Hard faced"
+        )
+        data["seat_material"] = _mo("seat_material") or _rt.get("seat_material", seat)
+        data["seal_material"] = _mo("seal_material") or _rt.get("seal_material_gate", seat)
         if cat.startswith("CS") and seat == "M":
             data["hardness_requirement"] = (
                 "Body seat and wedge min 250 BHN, min 50 BHN differential"
             )
     elif vt == "GL":
-        data["disc_material"] = data["stem_material"] + ", Hard faced"
-        data["seat_material"] = _rt.get("seat_material", seat)
-        data["seal_material"] = _rt.get("seal_material_gate", seat)
+        # disc = stem + hard faced (derived) — but allow direct PMS override
+        data["disc_material"] = (
+            _mo("disc_material")
+            or data["stem_material"] + ", Hard faced"
+        )
+        data["seat_material"] = _mo("seat_material") or _rt.get("seat_material", seat)
+        data["seal_material"] = _mo("seal_material") or _rt.get("seal_material_gate", seat)
         if cat.startswith("CS") and seat == "M":
             data["hardness_requirement"] = (
                 "Body seat and disc min 250 BHN, min 50 BHN differential"
             )
     elif vt == "CH":
-        data["disc_material"] = _rt.get("stem_material", cat)
-        data["seat_material"] = _rt.get("seat_material", seat)
+        data["disc_material"] = _mo("disc_material") or _rt.get("stem_material", cat)
+        data["seat_material"] = _mo("seat_material") or _rt.get("seat_material", seat)
         # seal_material_gate only has M/T entries; PEEK (P) falls back to ball table
         try:
-            data["seal_material"] = _rt.get("seal_material_gate", seat)
+            data["seal_material"] = _mo("seal_material") or _rt.get("seal_material_gate", seat)
         except KeyError:
-            data["seal_material"] = _rt.get("seal_material_ball", seat)
+            data["seal_material"] = _mo("seal_material") or _rt.get("seal_material_ball", seat)
         if design == "S":
-            data["hinge_pin_material"] = _rt.get("stem_material", cat)
+            data["hinge_pin_material"] = (
+                _mo("hinge_pin_material") or _rt.get("stem_material", cat)
+            )
         if cat in ("CS", "CS_NACE"):
-            data["cover_material"] = "Forged - ASTM A105N"
-            data["material_cover_material"] = "Forged - ASTM A105N"
+            _cover = _mo("cover_material") or "Forged - ASTM A105N"
+            data["cover_material"] = _cover
+            data["material_cover_material"] = _cover
     elif vt == "BF":
+        _pms_shaft = _mo("shaft_material")
         data["shaft_material"] = _stem_trim_row(
-            cat, None, is_nace=is_nace, is_lt=is_lt,
+            cat, _pms_shaft, is_nace=is_nace, is_lt=is_lt,
         )
-        data["disc_material"] = data["shaft_material"] + ", Stellite Hard Faced"
-        data["seal_material"] = _rt.get("seal_material_ball", seat)
-        _seat_bf = _rt.get("seat_material", seat)
-        if seat == "T":
+        # disc derived from shaft — but allow direct PMS override
+        data["disc_material"] = (
+            _mo("disc_material")
+            or data["shaft_material"] + ", Stellite Hard Faced"
+        )
+        data["seal_material"] = _mo("seal_material") or _rt.get("seal_material_ball", seat)
+        _seat_bf = _mo("seat_material") or _rt.get("seat_material", seat)
+        if seat == "T" and not _mo("seat_material"):
             _seat_bf = "Reinforced PTFE"
         data["seat_material"] = _seat_bf
     elif vt == "NE":
-        data["needle_material"] = _rt.get("stem_material", cat)
-        data["seat_material"] = _rt.get("seat_material", seat)
+        data["needle_material"] = _mo("needle_material") or _rt.get("stem_material", cat)
+        data["seat_material"] = _mo("seat_material") or _rt.get("seat_material", seat)
         data["minimum_bore"] = "10 mm (instrument connections)"
-        data["trim_material"] = data.get("stem_material", "")
+        data["trim_material"] = _mo("trim_material") or data.get("stem_material", "")
 
     # BF: keep both stem + shaft; no spring
     if vt == "BF":
@@ -442,10 +475,12 @@ def generate_datasheet_v2(
     if vt in ("GA", "GL", "NE"):
         data["backseat"] = "Back seated, renewable"
 
-    # Back seat material (gate/globe/needle only)
+    # Back seat material (gate/globe/needle only) — derived from stem, but
+    # allow direct PMS override
     if vt in ("GA", "GL", "NE"):
         data["back_seat_material"] = (
-            f'{data["stem_material"]}, Stellite Hard Faced'
+            _mo("back_seat_material")
+            or f'{data["stem_material"]}, Stellite Hard Faced'
         )
 
     # Seat pocket CRA overlay (CS NACE)
@@ -519,7 +554,7 @@ def generate_datasheet_v2(
     )
 
     if vt in ("GA", "GL"):
-        data["bonnet_material"] = _rt.get("body_material", cat)
+        data["bonnet_material"] = _mo("bonnet_material") or _rt.get("body_material", cat)
 
     # ────────────────────────────────────────────────────────────────────────
     # HYDROTEST (from PmsContext derived conditions)
@@ -676,7 +711,10 @@ def generate_datasheet_v2(
     )
 
     # ── Footer notes (dynamic PMS doc number + PMS project notes) ──
-    _pms = get_pms_doc(project_name)
+    # PMS project_code wins → else registry lookup
+    _pms_project_code = ctx.get_project_code()
+    _pms = (_PMS_TEMPLATE.format(code=_pms_project_code)
+            if _pms_project_code else get_pms_doc(project_name))
     data["datasheet_notes"] = _build_footer_notes_v2(
         vt, is_nace, _pms, ctx.get_project_notes(), ctx.get_class_note(),
     )
@@ -719,6 +757,8 @@ def generate_datasheet_v2(
             "max_design_temp", "bolts", "nuts", "gaskets", "body_material",
             "flange_material", "end_connections", "material_class",
         }
+        # Also tag any fields overridden by ValveMaterialOverrides
+        _pms_direct_fields.update(ctx.get_all_material_overrides().keys())
         for f in _pms_direct_fields:
             if f in provenance:
                 provenance[f] = f"PMS Generator ({ctx.get_class_code()}) + {provenance[f]}"
