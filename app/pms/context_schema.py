@@ -96,6 +96,35 @@ class FlangeExtras(BaseModel):
     valves: ValvesSection
 
 
+# ── Valve material overrides (optional, PMS-first cascade) ──
+#
+# When the PMS Generator specifies explicit valve material grades that
+# differ from the VMS reference-table defaults, they go here.  Each field
+# is Optional — ``None`` means "use reference table default for this
+# material category."  Any non-None value takes priority over the
+# reference table.
+
+class ValveMaterialOverrides(BaseModel):
+    """Per-component valve material overrides from PMS Generator."""
+    stem_material: Optional[str] = None
+    ball_material: Optional[str] = None
+    seat_material: Optional[str] = None
+    seal_material: Optional[str] = None
+    gland_material: Optional[str] = None
+    gland_packing: Optional[str] = None
+    disc_material: Optional[str] = None
+    wedge_material: Optional[str] = None
+    shaft_material: Optional[str] = None
+    needle_material: Optional[str] = None
+    back_seat_material: Optional[str] = None
+    bonnet_material: Optional[str] = None
+    spring_material: Optional[str] = None
+    lever_handwheel: Optional[str] = None
+    trim_material: Optional[str] = None
+    hinge_pin_material: Optional[str] = None
+    cover_material: Optional[str] = None
+
+
 # ── Branch chart (informational, not used by VDS engine) ──
 
 class BranchChart(BaseModel):
@@ -306,6 +335,16 @@ class PmsGeneratorInput(BaseModel):
     materials_tab: Optional[MaterialsTab] = None
     project_notes: List[ProjectNote] = Field(default_factory=list)
     design_conditions_inputs: Optional[List[Dict[str, Any]]] = None
+
+    # Valve material overrides — when PMS Generator specifies material grades
+    # that differ from VMS reference-table defaults.  None = use default.
+    valve_material_overrides: Optional[ValveMaterialOverrides] = None
+
+    # Project code — the first segment of the document number.
+    # e.g. "FPSO-006", "40801", "KLK-001".  When present, overrides the
+    # default project code from project_codes.py registry.
+    # None = use default project code from registry.
+    project_code: Optional[str] = None
 
     # ── Derived helpers ──
 
