@@ -33,6 +33,8 @@ def _overlay_pdf_provenance(vds_code: str, sources: dict[str, str], project_id: 
 from ..engine.rule_engine import apply_bf_vms_construction_overrides, footer_notes_as_text
 from ..engine.vds_decoder import decode_vds
 from ..engine.validator import raw_vds_bs_ball_prefix_retired_error
+from .datasheets_v2 import auto_sync_from_generator, _load_context_by_class
+from ..engine.generate_v2 import generate_datasheet_v2
 
 router = APIRouter()
 
@@ -189,6 +191,53 @@ async def get_datasheet(
         })
         return response
 
+    # ── v2 PMS Generator fallback ──────────────────────────────────────
+    # If v1 pipeline (index + rule_engine) could not produce a datasheet,
+    # try the v2 pipeline which handles custom piping classes from the
+    # PMS Generator (e.g. Y1 classes synced from saved_pms / pms_cache).
+    try:
+        decoded_v2 = decode_vds(code)
+        v2_ctx = auto_sync_from_generator(decoded_v2.piping_class)
+        if v2_ctx is None:
+            v2_ctx = _load_context_by_class(decoded_v2.piping_class)
+        if v2_ctx is not None:
+            v2_data, v2_provenance = generate_datasheet_v2(
+                decoded_v2, v2_ctx, return_provenance=True,
+            )
+            v2_data = filter_card_data(
+                _inject_footer_notes(code, v2_data),
+                for_chat_ui=chat_ui,
+                vds_code_for_mask=code,
+            )
+            piping_class = v2_data.get("piping_class", "")
+            sources = (
+                get_pms_field_sources(piping_class, v2_data)
+                if piping_class
+                else get_field_sources(v2_data)
+            )
+            sources.update(v2_provenance)
+            sources = _overlay_pdf_provenance(code, sources)
+            sources = filter_card_metadata(sources, v2_data)
+            total = len(v2_data)
+            filled = sum(1 for v in v2_data.values() if v and v != "-" and str(v).strip())
+            completion = round((filled / total * 100) if total else 0, 1)
+            response = DatasheetResponse(
+                vds_code=code,
+                datasheet=v2_data,
+                field_sources=sources,
+                validation_status="complete" if completion > 90 else "partial",
+                completion_pct=completion,
+            ).model_dump()
+            response.update({
+                "field_sources_links": {},
+                "field_sources_quotes": {},
+                "field_source_values": {},
+                "field_justifications": {},
+            })
+            return response
+    except Exception:
+        pass
+
     # Last resort: legacy ML predict (butterfly construction rows are repaired).
     if not settings.ml_api_base_url or settings.ml_api_base_url == "http://localhost:8080/api":
         raise HTTPException(
@@ -323,6 +372,53 @@ async def generate_batch(vds_codes: list[str]):
                 except Exception:
                     live_tuple = None
             if live_tuple is None:
+                # ── v2 PMS Generator fallback (batch) ──
+                v2_done = False
+                try:
+                    decoded_v2 = decode_vds(code)
+                    v2_ctx = auto_sync_from_generator(decoded_v2.piping_class)
+                    if v2_ctx is None:
+                        v2_ctx = _load_context_by_class(decoded_v2.piping_class)
+                    if v2_ctx is not None:
+                        v2_data, v2_prov = generate_datasheet_v2(
+                            decoded_v2, v2_ctx, return_provenance=True,
+                        )
+                        v2_data = filter_card_data(
+                            _inject_footer_notes(code, v2_data),
+                            for_chat_ui=False,
+                            vds_code_for_mask=code,
+                        )
+                        pc = v2_data.get("piping_class", "")
+                        srcs = (
+                            get_pms_field_sources(pc, v2_data) if pc
+                            else get_field_sources(v2_data)
+                        )
+                        srcs.update(v2_prov)
+                        srcs = _overlay_pdf_provenance(code, srcs)
+                        srcs = filter_card_metadata(srcs, v2_data)
+                        total = len(v2_data)
+                        filled = sum(
+                            1 for v in v2_data.values()
+                            if v and v != "-" and str(v).strip()
+                        )
+                        completion = round((filled / total * 100) if total else 0, 1)
+                        results.append({
+                            "vds_code": code,
+                            "data": v2_data,
+                            "field_sources": srcs,
+                            "field_sources_links": {},
+                            "field_sources_quotes": {},
+                            "field_source_values": {},
+                            "field_justifications": {},
+                            "completion_pct": completion,
+                            "status": "success",
+                            "source": "v2_pms_generator",
+                        })
+                        v2_done = True
+                except Exception:
+                    pass
+                if v2_done:
+                    continue
                 results.append({
                     "vds_code": code,
                     "error": (
