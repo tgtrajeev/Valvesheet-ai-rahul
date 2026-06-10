@@ -6,6 +6,7 @@ python-multipart>=0.0.9
 
 # LLM (direct Anthropic SDK — no LangChain overhead)
 anthropic>=0.40.0
+openai>=1.30.0
 httpx>=0.27
 
 # Database
