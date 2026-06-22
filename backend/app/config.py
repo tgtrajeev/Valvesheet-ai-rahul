@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     port: int = 8001
 
     # Agent
-    agent_model: str = "claude-sonnet-4-20250514"
+    agent_model: str = "claude-sonnet-4-6"
     agent_temperature: float = 0.1
     agent_max_tokens: int = 4096
     agent_max_tool_calls: int = 50

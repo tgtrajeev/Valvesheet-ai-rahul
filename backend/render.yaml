@@ -14,7 +14,7 @@ services:
           name: valve-agent-db
           property: connectionString
       - key: AGENT_MODEL
-        value: claude-sonnet-4-20250514
+        value: claude-sonnet-4-6
       - key: AGENT_TEMPERATURE
         value: "0.1"
       - key: AGENT_MAX_TOOL_CALLS
