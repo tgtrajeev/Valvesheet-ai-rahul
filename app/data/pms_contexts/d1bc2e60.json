@@ -1,0 +1,121 @@
+{
+  "context_id": "d1bc2e60",
+  "class_code": "D10N",
+  "label": "PMS D10N (auto-synced from PMS Generator)",
+  "pms": {
+    "class_code": "D10N",
+    "letter": "D",
+    "digit": "10",
+    "suffix": "N",
+    "trailing": "",
+    "service": "ASME B 31.3, NACE-MR-01-75/ISO-15156-1/2/3",
+    "note": null,
+    "base_class_code": null,
+    "code_factors": {
+      "stress_table": null,
+      "y_curve": null,
+      "cold_temp_c": null,
+      "stress_at_cold": null,
+      "fitting_specs": {
+        "family": "SS316L NACE",
+        "pipe": null,
+        "fittings": null,
+        "flange": "ASTM A 182 F 316L",
+        "valve_body": "ASTM A182 F316L / A351 CF3M",
+        "branch_outlet": null
+      },
+      "flange_extras": {
+        "face": {
+          "code": "RF",
+          "label": null
+        },
+        "type": null,
+        "bolting": {
+          "stud": "ASTM A 320 Gr. L7M, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm",
+          "hex_nut": "ASTM A 194 Gr. 7ML, XYLAR 2 + XYLAN 1070 coated with minimum combined thickness of 50μm"
+        },
+        "gasket": {
+          "type": "Spiral Wound",
+          "spec": "ASME B 16.20, 4.5mm, SS316/SS316L Spiral Wound with Flexible Graphite (F.G.) filler"
+        },
+        "spectacle": null,
+        "valves": {
+          "rating": "600#, RF",
+          "body": "",
+          "ball": {
+            "code": "BLRTD10NR, BLFTD10NR",
+            "desc": "Ball valve for D10N"
+          },
+          "gate": {
+            "code": "GAYMD10NR",
+            "desc": "Gate valve for D10N"
+          },
+          "globe": {
+            "code": "GLYMD10NR",
+            "desc": "Globe valve for D10N"
+          },
+          "check": {
+            "code": "CHPMD10NR, CHSMD10NR, CHDMD10NR",
+            "desc": "Check valve for D10N"
+          },
+          "butterfly": {
+            "code": "BFWTD10NR, BFTPD10NR",
+            "desc": "Butterfly valve for D10N"
+          },
+          "needle": null,
+          "dbb": null
+        }
+      },
+      "branch_chart": null
+    },
+    "design_conditions": {
+      "design_pressure_barg": 82.7,
+      "design_temp_c": 250.0,
+      "mdmt_c": 38.0,
+      "joint_type": "Seamless"
+    },
+    "effective_design_conditions": null,
+    "derived_conditions": {
+      "pressure": {
+        "design_barg": 82.7,
+        "design_psig": 1199.5,
+        "hydrotest_barg": 124.05,
+        "hydrotest_psig": 1799.2,
+        "operating_estimate_barg": null,
+        "operating_estimate_psig": null
+      },
+      "temperature": null
+    },
+    "pressure_temperature": {
+      "group": null,
+      "cold_point": null,
+      "hottest_point": null,
+      "temperatures_c": [
+        38.0,
+        50.0,
+        100.0,
+        150.0,
+        200.0,
+        250.0
+      ],
+      "pressures_barg": [
+        82.7,
+        80.0,
+        69.6,
+        62.8,
+        58.3,
+        54.9
+      ],
+      "temp_labels": [],
+      "hydrotest_barg": null,
+      "display_columns": null
+    },
+    "adequacy": null,
+    "wall_thickness": null,
+    "materials_tab": null,
+    "project_notes": [],
+    "design_conditions_inputs": null,
+    "valve_material_overrides": null,
+    "project_code": null
+  }
+}

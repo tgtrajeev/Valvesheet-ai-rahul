@@ -1,0 +1,114 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Anthropic SDK
+        run: pip install anthropic
+
+      - name: Get PR diff
+        run: git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+
+      - name: Run Claude Code Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          python - <<'EOF'
+          import anthropic
+          import subprocess
+          import os
+
+          with open("pr_diff.txt", "r") as f:
+              diff = f.read()
+
+          if not diff.strip():
+              print("No changes to review.")
+              exit(0)
+
+          MAX_CHARS = 15000
+          if len(diff) > MAX_CHARS:
+              diff = diff[:MAX_CHARS] + "\n\n[...diff truncated...]"
+
+          client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+          message = client.messages.create(
+              model="claude-opus-4-5",
+              max_tokens=1500,
+              messages=[{
+                  "role": "user",
+                  "content": f"""You are an expert code reviewer. Review this PR diff and provide feedback on:
+
+          1. **Bugs or logic errors**
+          2. **Security vulnerabilities**
+          3. **Performance issues**
+          4. **Code quality & best practices**
+          5. **Missing error handling**
+
+          Be concise and actionable. If code looks good, say so briefly.
+
+````diff
+          {diff}
+```"""
+              }]
+          )
+
+          review = message.content[0].text
+          body = f"## 🤖 Claude Code Review\n\n{review}\n\n---\n*Automated review by Claude*"
+
+          subprocess.run([
+              "gh", "pr", "comment", os.environ["PR_NUMBER"],
+              "--repo", os.environ["REPO"],
+              "--body", body
+          ], check=True)
+
+          print("Review posted successfully.")
+          EOF
+```
+
+---
+
+### **Option 2 — Fix the separate script approach**
+
+If you prefer keeping the script in a separate file, make sure you actually create and commit it:
+
+```bash
+# From your repo root
+mkdir -p .github/scripts
+
+# Create the file (paste the python script content into it)
+nano .github/scripts/claude_review.py
+
+# Commit both files
+git add .github/workflows/claude-code-review.yml
+git add .github/scripts/claude_review.py
+git commit -m "Add Claude review script"
+git push
+```
+
+The error means the `.github/scripts/` folder or `claude_review.py` file **was never pushed** to the repo — GitHub Actions can only run files that exist in the repository.
+
+---
+
+**Option 1 is simpler** — no risk of missing files. Go with that unless you want to maintain the script separately. Want me to help with anything else in the workflow?

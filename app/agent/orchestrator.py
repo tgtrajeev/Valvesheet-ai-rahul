@@ -1,12 +1,16 @@
-"""Agent orchestrator — Claude tool_use loop with SSE streaming.
+"""Agent orchestrator — LLM tool_use loop with SSE streaming.
 
 This is the core agent loop. It:
-1. Sends messages + tools to Claude
+1. Sends messages + tools to the configured LLM provider (Anthropic or GLM)
 2. Streams back text, thinking, tool_calls
-3. Executes tools when Claude requests them
-4. Loops until Claude finishes (stop_reason="end_turn") or max tool calls reached
+3. Executes tools when the LLM requests them
+4. Loops until the LLM finishes (stop_reason="end_turn") or max tool calls reached
 5. Supports conversation resumption via prior_agent_messages
 6. Retries failed tool calls and rate-limited API calls with exponential backoff
+
+Provider is selected via LLM_PROVIDER env var ("anthropic" or "glm").
+Messages are always stored in normalized (Anthropic-like) format — the provider
+layer converts at the API boundary.
 """
 
 import asyncio
@@ -15,12 +19,20 @@ import logging
 import uuid
 from typing import AsyncGenerator
 
-import anthropic
-
 from ..config import settings
 from ..models.schemas import AgentEvent
 from .prompts import SYSTEM_PROMPT
 from .tools import TOOL_DEFINITIONS, execute_tool
+from .llm_provider import (
+    LLMProvider,
+    LLMRateLimitError,
+    LLMAuthenticationError,
+    LLMConnectionError,
+    LLMAPIError,
+    LLMError,
+    StreamEventType,
+    get_provider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,20 +40,24 @@ logger = logging.getLogger(__name__)
 TOOL_RETRY_DELAYS = [0.5, 1.0, 2.0]       # max 2 retries
 API_RETRY_DELAYS = [1.0, 2.0, 4.0]         # max 3 retries for rate limits
 
+# Max tools executed concurrently within a single turn — bounds DB/connection
+# pressure and shared-cache contention when the model batches many calls.
+MAX_PARALLEL_TOOLS = 6
+
 
 def _strip_orphan_tool_blocks(messages: list[dict]) -> list[dict]:
     """Remove tool_use / tool_result blocks whose counterpart is missing in the
     adjacent message. Drops messages that become content-empty.
 
-    Anthropic requires every `tool_use` in an assistant message to be followed
+    The LLM requires every `tool_use` in an assistant message to be followed
     by a matching `tool_result` in the next user message — and every
     `tool_result` requires a matching `tool_use` in the previous assistant
     message. Saved sessions can violate either rule when:
       - a turn is interrupted (browser close, network drop, server restart)
-        before tool_results are appended → orphan tool_use
+        before tool_results are appended -> orphan tool_use
       - history is sliced for token control and the cut lands between a
-        tool_use and its tool_result → orphan on either side
-    Stripping orphan blocks (rather than stubbing them) lets Claude cleanly
+        tool_use and its tool_result -> orphan on either side
+    Stripping orphan blocks (rather than stubbing them) lets the LLM cleanly
     re-attempt or move on, instead of seeing a fake "tool errored" message.
     """
     if not messages:
@@ -94,7 +110,7 @@ def _strip_orphan_tool_blocks(messages: list[dict]) -> list[dict]:
         else:
             cleaned.append(msg)
 
-    # Anthropic requires the conversation to start with a user message
+    # Conversation must start with a user message
     while cleaned and cleaned[0].get("role") == "assistant":
         cleaned = cleaned[1:]
     return cleaned
@@ -117,6 +133,99 @@ async def _retry_tool(tool_name: str, tool_input: dict, project_id: str | None =
     return {"error": f"Tool '{tool_name}' failed after retries: {str(last_error)[:200]}"}
 
 
+def _typed_events_for_result(tool_name: str, result: dict) -> list[AgentEvent]:
+    """Build the frontend card events (validation / suggestion / datasheet) for a tool result.
+
+    Extracted so it can be reused whether tools run sequentially or in parallel.
+    """
+    events: list[AgentEvent] = []
+    if tool_name == "validate_combination":
+        events.append(AgentEvent(type="validation", data=result))
+    elif tool_name == "find_valves":
+        if result.get("results"):
+            events.append(AgentEvent(type="suggestion", data={
+                "suggestions": [
+                    {
+                        "type": "combination",
+                        "title": r["vds_code"],
+                        "description": (
+                            f"{r['valve_type']} | {r['piping_class']} | "
+                            f"{r.get('body_material', '')[:40]}"
+                        ),
+                        "action": {"vds_code": r["vds_code"]},
+                        "meta": {
+                            "valve_type": r.get("valve_type", ""),
+                            "piping_class": r.get("piping_class", ""),
+                            "pressure_class": r.get("pressure_class", ""),
+                            "size_range": r.get("size_range", ""),
+                            "body_material": r.get("body_material", "")[:60],
+                            "end_connections": r.get("end_connections", ""),
+                            "sour_service": r.get("sour_service", ""),
+                        },
+                    }
+                    for r in result["results"][:12]
+                ]
+            }))
+    elif tool_name == "generate_datasheet":
+        val = result.get("validation") or {}
+        errs = [e for e in (val.get("errors") or []) if str(e).strip()]
+        if val:
+            events.append(AgentEvent(type="validation", data=val))
+        # Do not emit a datasheet card when the tool reported errors
+        if not (result.get("error") or errs):
+            events.append(AgentEvent(type="datasheet", data=result))
+    elif tool_name == "generate_datasheets_bulk":
+        # Fan out one card per datasheet in the batch.
+        for ds in (result.get("datasheets") or []):
+            if not isinstance(ds, dict):
+                continue
+            val = ds.get("validation") or {}
+            errs = [e for e in (val.get("errors") or []) if str(e).strip()]
+            if val:
+                events.append(AgentEvent(type="validation", data=val))
+            if not (ds.get("error") or errs):
+                events.append(AgentEvent(type="datasheet", data=ds))
+    return events
+
+
+def _llm_safe_result(tool_name: str, result: dict) -> dict:
+    """Compact a tool result before sending it back to the LLM as context.
+
+    Bulk generation returns up to 60 full datasheets — far too many tokens to feed
+    back to the model. The cards already went to the UI; the LLM only needs a summary.
+    """
+    if tool_name == "generate_datasheets_bulk" and isinstance(result, dict):
+        sheets = result.get("datasheets") or []
+        return {
+            "count": result.get("count", len(sheets)),
+            "succeeded": result.get("succeeded"),
+            "failed": result.get("failed"),
+            "truncated": result.get("truncated", False),
+            "vds_codes": [s.get("vds_code") for s in sheets if isinstance(s, dict)],
+            "errors": [
+                {"vds_code": s.get("vds_code"), "error": s.get("error")}
+                for s in sheets if isinstance(s, dict) and s.get("error")
+            ],
+            "note": "Datasheets were rendered to the user as cards. Summarise the batch; do not re-list every field.",
+        }
+    return result
+
+
+def _get_provider() -> LLMProvider:
+    """Instantiate the configured LLM provider from active_llm_config()."""
+    cfg = settings.active_llm_config()
+    return get_provider(
+        cfg["provider"],
+        api_key=cfg["api_key"],
+        base_url=cfg["base_url"],
+    )
+
+
+def _get_model_name() -> str:
+    """Return the model name for the active provider."""
+    return settings.active_llm_config()["model"]
+
+
 async def run_agent(
     messages: list[dict],
     session_id: str | None = None,
@@ -128,21 +237,26 @@ async def run_agent(
     Args:
         messages: Current user messages (from this request).
         session_id: Session ID for tracking.
-        prior_agent_messages: Full Anthropic message history from a previous session
+        prior_agent_messages: Full message history from a previous session
                               for conversation resumption.
         project_id: Optional project ID for project-scoped PMS resolution.
     """
     if not session_id:
         session_id = uuid.uuid4().hex[:16]
 
-    # Validate API key before doing anything
-    if not settings.anthropic_api_key or settings.anthropic_api_key.startswith("your-"):
+    # ── Instantiate provider ──
+    try:
+        provider = _get_provider()
+    except LLMAuthenticationError as e:
+        yield AgentEvent(type="error", data={"message": str(e)})
+        return
+    except Exception as e:
         yield AgentEvent(type="error", data={
-            "message": "Anthropic API key not configured. Set ANTHROPIC_API_KEY in your .env file."
+            "message": f"Failed to initialize LLM provider: {str(e)[:200]}"
         })
         return
 
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+    model = _get_model_name()
 
     # Build system prompt — inject project context if available
     system_prompt = SYSTEM_PROMPT
@@ -166,16 +280,16 @@ async def run_agent(
 
     # Build message history: prior session + new messages
     if prior_agent_messages:
-        anthropic_messages = _strip_orphan_tool_blocks(list(prior_agent_messages))
+        agent_messages = _strip_orphan_tool_blocks(list(prior_agent_messages))
         # Append only new user messages (the last user message from request)
         new_user_msgs = [m for m in messages if m["role"] == "user"]
         if new_user_msgs:
-            anthropic_messages.append({
+            agent_messages.append({
                 "role": "user",
                 "content": new_user_msgs[-1]["content"],
             })
     else:
-        anthropic_messages = [
+        agent_messages = [
             {"role": msg["role"], "content": msg["content"]}
             for msg in messages
         ]
@@ -189,50 +303,36 @@ async def run_agent(
         # ── Status: calling LLM ──
         yield AgentEvent(type="status", data={"message": "Calling Valve Agent...", "phase": "llm"})
 
-        # ── Call Claude with streaming + rate limit retry ──
-        final = None
+        # ── Call LLM with streaming + rate limit retry ──
+        response = None
         for api_attempt in range(1 + len(API_RETRY_DELAYS)):
             try:
-                stream = client.messages.stream(
-                    model=settings.agent_model,
+                event_gen, handle = await provider.stream_completion(
+                    system=system_prompt,
+                    messages=agent_messages,
+                    tools=TOOL_DEFINITIONS,
+                    model=model,
                     max_tokens=settings.agent_max_tokens,
                     temperature=settings.agent_temperature,
-                    system=system_prompt,
-                    messages=anthropic_messages,
-                    tools=TOOL_DEFINITIONS,
                 )
 
-                # Process the stream — the actual HTTP request happens here in __aenter__
-                assistant_content = []
-                tool_uses = []
-                accumulated_text = ""
+                # Process the stream
+                async for event in event_gen:
+                    if event.type == StreamEventType.THINKING:
+                        yield AgentEvent(type="thinking", data={"text": event.text})
+                    elif event.type == StreamEventType.TEXT:
+                        yield AgentEvent(type="text", data={"text": event.text})
 
-                async with stream as s:
-                    async for event in s:
-                        if event.type == "content_block_start":
-                            block = event.content_block
-                            if block.type == "thinking":
-                                yield AgentEvent(type="thinking", data={"text": ""})
-
-                        elif event.type == "content_block_delta":
-                            delta = event.delta
-                            if hasattr(delta, "thinking") and delta.thinking:
-                                yield AgentEvent(type="thinking", data={"text": delta.thinking})
-                            elif hasattr(delta, "text") and delta.text:
-                                accumulated_text += delta.text
-                                yield AgentEvent(type="text", data={"text": delta.text})
-
-                    # Get the final message
-                    final = await s.get_final_message()
+                # Get the final response
+                response = await provider.get_final_response(handle)
 
                 # Track token usage
-                if final and final.usage:
-                    total_input_tokens += final.usage.input_tokens
-                    total_output_tokens += final.usage.output_tokens
+                total_input_tokens += response.input_tokens
+                total_output_tokens += response.output_tokens
 
                 break  # Success — exit retry loop
 
-            except anthropic.RateLimitError:
+            except LLMRateLimitError:
                 if api_attempt < len(API_RETRY_DELAYS):
                     delay = API_RETRY_DELAYS[api_attempt]
                     logger.warning(f"Rate limited (attempt {api_attempt + 1}), retrying in {delay}s")
@@ -243,172 +343,134 @@ async def run_agent(
                     await asyncio.sleep(delay)
                 else:
                     yield AgentEvent(type="error", data={
-                        "message": "Anthropic API rate limit reached after retries. Please wait and try again.",
+                        "message": f"{provider.provider_name.upper()} API rate limit reached after retries. Please wait and try again.",
                         "retryable": True,
                     })
                     return
 
-            except anthropic.AuthenticationError:
+            except LLMAuthenticationError as e:
                 yield AgentEvent(type="error", data={
-                    "message": "Invalid Anthropic API key. Please check ANTHROPIC_API_KEY in your .env file."
+                    "message": str(e) or f"Invalid {provider.provider_name.upper()} API key."
                 })
                 return
 
-            except anthropic.APIConnectionError as e:
+            except LLMConnectionError as e:
                 yield AgentEvent(type="error", data={
-                    "message": f"Cannot reach Anthropic API. Check your internet connection. ({e})",
+                    "message": f"Cannot reach {provider.provider_name.upper()} API. Check your internet connection. ({e})",
                     "retryable": True,
                 })
                 return
 
-            except Exception as e:
-                logger.exception("Anthropic API error")
+            except (LLMAPIError, LLMError, Exception) as e:
+                logger.exception(f"{provider.provider_name} API error")
                 yield AgentEvent(type="error", data={
                     "message": f"API error: {type(e).__name__}: {str(e)[:200]}",
                     "retryable": True,
                 })
                 return
 
-        if not final:
-            yield AgentEvent(type="error", data={"message": "Failed to get response from Claude."})
+        if not response:
+            yield AgentEvent(type="error", data={"message": f"Failed to get response from {provider.provider_name.upper()}."})
             return
 
-        # ── Collect content blocks ──
-        assistant_content = []
-        tool_uses = []
-        for block in final.content:
-            if block.type == "text":
-                assistant_content.append({"type": "text", "text": block.text})
-            elif block.type == "tool_use":
-                assistant_content.append({
-                    "type": "tool_use",
-                    "id": block.id,
-                    "name": block.name,
-                    "input": block.input,
-                })
-                tool_uses.append(block)
-            elif block.type == "thinking":
-                assistant_content.append({"type": "thinking", "thinking": block.thinking})
+        # ── Content blocks are already in normalized format ──
+        assistant_content = response.content_blocks
+        tool_calls = response.tool_calls
 
-        # Append assistant message to history
-        anthropic_messages.append({"role": "assistant", "content": assistant_content})
+        # Append assistant message to history (normalized format)
+        agent_messages.append({"role": "assistant", "content": assistant_content})
 
         # ── If no tool calls, we're done ──
-        # NOTE: must check tool_uses presence, not stop_reason. If stop_reason
-        # is 'max_tokens' but tool_uses exist, we still MUST emit tool_result
-        # blocks for every tool_use — otherwise the saved session state has
-        # dangling tool_use IDs and the next API call returns 400.
-        if not tool_uses:
+        if not tool_calls:
             break
 
-        # ── Execute tool calls ──
-        # CRITICAL: every tool_use in the assistant message must get a matching
-        # tool_result, even if execution is skipped (limit hit, error, etc.).
-        # Anthropic rejects the whole conversation otherwise.
-        tool_results_content = []
+        # ── Execute tool calls (in parallel, streaming each result as it finishes) ──
+        # The model may request several tools in one turn (e.g. generate_datasheet
+        # for many VDS codes). Running them concurrently and emitting each card the
+        # instant it's ready is far faster than sequential execution and lets the UI
+        # show datasheets one-by-one instead of waiting for the whole batch.
+        _friendly_tool_msgs = {
+            "find_valves": "Analyzing your requirements and finding matching valves...",
+            "generate_datasheet": "Generating valve datasheet with AI analysis...",
+            "get_piping_class_info": "Retrieving piping class specifications...",
+            "validate_combination": "Validating valve combination compatibility...",
+            "compare_valves": "Comparing valve specifications side by side...",
+            "query_pms": "Looking up PMS material specifications...",
+        }
+
+        results_by_id: dict[str, str] = {}   # tool_use_id -> result JSON (for history, in call order)
         limit_hit = False
+        runnable: list = []                  # tool calls that are within the limit
 
-        for tool_block in tool_uses:
+        # First pass: enforce the call limit and emit tool_call events up-front.
+        for tc in tool_calls:
             tool_call_count += 1
-
             if tool_call_count > max_calls:
                 if not limit_hit:
                     yield AgentEvent(type="error", data={
                         "message": f"Tool call limit ({max_calls}) reached. Stopping."
                     })
                     limit_hit = True
-                # Stub a tool_result so this tool_use isn't dangling.
-                tool_results_content.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_block.id,
-                    "content": json.dumps({"error": "Tool call limit reached, skipped"}),
-                })
+                results_by_id[tc.id] = json.dumps({"error": "Tool call limit reached, skipped"})
                 continue
 
-            # Emit status + tool_call events
-            _friendly_tool_msgs = {
-                "find_valves": "Analyzing your requirements and finding matching valves...",
-                "generate_datasheet": "Generating valve datasheet with AI analysis...",
-                "get_piping_class_info": "Retrieving piping class specifications...",
-                "validate_combination": "Validating valve combination compatibility...",
-                "compare_valves": "Comparing valve specifications side by side...",
-                "query_pms": "Looking up PMS material specifications...",
-            }
             yield AgentEvent(type="status", data={
-                "message": _friendly_tool_msgs.get(tool_block.name, f"Processing your request..."),
+                "message": _friendly_tool_msgs.get(tc.name, "Processing your request..."),
                 "phase": "tool",
-                "tool": tool_block.name,
+                "tool": tc.name,
             })
             yield AgentEvent(type="tool_call", data={
-                "name": tool_block.name,
-                "input": tool_block.input,
+                "name": tc.name,
+                "input": tc.arguments,
             })
+            runnable.append(tc)
 
-            # Execute with retry
-            result = await _retry_tool(tool_block.name, tool_block.input, project_id=project_id)
-            result_str = json.dumps(result)
+        # Launch all runnable tools concurrently (capped), then stream results as they complete.
+        if runnable:
+            _sem = asyncio.Semaphore(MAX_PARALLEL_TOOLS)
 
-            # Emit tool_result event
-            yield AgentEvent(type="tool_result", data={
-                "name": tool_block.name,
-                "result": result,
-            })
+            async def _run_capped(_tc):
+                # Return the tool call alongside its result — as_completed() yields
+                # wrapper awaitables, not the original futures, so we can't map back
+                # via a dict. Carrying _tc in the return value is the reliable way.
+                async with _sem:
+                    _res = await _retry_tool(_tc.name, _tc.arguments, project_id=project_id)
+                return _tc, _res
 
-            # Emit typed events for frontend card rendering
-            if tool_block.name == "validate_combination":
-                yield AgentEvent(type="validation", data=result)
-            elif tool_block.name == "find_valves":
-                if result.get("results"):
-                    yield AgentEvent(type="suggestion", data={
-                        "suggestions": [
-                            {
-                                "type": "combination",
-                                "title": r["vds_code"],
-                                "description": (
-                                    f"{r['valve_type']} | {r['piping_class']} | "
-                                    f"{r.get('body_material', '')[:40]}"
-                                ),
-                                "action": {"vds_code": r["vds_code"]},
-                                "meta": {
-                                    "valve_type": r.get("valve_type", ""),
-                                    "piping_class": r.get("piping_class", ""),
-                                    "pressure_class": r.get("pressure_class", ""),
-                                    "size_range": r.get("size_range", ""),
-                                    "body_material": r.get("body_material", "")[:60],
-                                    "end_connections": r.get("end_connections", ""),
-                                    "sour_service": r.get("sour_service", ""),
-                                },
-                            }
-                            for r in result["results"][:12]
-                        ]
-                    })
-            elif tool_block.name == "generate_datasheet":
-                val = result.get("validation") or {}
-                errs = [e for e in (val.get("errors") or []) if str(e).strip()]
-                if val:
-                    yield AgentEvent(type="validation", data=val)
-                # Do not emit a datasheet card when the tool reported errors — only warnings
-                # may accompany a real datasheet payload.
-                if not (result.get("error") or errs):
-                    yield AgentEvent(type="datasheet", data=result)
+            tasks = [asyncio.ensure_future(_run_capped(tc)) for tc in runnable]
+            for fut in asyncio.as_completed(tasks):
+                tc, result = await fut
+                # Store a compact form for the LLM (bulk returns too much to feed back).
+                results_by_id[tc.id] = json.dumps(_llm_safe_result(tc.name, result))
 
-            tool_results_content.append({
+                # Emit tool_result + typed card events the moment this one finishes.
+                yield AgentEvent(type="tool_result", data={
+                    "name": tc.name,
+                    "result": result,
+                })
+                for ev in _typed_events_for_result(tc.name, result):
+                    yield ev
+
+        # Append tool results to message history in the ORIGINAL call order
+        # (provider tool_result ↔ tool_use matching is by id, but consistent
+        # ordering keeps the conversation deterministic).
+        tool_results_content = [
+            {
                 "type": "tool_result",
-                "tool_use_id": tool_block.id,
-                "content": result_str,
-            })
+                "tool_use_id": tc.id,
+                "content": results_by_id.get(tc.id, json.dumps({"error": "missing result"})),
+            }
+            for tc in tool_calls
+        ]
+        agent_messages.append({"role": "user", "content": tool_results_content})
 
-        # Append tool results to message history for next loop iteration
-        anthropic_messages.append({"role": "user", "content": tool_results_content})
-
-        # If we hit the tool-call limit, stop now — don't call Claude again with
-        # stubbed errors and risk an infinite stub-loop.
+        # If we hit the tool-call limit, stop now
         if limit_hit:
             break
 
     # ── Emit internal state for session persistence (not sent to client) ──
     yield AgentEvent(type="_agent_state", data={
-        "agent_messages": anthropic_messages,
+        "agent_messages": agent_messages,
     })
 
     # ── Done ──

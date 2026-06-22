@@ -10,6 +10,7 @@ For unknown-but-valid VDS combinations, the Rule Engine dynamically generates
 a complete datasheet from PMS data + engineering rules — no hardcoded lookup needed.
 """
 
+import asyncio
 import json
 import logging
 import httpx
@@ -337,6 +338,34 @@ TOOL_DEFINITIONS = [
         "description": "List all PMS projects available in the system, with their class counts.",
         "input_schema": {"type": "object", "properties": {}},
     },
+    {
+        "name": "generate_datasheets_bulk",
+        "description": (
+            "Generate MANY valve datasheets in ONE single call. Use this for bulk / batch "
+            "requests such as 'check valve for all piping classes', 'all datasheets for class Y1', "
+            "or 'generate every ball valve'. "
+            "WORKFLOW: first call find_valves to obtain the list of VDS codes, then pass them ALL "
+            "to this tool in ONE call. Do NOT call generate_datasheet one code at a time for bulk "
+            "requests — that exhausts the tool-call limit and stalls. Each returned datasheet is "
+            "rendered as its own card in the UI."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "vds_codes": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of VDS codes to generate (e.g. ['CHSA1R','CHSB1R','CHSD1R']). Up to 60 per call.",
+                },
+                "overrides": {
+                    "type": "object",
+                    "description": "Optional field overrides applied to EVERY datasheet (e.g. size, project_name).",
+                    "additionalProperties": {"type": "string"},
+                },
+            },
+            "required": ["vds_codes"],
+        },
+    },
 ]
 
 # ── Tool execution ────────────────────────────────────────────────────────────
@@ -377,6 +406,7 @@ async def execute_tool(name: str, input_data: dict, project_id: str | None = Non
         "query_pms": _handle_query_pms,
         "query_project_pms": _handle_query_project_pms,
         "list_projects": _handle_list_projects,
+        "generate_datasheets_bulk": _handle_generate_bulk,
     }
     handler = handlers.get(name)
     if not handler:
@@ -712,6 +742,52 @@ async def _handle_generate(input_data: dict) -> dict:
     if applied_overrides:
         result["applied_overrides"] = applied_overrides
     return _finalize_generate_datasheet_response(result)
+
+
+async def _handle_generate_bulk(input_data: dict) -> dict:
+    """Generate many datasheets in one call (for 'all classes' / batch requests).
+
+    Reuses _handle_generate per code, runs them concurrently (capped), and returns
+    an array of datasheet results. The orchestrator renders one card per item.
+    """
+    codes = input_data.get("vds_codes") or []
+    overrides = input_data.get("overrides") or {}
+
+    seen: set[str] = set()
+    uniq: list[str] = []
+    for c in codes:
+        cu = str(c).upper().strip()
+        if cu and cu not in seen:
+            seen.add(cu)
+            uniq.append(cu)
+
+    MAX_BULK = 60
+    truncated = len(uniq) > MAX_BULK
+    uniq = uniq[:MAX_BULK]
+
+    if not uniq:
+        return {"count": 0, "succeeded": 0, "failed": 0, "datasheets": [],
+                "error": "No VDS codes provided. Call find_valves first to enumerate codes."}
+
+    sem = asyncio.Semaphore(6)   # cap concurrency: protects DB / connection pool
+
+    async def _one(code: str) -> dict:
+        async with sem:
+            try:
+                return await _handle_generate({"vds_code": code, "overrides": overrides})
+            except Exception as e:
+                return {"vds_code": code, "error": f"generation failed: {str(e)[:200]}"}
+
+    datasheets = await asyncio.gather(*[_one(c) for c in uniq])
+    succeeded = sum(1 for d in datasheets if isinstance(d, dict) and not d.get("error"))
+
+    return {
+        "count": len(datasheets),
+        "succeeded": succeeded,
+        "failed": len(datasheets) - succeeded,
+        "truncated": truncated,
+        "datasheets": list(datasheets),
+    }
 
 
 async def _handle_resolve_piping_class(input_data: dict) -> dict:
